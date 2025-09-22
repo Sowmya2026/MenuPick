@@ -1,10 +1,11 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { MealProvider } from './context/MealContext'
 import { MenuProvider } from './context/MenuContext'
 import { FeedbackProvider } from './context/FeedbackContext'
 import { Toaster } from 'react-hot-toast'
 import { useState, useEffect } from 'react'
+import { Smartphone } from 'lucide-react' // ADD THIS IMPORT
 
 import Navbar from './components/Navbar'
 import Home from './pages/Home'
@@ -15,6 +16,58 @@ import Auth from './pages/Auth'
 import Splash from './pages/Splash'
 import Onboarding from './pages/Onboarding'
 import Profile from './pages/Profile'
+
+// Mobile Restricted Route Component
+const MobileRestrictedRoute = ({ children }) => {
+  const [isMobile, setIsMobile] = useState(false)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      
+      if (mobile) {
+        // If mobile, redirect to home after a short delay
+        const timer = setTimeout(() => {
+          navigate('/', { replace: true })
+        }, 100)
+        
+        return () => clearTimeout(timer)
+      }
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [navigate])
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Smartphone className="h-8 w-8 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Mobile Access Restricted</h2>
+          <p className="text-gray-600 mb-6">
+            Meal selection is currently only available on desktop devices. 
+            Please visit this page on a computer or tablet to make your meal selections.
+          </p>
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Go to Home Page
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return children
+}
 
 // Protected Route Component that redirects to home if trying to access protected routes directly
 const ProtectedRoute = ({ children }) => {
@@ -45,11 +98,19 @@ const PublicRoute = ({ children }) => {
 const RouteHandler = () => {
   const { currentUser } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   // Redirect logged-in users to home if they try to access auth
   if (currentUser && location.pathname === '/auth') {
     return <Navigate to="/" replace />
   }
+
+  // Redirect mobile users from selection page to home
+  useEffect(() => {
+    if (location.pathname === '/selection' && window.innerWidth < 768) {
+      navigate('/', { replace: true })
+    }
+  }, [location.pathname, navigate])
 
   // For all other cases, render the appropriate route
   return (
@@ -69,7 +130,9 @@ const RouteHandler = () => {
       {/* Protected routes - require authentication */}
       <Route path="/selection" element={
         <ProtectedRoute>
-          <MealSelection />
+          <MobileRestrictedRoute>
+            <MealSelection />
+          </MobileRestrictedRoute>
         </ProtectedRoute>
       } />
       
@@ -159,11 +222,27 @@ function AppContent() {
       {/* Show navbar only for authenticated users */}
       {currentUser && <Navbar />}
       
-      <main className={currentUser ? "container mx-auto px-4 py-6" : ""}>
+      <main className={currentUser ? "pb-16" : ""}> {/* Add padding for mobile navbar */}
         <RouteHandler />
       </main>
       
-      <Toaster position="top-right" />
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            theme: {
+              primary: 'green',
+              secondary: 'black',
+            },
+          },
+        }}
+      />
     </div>
   )
 }
