@@ -60,8 +60,7 @@ const Navbar = () => {
       color: 'text-green-600',
       hoverColor: 'group-hover:text-green-600',
       bgColor: 'bg-green-50',
-      theme: 'green',
-      alwaysShow: true // Home is always visible
+      theme: 'green'
     },
     { 
       path: '/selection', 
@@ -70,8 +69,7 @@ const Navbar = () => {
       color: 'text-red-600',
       hoverColor: 'group-hover:text-red-600',
       bgColor: 'bg-red-50',
-      theme: 'red',
-      alwaysShow: false // Only for logged-in users
+      theme: 'red'
     },
     { 
       path: '/feedback', 
@@ -80,14 +78,17 @@ const Navbar = () => {
       color: 'text-purple-600',
       hoverColor: 'group-hover:text-purple-600',
       bgColor: 'bg-purple-50',
-      theme: 'purple',
-      alwaysShow: false // Only for logged-in users
+      theme: 'purple'
     }
   ];
 
-  // Filter navigation items based on authentication
-  const getVisibleNavItems = () => {
-    return navItems.filter(item => item.alwaysShow || currentUser);
+  const getThemeGradient = (theme) => {
+    switch(theme) {
+      case 'green': return 'from-green-400 to-green-600';
+      case 'red': return 'from-red-400 to-red-600';
+      case 'purple': return 'from-purple-400 to-purple-600';
+      default: return 'from-green-400 to-purple-600';
+    }
   };
 
   return (
@@ -112,33 +113,35 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             {/* Navigation Items */}
-            {getVisibleNavItems().map((item) => (
-              <Link 
-                key={item.path}
-                to={item.path} 
-                className={`flex flex-col items-center p-3 rounded-lg transition-all duration-300 group relative ${
-                  location.pathname === item.path ? item.bgColor : ''
-                }`}
-                title={item.label}
-              >
-                {/* Icon with transparent background */}
-                <div className="p-2 rounded-lg transition-all duration-300 group-hover:scale-110">
-                  <item.icon 
-                    size={20} 
-                    className={`${location.pathname === item.path ? item.color : 'text-gray-700'} ${item.hoverColor} transition-colors duration-300`}
-                  />
-                </div>
-                
-                {/* Hover Tooltip */}
-                <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                  <div className={`px-3 py-2 rounded-lg shadow-lg ${item.bgColor} border border-${item.theme}-200`}>
-                    <span className={`text-sm font-medium ${item.color} whitespace-nowrap`}>
-                      {item.label}
-                    </span>
-                    <div className={`absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 ${item.bgColor} border-l border-t border-${item.theme}-200`}></div>
+            {navItems.map((item) => (
+              (item.path === '/' || currentUser) && (
+                <Link 
+                  key={item.path}
+                  to={item.path} 
+                  className={`flex flex-col items-center p-3 rounded-lg transition-all duration-300 group relative ${
+                    location.pathname === item.path ? item.bgColor : ''
+                  }`}
+                  title={item.label}
+                >
+                  {/* Icon with transparent background */}
+                  <div className="p-2 rounded-lg transition-all duration-300 group-hover:scale-110">
+                    <item.icon 
+                      size={20} 
+                      className={`${location.pathname === item.path ? item.color : 'text-gray-700'} ${item.hoverColor} transition-colors duration-300`}
+                    />
                   </div>
-                </div>
-              </Link>
+                  
+                  {/* Hover Tooltip */}
+                  <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                    <div className={`px-3 py-2 rounded-lg shadow-lg ${item.bgColor} border border-${item.theme}-200`}>
+                      <span className={`text-sm font-medium ${item.color} whitespace-nowrap`}>
+                        {item.label}
+                      </span>
+                      <div className={`absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 ${item.bgColor} border-l border-t border-${item.theme}-200`}></div>
+                    </div>
+                  </div>
+                </Link>
+              )
             ))}
             
             {/* User section */}
@@ -197,15 +200,16 @@ const Navbar = () => {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-lg truncate text-gray-900">
+                          <p className="font-semibold text-lg truncate">
                             {currentUser.displayName || 'Welcome Back!'}
                           </p>
-                          <p className="text-gray-700 text-sm truncate">
+                          <p className="text-white/80 text-sm truncate">
                             {currentUser.email}
                           </p>
                         </div>
                       </div>
                     </div>
+
 
                     {/* Menu Items */}
                     <div className="py-2">
@@ -263,24 +267,26 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* Mobile Navigation - FIXED: Only show authorized routes */}
+        {/* Mobile Navigation */}
         <div className={`md:hidden overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
           <div className="flex flex-col space-y-1 pt-3">
-            {getVisibleNavItems().map((item) => (
-              <Link 
-                key={item.path}
-                to={item.path} 
-                className={`flex items-center p-3 rounded-lg transition-all duration-300 ${
-                  location.pathname === item.path ? item.bgColor : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsOpen(false)}
-              >
-                <item.icon 
-                  size={20} 
-                  className={`mr-3 ${location.pathname === item.path ? item.color : 'text-gray-600'}`}
-                />
-                {item.label}
-              </Link>
+            {navItems.map((item) => (
+              (item.path === '/' || currentUser) && (
+                <Link 
+                  key={item.path}
+                  to={item.path} 
+                  className={`flex items-center p-3 rounded-lg transition-all duration-300 ${
+                    location.pathname === item.path ? item.bgColor : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  <item.icon 
+                    size={20} 
+                    className={`mr-3 ${location.pathname === item.path ? item.color : 'text-gray-600'}`}
+                  />
+                  {item.label}
+                </Link>
+              )
             ))}
             
             {currentUser ? (

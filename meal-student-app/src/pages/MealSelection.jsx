@@ -8,17 +8,6 @@ import toast from 'react-hot-toast'
 const MealSelection = () => {
   const { meals, categories, loading, getSubcategories, checkSubcategoryLimit, saveStudentSelections, MAX_ITEMS, fetchStudentSelections } = useMeal()
   const { currentUser } = useAuth()
-  // ------------------- ADD THIS -------------------
-  const [redirecting, setRedirecting] = useState(false);
-
-  useEffect(() => {
-    const navigation = performance.getEntriesByType("navigation")[0];
-    if (navigation && navigation.type === "reload") {
-      setRedirecting(true); // prevents rendering before redirect
-      window.location.href = "/"; // go to Home
-    }
-  }, []);
-  // ------------------- END ADD -------------------
   const [selectedMeals, setSelectedMeals] = useState({})
   const [saving, setSaving] = useState(false)
   const [activeCategory, setActiveCategory] = useState('breakfast')
