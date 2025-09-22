@@ -130,9 +130,9 @@ const RouteHandler = () => {
       {/* Protected routes - require authentication */}
       <Route path="/selection" element={
         <ProtectedRoute>
-          <MobileRestrictedRoute>
+          
             <MealSelection />
-          </MobileRestrictedRoute>
+         
         </ProtectedRoute>
       } />
       
