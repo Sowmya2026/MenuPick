@@ -3,16 +3,25 @@ import { useAuth } from '../context/AuthContext'
 import { useMeal } from '../context/MealContext';
 import { Star, MessageSquare, Calendar } from 'lucide-react'
 import FeedbackForm from '../components/FeedbackForm'
-import Loader from '../components/Loader'
 
 const Feedback = () => {
   const { currentUser } = useAuth()
   const { meals } = useMeal()
   const [selectedMeal, setSelectedMeal] = useState(null)
   const [recentMeals, setRecentMeals] = useState([])
+  
+  // ------------------- ULTRA FAST RELOAD REDIRECT -------------------
+  useEffect(() => {
+    const navigation = performance.getEntriesByType("navigation")[0];
+    if (navigation && navigation.type === "reload") {
+      window.history.replaceState(null, '', '/');
+      window.location.href = "/";
+      return;
+    }
+  }, []);
+  // ------------------- END ULTRA FAST RELOAD REDIRECT -------------------
 
   useEffect(() => {
-    // Get recent meals (last 7 days)
     const recent = meals
       .filter(meal => new Date(meal.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
       .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -21,7 +30,7 @@ const Feedback = () => {
     if (recent.length > 0 && !selectedMeal) {
       setSelectedMeal(recent[0].id)
     }
-  }, [meals])
+  }, [meals, selectedMeal])
 
   if (!currentUser) {
     return (
@@ -38,7 +47,7 @@ const Feedback = () => {
   const selectedMealData = recentMeals.find(meal => meal.id === selectedMeal)
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
           <MessageSquare size={32} className="text-green-600" />
@@ -51,7 +60,7 @@ const Feedback = () => {
 
       <div className="grid gap-8 md:grid-cols-2">
         <div>
-          <div className="card p-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Select a Meal</h2>
             <div className="space-y-3">
               {recentMeals.map(meal => (
@@ -88,7 +97,7 @@ const Feedback = () => {
 
         <div>
           {selectedMealData ? (
-            <div className="card p-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Feedback</h2>
               <div className="mb-6">
                 <h3 className="font-medium text-gray-900 capitalize">{selectedMealData.type}</h3>

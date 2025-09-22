@@ -15,6 +15,7 @@ import {
   Leaf,
   Beef,
   Star,
+  BookOpen,
 } from "lucide-react";
 
 export default function Profile() {
@@ -25,9 +26,10 @@ export default function Profile() {
     displayName: "",
     email: "",
     phone: "",
+    studentId: "",
     dietaryPreferences: [],
     allergies: [],
-    messPreference: "veg", // Add mess preference to form data
+    messPreference: "veg",
   });
   const [notifications, setNotifications] = useState({
     mealReminders: true,
@@ -43,6 +45,7 @@ export default function Profile() {
         displayName: currentUser.displayName || "",
         email: currentUser.email || "",
         phone: currentUser.phone || "",
+        studentId: currentUser.studentId || "",
         dietaryPreferences: currentUser.dietaryPreferences || [],
         allergies: currentUser.allergies || [],
         messPreference: currentUser.messPreference || "veg",
@@ -90,10 +93,8 @@ export default function Profile() {
       if (result.success) {
         console.log("Profile saved successfully:", formData);
         setIsEditing(false);
-        // Show success message
       } else {
         console.error("Error saving profile:", result.error);
-        // Show error message
       }
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -101,12 +102,12 @@ export default function Profile() {
   };
 
   const handleCancel = () => {
-    // Reset form data
     if (currentUser) {
       setFormData({
         displayName: currentUser.displayName || "",
         email: currentUser.email || "",
         phone: currentUser.phone || "",
+        studentId: currentUser.studentId || "",
         dietaryPreferences: currentUser.dietaryPreferences || [],
         allergies: currentUser.allergies || [],
         messPreference: currentUser.messPreference || "veg",
@@ -230,6 +231,27 @@ export default function Profile() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Student ID
+                </label>
+                <div className="flex items-center">
+                  <BookOpen size={16} className="text-gray-400 mr-2" />
+                  <input
+                    type="text"
+                    value={formData.studentId}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        studentId: e.target.value,
+                      }))
+                    }
+                    disabled={!isEditing}
+                    className="input-field disabled:bg-gray-50 disabled:cursor-not-allowed flex-1"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email
                 </label>
                 <div className="flex items-center">
@@ -262,8 +284,20 @@ export default function Profile() {
                   <Calendar size={16} className="text-gray-400 mr-2" />
                   <span className="text-gray-600">
                     {new Date(
-                      currentUser.metadata.creationTime
+                      currentUser.metadata?.creationTime || new Date()
                     ).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Type
+                </label>
+                <div className="flex items-center">
+                  <Shield size={16} className="text-gray-400 mr-2" />
+                  <span className="text-gray-600 capitalize">
+                    {currentUser.accountType || 'email'}
                   </span>
                 </div>
               </div>
@@ -394,6 +428,16 @@ export default function Profile() {
             </h2>
             <div className="space-y-3">
               <div className="flex justify-between">
+                <span className="text-gray-600">Student ID</span>
+                <span className="font-medium">{formData.studentId || 'Not set'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Mess Preference</span>
+                <span className="font-medium capitalize">
+                  {formData.messPreference}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-gray-600">Meals Rated</span>
                 <span className="font-medium">24</span>
               </div>
@@ -403,19 +447,12 @@ export default function Profile() {
                   {(preferences || []).length}/10
                 </span>
               </div>
-
               <div className="flex justify-between">
                 <span className="text-gray-600">Member Since</span>
                 <span className="font-medium">
                   {new Date(
-                    currentUser.metadata.creationTime
+                    currentUser.metadata?.creationTime || new Date()
                   ).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Default Mess</span>
-                <span className="font-medium capitalize">
-                  {formData.messPreference}
                 </span>
               </div>
             </div>

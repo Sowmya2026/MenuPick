@@ -92,10 +92,10 @@ const Home = () => {
   const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]
 
   return (
-    <div className="space-y-6 px-4 py-4 md:space-y-8 md:px-0 md:py-6">
+    <div className="bg-white space-y-6 px-4 py-4 md:space-y-8 md:px-0 md:py-6">
       {/* Header Section */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 font-serif md:text-4xl">Campus Dining</h1>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-green-900 to-purple-600 bg-clip-text text-transparent font-serif md:text-4xl">Campus Dining</h1>
         <p className="text-base text-gray-700 italic font-light mt-2 md:text-lg md:mt-3">"{randomQuote}"</p>
         <div className="flex items-center justify-center mt-3 text-gray-600">
           <Calendar size={16} className="mr-2" />
@@ -155,8 +155,6 @@ const Home = () => {
       {selectedMess && (
         <div className="mt-6 max-w-6xl mx-auto md:mt-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
-            
-            
             <div className="mt-2 md:mt-0">
               <DaySelector 
                 days={days} 
@@ -183,15 +181,6 @@ const Home = () => {
         </div>
       )}
 
-      {!currentUser && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 text-center max-w-2xl mx-auto md:p-8">
-          <h2 className="text-xl font-bold text-blue-900 mb-2 font-serif md:text-2xl md:mb-3">Join Campus Dining Today!</h2>
-          <p className="text-blue-700 mb-4 text-sm md:text-base md:mb-6">Sign up to customize meal preferences and provide feedback</p>
-          <a href="/auth" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-lg transition-colors duration-300 text-sm md:py-3 md:px-6 md:text-base">
-            Create Account
-          </a>
-        </div>
-      )}
     </div>
   )
 }

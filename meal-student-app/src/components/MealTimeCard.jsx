@@ -67,8 +67,8 @@ const MealTimeCard = ({
           </div>
           <div>
             <h3 className="font-bold text-gray-900 capitalize text-lg">{mealTime}</h3>
-            <div className="flex items-center text-sm text-gray-500 mt-1">
-              <Clock size={16} className="mr-1.5" />
+            <div className="flex items-center text-xs text-gray-500 mt-1">
+              <Clock size={11} className="mr-1.5" />
               <span>{timing}</span>
             </div>
           </div>

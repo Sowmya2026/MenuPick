@@ -49,7 +49,24 @@ export const AuthProvider = ({ children }) => {
   const loginWithGoogle = async () => {
     const result = await authService.loginWithGoogle()
     if (result.success && result.user) {
-      // Get user profile from Firestore
+      const userProfile = await getUserProfile(result.user.uid)
+      setCurrentUser({ ...result.user, ...userProfile })
+    }
+    return result
+  }
+
+  const loginWithEmail = async (email, password) => {
+    const result = await authService.loginWithEmail(email, password)
+    if (result.success && result.user) {
+      const userProfile = await getUserProfile(result.user.uid)
+      setCurrentUser({ ...result.user, ...userProfile })
+    }
+    return result
+  }
+
+  const signupWithEmail = async (email, password, userData) => {
+    const result = await authService.signupWithEmail(email, password, userData)
+    if (result.success && result.user) {
       const userProfile = await getUserProfile(result.user.uid)
       setCurrentUser({ ...result.user, ...userProfile })
     }
@@ -67,7 +84,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged(async (user) => {
       if (user) {
-        // Get user profile from Firestore
         const userProfile = await getUserProfile(user.uid)
         setCurrentUser({ ...user, ...userProfile })
       } else {
@@ -82,6 +98,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     loginWithGoogle,
+    loginWithEmail,
+    signupWithEmail,
     logout,
     updateUserProfile
   }
@@ -93,7 +111,6 @@ export const AuthProvider = ({ children }) => {
   )
 }
 
-// Create and export the useAuth hook here
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {

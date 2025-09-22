@@ -61,13 +61,13 @@ const DaySelector = ({ days, selectedDay, onSelect }) => {
                 onClick={() => onSelect(day)}
                 className={`
                   flex items-center justify-center 
-                  rounded-full transition-all duration-300 
+                  rounded-3xl transition-all duration-300 
                   font-medium relative
                   ${isSelected
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg'
                     : isToday
-                    ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-green-100 text-green-900 border-2 border-green-500'
+                    : 'bg-green-100 text-green-900 border-2 border-green-500 hover:bg-green-300'
                   }
                   ${isMobile 
                     ? 'h-10 w-10 text-sm' 
@@ -81,7 +81,7 @@ const DaySelector = ({ days, selectedDay, onSelect }) => {
               
               {/* Today indicator dot */}
               {isToday && !isSelected && (
-                <div className="absolute -bottom-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="absolute -bottom-1 w-2 h-2 bg-green-500 rounded-half"></div>
               )}
             </div>
           );
