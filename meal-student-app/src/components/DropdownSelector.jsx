@@ -1,11 +1,72 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
 
-const DropdownSelector = ({ options = [], selected, onSelect, label, placeholder = "Select an option" }) => {
+const DropdownSelector = ({ options = [], selected, onSelect, label, placeholder = "Select an option", messType = 'veg' }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
 
   const selectedOption = options.find(opt => opt.id === selected)
+
+  // Get focus color based on mess type
+  const getFocusColor = () => {
+    switch (messType) {
+      case 'veg':
+        return 'focus:ring-green-500 focus:border-green-500';
+      case 'non-veg':
+        return 'focus:ring-red-500 focus:border-red-500';
+      case 'special':
+        return 'focus:ring-purple-500 focus:border-purple-500';
+      default:
+        return 'focus:ring-blue-500 focus:border-blue-500';
+    }
+  };
+
+  // Get selected color based on mess type
+  const getSelectedColor = () => {
+    switch (messType) {
+      case 'veg':
+        return 'bg-green-50 text-green-700';
+      case 'non-veg':
+        return 'bg-red-50 text-red-700';
+      case 'special':
+        return 'bg-purple-50 text-purple-700';
+      default:
+        return 'bg-blue-50 text-blue-700';
+    }
+  };
+
+  // Get hover color based on mess type
+  const getHoverColor = () => {
+    switch (messType) {
+      case 'veg':
+        return 'hover:bg-green-50';
+      case 'non-veg':
+        return 'hover:bg-red-50';
+      case 'special':
+        return 'hover:bg-purple-50';
+      default:
+        return 'hover:bg-blue-50';
+    }
+  };
+
+  // Get check color based on mess type
+  const getCheckColor = () => {
+    switch (messType) {
+      case 'veg':
+        return 'text-green-600';
+      case 'non-veg':
+        return 'text-red-600';
+      case 'special':
+        return 'text-purple-600';
+      default:
+        return 'text-blue-600';
+    }
+  };
+
+  const focusColor = getFocusColor();
+  const selectedColor = getSelectedColor();
+  const hoverColor = getHoverColor();
+  const checkColor = getCheckColor();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -38,7 +99,7 @@ const DropdownSelector = ({ options = [], selected, onSelect, label, placeholder
       
       <button
         type="button"
-        className="w-full bg-white border border-gray-300 rounded-xl shadow-sm px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between transition-all duration-300 hover:border-gray-400"
+        className={`w-full bg-white border border-gray-300 rounded-xl shadow-sm px-4 py-3 text-left focus:outline-none focus:ring-2 ${focusColor} flex items-center justify-between transition-all duration-300 hover:border-gray-400`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center">
@@ -57,8 +118,8 @@ const DropdownSelector = ({ options = [], selected, onSelect, label, placeholder
             {options.map((option) => (
               <button
                 key={option.id}
-                className={`w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors duration-300 flex items-center justify-between ${
-                  selected === option.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                className={`w-full text-left px-4 py-3 ${hoverColor} transition-colors duration-300 flex items-center justify-between ${
+                  selected === option.id ? `${selectedColor}` : 'text-gray-700'
                 }`}
                 onClick={() => handleSelect(option.id)}
               >
@@ -68,7 +129,7 @@ const DropdownSelector = ({ options = [], selected, onSelect, label, placeholder
                 </div>
                 
                 {selected === option.id && (
-                  <Check size={18} className="text-blue-600 flex-shrink-0" />
+                  <Check size={18} className={`${checkColor} flex-shrink-0`} />
                 )}
               </button>
             ))}

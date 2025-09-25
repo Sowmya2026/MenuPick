@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 
-const DaySelector = ({ days, selectedDay, onSelect }) => {
+const DaySelector = ({ days, selectedDay, onSelect, messType = 'veg' }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [currentDay, setCurrentDay] = useState('');
 
@@ -31,6 +31,42 @@ const DaySelector = ({ days, selectedDay, onSelect }) => {
       onSelect(today);
     }
   }, []);
+
+  // Get color classes based on mess type - matching MealTimeCard colors
+  const getColorClasses = () => {
+    switch (messType) {
+      case 'veg':
+        return {
+          selected: 'from-green-500 to-green-700',
+          today: 'bg-green-100 text-green-900 border-green-300 shadow-md', // Enhanced today style
+          todayDot: 'bg-green-500',
+          default: 'bg-green-50 text-green-700 border-green-100 hover:bg-green-100'
+        };
+      case 'non-veg':
+        return {
+          selected: 'from-red-500 to-red-700',
+          today: 'bg-red-100 text-red-900 border-red-300 shadow-md',
+          todayDot: 'bg-red-500',
+          default: 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100'
+        };
+      case 'special':
+        return {
+          selected: 'from-purple-500 to-purple-700',
+          today: 'bg-purple-100 text-purple-900 border-purple-300 shadow-md',
+          todayDot: 'bg-purple-500',
+          default: 'bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100'
+        };
+      default:
+        return {
+          selected: 'from-green-500 to-green-700',
+          today: 'bg-green-100 text-green-900 border-green-300 shadow-md',
+          todayDot: 'bg-green-500',
+          default: 'bg-green-50 text-green-700 border-green-100 hover:bg-green-100'
+        };
+    }
+  };
+
+  const colors = getColorClasses();
 
   // Function to get day abbreviation
   const getDayAbbreviation = (day) => {
@@ -62,27 +98,28 @@ const DaySelector = ({ days, selectedDay, onSelect }) => {
                 className={`
                   flex items-center justify-center 
                   rounded-3xl transition-all duration-300 
-                  font-medium relative
+                  font-medium relative border-2
                   ${isSelected
-                    ? 'bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg'
+                    ? `bg-gradient-to-r ${colors.selected} text-white shadow-lg border-transparent transform scale-105`
                     : isToday
-                    ? 'bg-green-100 text-green-900 border-2 border-green-500'
-                    : 'bg-green-100 text-green-900 border-2 border-green-500 hover:bg-green-300'
+                    ? `${colors.today} border-2 font-semibold` // Enhanced today styling
+                    : `${colors.default}`
                   }
                   ${isMobile 
                     ? 'h-10 w-10 text-sm' 
                     : 'h-12 w-12 text-base'
                   }
+                  hover:scale-105 active:scale-95
                 `}
                 title={isToday ? `${day} (Today)` : day}
               >
                 {displayText}
+                
+                {/* Today indicator dot - show only when not selected */}
+                {isToday && !isSelected && (
+                  <div className={`absolute -top-1 -right-1 w-3 h-3 ${colors.todayDot} rounded-full border-2 border-white`}></div>
+                )}
               </button>
-              
-              {/* Today indicator dot */}
-              {isToday && !isSelected && (
-                <div className="absolute -bottom-1 w-2 h-2 bg-green-500 rounded-half"></div>
-              )}
             </div>
           );
         })}
@@ -92,4 +129,3 @@ const DaySelector = ({ days, selectedDay, onSelect }) => {
 };
 
 export default DaySelector;
-

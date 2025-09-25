@@ -1,35 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import {
-  Menu,
-  X,
-  User,
-  LogOut,
-  Settings,
-  Home,
-  Utensils,
-  MessageSquare,
-  Sparkles,
-} from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, X, Home, LogIn, User, Sparkles } from "lucide-react";
 
-const LoggedInNavbar = () => {
+const PublicNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { currentUser, logout } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
   const profileRef = useRef(null);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/home");
-      setIsProfileOpen(false);
-    } catch (error) {
-      console.error("Failed to log out");
-    }
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -50,10 +28,10 @@ const LoggedInNavbar = () => {
     setIsOpen(false);
   }, [location.pathname]);
 
-  // Navigation items for logged-in users
+  // Navigation items for non-logged-in users
   const navItems = [
     {
-      path: "/",
+      path: "/home",
       icon: Home,
       label: "Home",
       color: "text-green-600",
@@ -61,25 +39,12 @@ const LoggedInNavbar = () => {
       bgColor: "bg-green-50",
       theme: "green",
     },
-    {
-      path: "/selection",
-      icon: Utensils,
-      label: "Meal Selection",
-      color: "text-red-600",
-      hoverColor: "group-hover:text-red-600",
-      bgColor: "bg-red-50",
-      theme: "red",
-    },
-    {
-      path: "/feedback",
-      icon: MessageSquare,
-      label: "Feedback",
-      color: "text-purple-600",
-      hoverColor: "group-hover:text-purple-600",
-      bgColor: "bg-purple-50",
-      theme: "purple",
-    },
   ];
+
+  const handleSkipForNow = () => {
+    navigate("/home");
+    setIsProfileOpen(false);
+  };
 
   return (
     <nav className="bg-white relative border-b border-gray-100">
@@ -146,42 +111,34 @@ const LoggedInNavbar = () => {
             ))}
 
             {/* Spacing between nav items and profile */}
-            <div className="w-6"></div>
+            <div className="w-4"></div>
 
-            {/* Profile dropdown */}
+            {/* Profile dropdown for guest user */}
             <div className="relative" ref={profileRef}>
               <button
                 onMouseEnter={() => setIsProfileOpen(true)}
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center justify-center transition-all duration-300 group"
               >
-                {currentUser?.photoURL ? (
-                  <img
-                    src={currentUser.photoURL}
-                    alt={currentUser.displayName || "User"}
-                    className="w-9 h-9 rounded-full border-2 border-gray-200 hover:border-green-400 transition-all duration-300 group-hover:scale-110"
+                <div className="w-9 h-9 rounded-full flex items-center justify-center border-2 border-gray-200 hover:border-purple-400 transition-all duration-300 group-hover:scale-110">
+                  <User
+                    size={18}
+                    className="text-gray-600 group-hover:text-purple-600 transition-colors"
                   />
-                ) : (
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center border-2 border-gray-200 hover:border-green-400 transition-all duration-300 group-hover:scale-110">
-                    <User
-                      size={18}
-                      className="text-gray-600 group-hover:text-green-600 transition-colors"
-                    />
-                  </div>
-                )}
+                </div>
 
                 {/* Hover Tooltip */}
                 <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                  <div className="px-3 py-2 rounded-lg shadow-lg bg-green-50 border border-green-200">
-                    <span className="text-sm font-medium text-green-600 whitespace-nowrap">
-                      Profile
+                  <div className="px-3 py-2 rounded-lg shadow-lg bg-purple-50 border border-purple-200">
+                    <span className="text-sm font-medium text-purple-600 whitespace-nowrap">
+                      Guest Menu
                     </span>
-                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 bg-green-50 border-l border-t border-green-200"></div>
+                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 bg-purple-50 border-l border-t border-purple-200"></div>
                   </div>
                 </div>
               </button>
 
-              {/* Profile Dropdown */}
+              {/* Guest Profile Dropdown */}
               <div
                 className={`absolute right-0 mt-2 w-80 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl py-4 z-50 border border-white/50 transition-all duration-300 transform origin-top-right ${
                   isProfileOpen
@@ -190,26 +147,18 @@ const LoggedInNavbar = () => {
                 }`}
                 onMouseLeave={() => setIsProfileOpen(false)}
               >
-                {/* Header with user info */}
-                <div className="px-6 py-4 bg-gradient-to-r from-green-200 via-purple-200 to-red-200 rounded-t-2xl text-white">
+                {/* Header with gradient */}
+                <div className="px-6 py-4 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 rounded-t-2xl text-white">
                   <div className="flex items-center space-x-3">
-                    {currentUser?.photoURL ? (
-                      <img
-                        src={currentUser.photoURL}
-                        alt={currentUser.displayName || "User"}
-                        className="w-12 h-12 rounded-xl border-2 border-white/50"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center border-2 border-white/50">
-                        <User size={24} className="text-white" />
-                      </div>
-                    )}
+                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center border-2 border-white/50">
+                      <User size={24} className="text-white" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-lg truncate">
-                        {currentUser?.displayName || "Welcome Back!"}
+                        Welcome Guest!
                       </p>
                       <p className="text-white/80 text-sm truncate">
-                        {currentUser?.email}
+                        Sign in to access all features
                       </p>
                     </div>
                   </div>
@@ -218,56 +167,61 @@ const LoggedInNavbar = () => {
                 {/* Menu Items */}
                 <div className="py-2">
                   <Link
-                    to="/profile"
-                    className="flex items-center px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 transition-all duration-300 group"
+                    to="/auth"
+                    className="flex items-center px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 group"
                     onClick={() => setIsProfileOpen(false)}
                   >
-                    <User
+                    <LogIn
+                      size={18}
+                      className="mr-3 text-blue-500 group-hover:scale-110 transition-transform"
+                    />
+                    <span>Sign In / Register</span>
+                    <Sparkles
+                      size={14}
+                      className="ml-auto text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
+                  </Link>
+
+                  <button
+                    onClick={handleSkipForNow}
+                    className="flex items-center w-full text-left px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 transition-all duration-300 group"
+                  >
+                    <Home
                       size={18}
                       className="mr-3 text-green-500 group-hover:scale-110 transition-transform"
                     />
-                    <span>My Profile</span>
-                    <Sparkles
-                      size={14}
-                      className="ml-auto text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
-                  </Link>
-
-                  <Link
-                    to="/settings"
-                    className="flex items-center px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 transition-all duration-300 group"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    <Settings
-                      size={18}
-                      className="mr-3 text-purple-500 group-hover:scale-110 transition-transform"
-                    />
-                    <span>Settings</span>
-                    <Sparkles
-                      size={14}
-                      className="ml-auto text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
-                  </Link>
-
-                  <div className="mx-6 my-2 border-t border-gray-200"></div>
-
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center w-full text-left px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 transition-all duration-300 group"
-                  >
-                    <LogOut
-                      size={18}
-                      className="mr-3 text-red-500 group-hover:scale-110 transition-transform"
-                    />
-                    <span>Logout</span>
+                    <span>Continue as Guest</span>
                     <Sparkles
                       size={14}
                       className="ml-auto text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity"
                     />
                   </button>
+
+                  <div className="mx-6 my-2 border-t border-gray-200"></div>
+
+                  <div className="px-6 py-2">
+                    <p className="text-xs text-gray-500 text-center">
+                      Explore basic features without signing in
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Spacing between profile and login button */}
+            <div className="w-6"></div>
+
+            {/* Login Button */}
+            <Link
+              to="/auth"
+              className="bg-gradient-to-r from-green-500 to-purple-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-300 shadow-md flex items-center group"
+            >
+              <LogIn
+                size={18}
+                className="mr-2 group-hover:scale-110 transition-transform"
+              />
+              Login
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -311,57 +265,32 @@ const LoggedInNavbar = () => {
 
             <hr className="my-2 border-gray-200" />
 
-            {/* Mobile Profile Section */}
-            <div className="px-3 py-2 flex items-center space-x-3">
-              {currentUser?.photoURL ? (
-                <img
-                  src={currentUser.photoURL}
-                  alt={currentUser.displayName || "User"}
-                  className="w-8 h-8 rounded-full"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                  <User size={16} className="text-gray-600" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 truncate text-sm">
-                  {currentUser?.displayName || "User"}
-                </p>
-                <p className="text-gray-500 truncate text-xs">
-                  {currentUser?.email}
-                </p>
-              </div>
-            </div>
-
+            {/* Mobile Guest Options */}
             <Link
-              to="/profile"
-              className="flex items-center text-gray-700 p-3 rounded-lg transition-all duration-300 hover:bg-gray-50"
+              to="/auth"
+              className="flex items-center text-gray-700 p-3 rounded-lg transition-all duration-300 hover:bg-blue-50"
               onClick={() => setIsOpen(false)}
             >
-              <User size={20} className="mr-3 text-green-600" />
-              My Profile
-            </Link>
-
-            <Link
-              to="/settings"
-              className="flex items-center text-gray-700 p-3 rounded-lg transition-all duration-300 hover:bg-purple-50"
-              onClick={() => setIsOpen(false)}
-            >
-              <Settings size={20} className="mr-3 text-purple-600" />
-              Settings
+              <LogIn size={20} className="mr-3 text-blue-600" />
+              Sign In / Register
             </Link>
 
             <button
               onClick={() => {
-                handleLogout();
+                handleSkipForNow();
                 setIsOpen(false);
               }}
-              className="flex items-center text-gray-700 p-3 rounded-lg transition-all duration-300 hover:bg-red-50 text-left"
+              className="flex items-center text-gray-700 p-3 rounded-lg transition-all duration-300 hover:bg-green-50 text-left"
             >
-              <LogOut size={20} className="mr-3 text-red-600" />
-              Logout
+              <Home size={20} className="mr-3 text-green-600" />
+              Continue as Guest
             </button>
+
+            <div className="px-3 py-2">
+              <p className="text-xs text-gray-500 text-center">
+                Explore basic features without signing in
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -369,4 +298,4 @@ const LoggedInNavbar = () => {
   );
 };
 
-export default LoggedInNavbar;
+export default PublicNavbar;

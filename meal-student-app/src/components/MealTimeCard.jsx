@@ -4,7 +4,8 @@ import { Clock, ChevronDown, ChevronUp, Utensils, Coffee, Sun, Moon, ChefHat } f
 const MealTimeCard = ({ 
   mealTime, 
   timing, 
-  items 
+  items,
+  messType = 'veg' 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -12,102 +13,122 @@ const MealTimeCard = ({
     setIsExpanded(!isExpanded);
   };
 
-  // Get meal-specific styling and icons
-  const getMealStyles = () => {
-    switch(mealTime) {
-      case 'breakfast':
-        return {
-          bgColor: 'bg-amber-50',
-          borderColor: 'border-amber-200',
-          accentColor: 'text-amber-600',
-          icon: <Coffee size={22} className="text-amber-600" />,
-          dotColor: 'bg-amber-400',
-          shadow: 'shadow-amber-100'
-        };
-      case 'lunch':
+  // Get color classes based on mess type
+  const getMessColorClasses = () => {
+    switch (messType) {
+      case 'veg':
         return {
           bgColor: 'bg-green-50',
           borderColor: 'border-green-200',
           accentColor: 'text-green-600',
-          icon: <Sun size={22} className="text-green-600" />,
           dotColor: 'bg-green-400',
-          shadow: 'shadow-green-100'
+          shadow: 'shadow-green-100',
+          hoverBg: 'hover:bg-green-50'
         };
-      case 'dinner':
+      case 'non-veg':
+        return {
+          bgColor: 'bg-red-50',
+          borderColor: 'border-red-200',
+          accentColor: 'text-red-600',
+          dotColor: 'bg-red-400',
+          shadow: 'shadow-red-100',
+          hoverBg: 'hover:bg-red-50'
+        };
+      case 'special':
         return {
           bgColor: 'bg-purple-50',
           borderColor: 'border-purple-200',
           accentColor: 'text-purple-600',
-          icon: <Moon size={22} className="text-purple-600" />,
           dotColor: 'bg-purple-400',
-          shadow: 'shadow-purple-100'
+          shadow: 'shadow-purple-100',
+          hoverBg: 'hover:bg-purple-50'
         };
       default:
         return {
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
-          accentColor: 'text-blue-600',
-          icon: <Utensils size={22} className="text-blue-600" />,
-          dotColor: 'bg-blue-400',
-          shadow: 'shadow-blue-100'
+          bgColor: 'bg-green-50',
+          borderColor: 'border-green-200',
+          accentColor: 'text-green-600',
+          dotColor: 'bg-green-400',
+          shadow: 'shadow-green-100',
+          hoverBg: 'hover:bg-green-50'
         };
     }
   };
 
-  const styles = getMealStyles();
+  const messColors = getMessColorClasses();
+
+  // Get meal-specific icons (using mess type colors)
+  const getMealIcon = () => {
+    switch(mealTime) {
+      case 'breakfast':
+        return <Coffee size={20} className={messColors.accentColor} />;
+      case 'lunch':
+        return <Sun size={20} className={messColors.accentColor} />;
+      case 'dinner':
+        return <Moon size={20} className={messColors.accentColor} />;
+      default:
+        return <Utensils size={20} className={messColors.accentColor} />;
+    }
+  };
+
+  const mealIcon = getMealIcon();
 
   return (
     <div 
-      className={`rounded-2xl p-5 transition-all duration-300 border-2 ${styles.borderColor} bg-white hover:shadow-md`}
+      className={`rounded-xl p-4 transition-all duration-300 border-2 ${messColors.borderColor} bg-white hover:shadow-md ${messColors.shadow} mx-2 md:mx-0`}
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center">
-          <div className={`p-3 rounded-xl mr-4 ${styles.bgColor}`}>
-            {styles.icon}
+          <div className={`p-2 rounded-lg mr-3 ${messColors.bgColor} md:p-3 md:rounded-xl md:mr-4`}>
+            {mealIcon}
           </div>
           <div>
-            <h3 className="font-bold text-gray-900 capitalize text-lg">{mealTime}</h3>
+            <h3 className="font-bold text-gray-900 capitalize text-base md:text-lg">
+              {mealTime}
+            </h3>
             <div className="flex items-center text-xs text-gray-500 mt-1">
-              <Clock size={11} className="mr-1.5" />
-              <span>{timing}</span>
+              <Clock size={10} className="mr-1 md:size-3 md:mr-1.5" />
+              <span className="text-xs md:text-sm">{timing}</span>
             </div>
           </div>
         </div>
         
         <button 
           onClick={toggleExpand}
-          className={`p-2 rounded-full transition-colors ${styles.accentColor} hover:bg-white`}
+          className={`p-1.5 rounded-full transition-colors ${messColors.accentColor} ${messColors.hoverBg} md:p-2`}
           aria-label={isExpanded ? "Collapse meals" : "Expand meals"}
         >
-          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </button>
       </div>
       
       {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-gray-100 animate-fadeIn">
-          <div className="flex items-center mb-3">
-            <ChefHat size={16} className="text-gray-400 mr-2" />
-            <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Today's Menu</h4>
+        <div className="mt-3 pt-3 border-t border-gray-100 animate-fadeIn md:mt-4 md:pt-4">
+          <div className="flex items-center mb-2 md:mb-3">
+            <ChefHat size={14} className={`${messColors.accentColor} mr-2 md:size-4`} />
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide md:text-sm">
+              Today's Menu
+            </h4>
           </div>
           
           {items.length > 0 ? (
-            <ul className="space-y-3">
+            <ul className="space-y-2 md:space-y-3">
               {items.map((item, index) => (
                 <li 
                   key={index} 
                   className="flex items-start animate-fadeIn transition-all duration-300 hover:translate-x-1"
                 >
-                  <div className={`w-2.5 h-2.5 rounded-full mt-2 mr-3 flex-shrink-0 ${styles.dotColor}`}></div>
-                  <span className="text-gray-800 font-medium">{item}</span>
+                  <div className={`w-2 h-2 rounded-full mt-1.5 mr-2 flex-shrink-0 ${messColors.dotColor} md:w-2.5 md:h-2.5 md:mt-2 md:mr-3`}></div>
+                  <span className="text-sm text-gray-800 font-medium md:text-base">{item}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <div className="text-center py-4">
+            <div className="text-center py-3 md:py-4">
               <div className="text-gray-300 mb-2">
-                <Utensils size={40} className="mx-auto" />
+                <Utensils size={32} className="mx-auto md:size-10" />
               </div>
-              <p className="text-gray-400">No items available for this meal time</p>
+              <p className="text-gray-400 text-sm md:text-base">No items available for this meal time</p>
             </div>
           )}
         </div>

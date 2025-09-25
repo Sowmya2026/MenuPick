@@ -6,7 +6,7 @@ import { FeedbackProvider } from './context/FeedbackContext'
 import { Toaster } from 'react-hot-toast'
 import { useState, useEffect } from 'react'
 
-import Navbar from './components/Navbar'
+import MainNavbar from './components/MainNavbar'
 import Home from './pages/Home'
 import MealSelection from './pages/MealSelection'
 import MealDetail from './pages/MealDetail'
@@ -15,6 +15,7 @@ import Auth from './pages/Auth'
 import Splash from './pages/Splash'
 import Onboarding from './pages/Onboarding'
 import Profile from './pages/Profile'
+import CompleteProfile from './pages/CompleteProfile' // ADD THIS IMPORT
 
 // Protected Route Component that redirects to home if trying to access protected routes directly
 const ProtectedRoute = ({ children }) => {
@@ -41,19 +42,49 @@ const PublicRoute = ({ children }) => {
   return children
 }
 
+// Profile Completion Route - accessible only to authenticated users who need to complete profile
+const ProfileCompletionRoute = ({ children }) => {
+  const { currentUser, needsProfileCompletion } = useAuth()
+  
+  // If not authenticated, redirect to auth
+  if (!currentUser) {
+    return <Navigate to="/auth" replace />
+  }
+  
+  // If profile is already completed, redirect to home
+  if (!needsProfileCompletion) {
+    return <Navigate to="/" replace />
+  }
+  
+  return children
+}
+
 // Route handler to ensure home is always default for logged-in users
 const RouteHandler = () => {
-  const { currentUser } = useAuth()
+  const { currentUser, needsProfileCompletion } = useAuth()
   const location = useLocation()
+
+  // Redirect logged-in users who need profile completion
+  if (currentUser && needsProfileCompletion && location.pathname !== '/complete-profile') {
+    return <Navigate to="/complete-profile" replace />
+  }
 
   // Redirect logged-in users to home if they try to access auth
   if (currentUser && location.pathname === '/auth') {
     return <Navigate to="/" replace />
   }
 
+  // Redirect users with completed profile away from complete-profile page
+  if (currentUser && !needsProfileCompletion && location.pathname === '/complete-profile') {
+    return <Navigate to="/" replace />
+  }
+
   // For all other cases, render the appropriate route
   return (
     <Routes>
+      {/* Public home page for guests */}
+      <Route path="/home" element={<Home />} />
+
       {/* Home is always the default and landing page for logged-in users */}
       <Route path="/" element={
         currentUser ? <Home /> : <Navigate to="/auth" replace />
@@ -64,6 +95,13 @@ const RouteHandler = () => {
         <PublicRoute>
           <Auth />
         </PublicRoute>
+      } />
+      
+      {/* Profile completion route - only for users who need to complete profile */}
+      <Route path="/complete-profile" element={
+        <ProfileCompletionRoute>
+          <CompleteProfile />
+        </ProfileCompletionRoute>
       } />
       
       {/* Protected routes - require authentication */}
@@ -101,7 +139,7 @@ const RouteHandler = () => {
 
 // Main App Component
 function AppContent() {
-  const { currentUser, loading } = useAuth()
+  const { currentUser, loading, needsProfileCompletion } = useAuth()
   const [showSplash, setShowSplash] = useState(true)
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false)
   const [isInitializing, setIsInitializing] = useState(true)
@@ -143,6 +181,19 @@ function AppContent() {
     )
   }
 
+  // Don't show splash/onboarding for users who need profile completion
+  if (currentUser && needsProfileCompletion) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Hide navbar for profile completion to focus user on the task */}
+        <main>
+          <RouteHandler />
+        </main>
+        <Toaster position="top-right" />
+      </div>
+    )
+  }
+
   // Show splash screen ONLY for first-time users who haven't completed onboarding
   if (showSplash && !hasCompletedOnboarding && !currentUser) {
     return <Splash onComplete={() => setShowSplash(false)} />
@@ -156,8 +207,8 @@ function AppContent() {
   // MAIN APP - for all authenticated users and returning users
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Show navbar only for authenticated users */}
-      {currentUser && <Navbar />}
+      {/* Show navbar for both authenticated and non-authenticated users */}
+      <MainNavbar />
       
       <main className={currentUser ? "container mx-auto px-4 py-6" : ""}>
         <RouteHandler />
