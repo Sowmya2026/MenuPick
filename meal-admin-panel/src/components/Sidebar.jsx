@@ -36,7 +36,6 @@ const Sidebar = ({
 
   // Initialize sidebar state
   useEffect(() => {
-    // Check if we need to set initial collapsed state
     const savedState = localStorage.getItem("sidebarCollapsed");
     if (savedState !== null) {
       setIsCollapsed(savedState === "true");
@@ -66,12 +65,10 @@ const Sidebar = ({
     }
   };
 
-  // Toggle sidebar collapse state
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
 
-  // Prevent click inside sidebar from closing it
   const handleSidebarClick = (e) => {
     e.stopPropagation();
   };
@@ -81,80 +78,89 @@ const Sidebar = ({
       {/* Mobile sidebar */}
       <Dialog
         as="div"
-        className="fixed inset-0 z-40 flex lg:hidden"
+        className="relative z-40 lg:hidden"
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       >
         {/* Overlay */}
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" />
 
-        <div
-          className="relative flex-1 flex flex-col max-w-xs w-full bg-white"
-          onClick={handleSidebarClick}
-          ref={sidebarRef}
-        >
-          {/* Close button */}
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
-            <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-6 w-6 text-white" aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div className="flex items-center justify-center px-4 mb-5">
-              <h1 className="text-xl font-bold text-green-900">Meal Admin</h1>
+        <div className="fixed inset-0 flex">
+          <Dialog.Panel
+            className="relative flex-1 flex flex-col w-full max-w-xs bg-white"
+            onClick={handleSidebarClick}
+            ref={sidebarRef}
+          >
+            {/* Close button */}
+            <div className="absolute top-3 right-3 z-50">
+              <button
+                className="flex items-center justify-center h-8 w-8 rounded-full bg-green-200 bg-opacity-80 hover:bg-green-100 transition-colors"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X className="h-5 w-5 text-green-600" />
+              </button>
             </div>
-            <nav className="px-2 space-y-1">
-              {navigation.map((item) => (
-                <NavLink
-                  key={item.name}
-                  to={item.href}
-                  className={({ isActive }) =>
-                    `group flex items-center px-2 py-2 text-base font-medium rounded-md transition-colors duration-200 ${
-                      isActive
-                        ? "bg-primary-100 text-primary-700"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`
-                  }
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  {item.icon && <item.icon className="mr-4 h-6 w-6" />}
-                  {item.name}
-                </NavLink>
-              ))}
-            </nav>
-          </div>
 
-          {/* Bottom section for mobile */}
-          <div className="flex-shrink-0 flex flex-col border-t border-gray-200 p-4 space-y-2">
-            <div className="px-2 py-2 text-sm text-gray-500">
-              Logged in as: {currentUser?.email}
+            <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+              {/* Logo */}
+              <div className="flex items-center justify-center px-4 mb-4">
+                <h1 className="text-lg font-bold text-green-900">Meal Admin</h1>
+              </div>
+              
+              {/* Navigation */}
+              <nav className="px-3 space-y-1">
+                {navigation.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    className={({ isActive }) =>
+                      `group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                        isActive
+                          ? "bg-green-100 text-green-700 border border-green-200"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`
+                    }
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                    {item.name}
+                  </NavLink>
+                ))}
+              </nav>
+
+              {/* User info */}
+              <div className="mt-auto px-4 py-3 border-t border-gray-200">
+                <div className="text-xs text-gray-500 mb-3 px-2">
+                  Logged in as: <span className="font-medium">{currentUser?.email}</span>
+                </div>
+                
+                {/* Bottom actions */}
+                <div className="space-y-1">
+                  <a
+                    href="#"
+                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
+                  >
+                    <HelpCircle className="mr-3 h-4 w-4" />
+                    Help
+                  </a>
+                  <a
+                    href="#"
+                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
+                  >
+                    <Settings className="mr-3 h-4 w-4" />
+                    Settings
+                  </a>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
+                  >
+                    <LogOut className="mr-3 h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              </div>
             </div>
-            <a
-              href="#"
-              className="flex items-center p-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
-            >
-              <HelpCircle className="mr-4 h-6 w-6" />
-              Help
-            </a>
-            <a
-              href="#"
-              className="flex items-center p-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
-            >
-              <Settings className="mr-4 h-6 w-6" />
-              Settings
-            </a>
-            <button
-              onClick={handleLogout}
-              className="flex items-center p-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md w-full"
-            >
-              <LogOut className="mr-4 h-6 w-6" />
-              Sign out
-            </button>
-          </div>
+          </Dialog.Panel>
         </div>
       </Dialog>
 
@@ -165,18 +171,16 @@ const Sidebar = ({
         } transition-all duration-300 ease-in-out`}
         ref={sidebarRef}
       >
-        <div className="flex flex-col w-full h-full bg-transparent border-r border-gray-200">
+        <div className="flex flex-col w-full h-full bg-gradient-to-br from-green-100 to-emerald-100 border-r border-green-200">
           {/* Top section with toggle */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between p-4 border-b border-green-200">
             {!isCollapsed && (
-              <h1 className="text-xl font-bold text-primary-600">
-                Admin Panel
-              </h1>
+              <h1 className="text-xl font-bold text-green-900">Admin Panel</h1>
             )}
 
             <button
               onClick={toggleSidebar}
-              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all duration-200"
+              className="p-1.5 rounded-lg text-green-700 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 transition-all duration-200"
             >
               <ChevronLeft
                 className={`h-5 w-5 ${
@@ -195,10 +199,10 @@ const Sidebar = ({
                 className={({ isActive }) =>
                   `group flex items-center ${
                     isCollapsed ? "justify-center px-2" : "px-2"
-                  } py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                  } py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
                     isActive
-                      ? "bg-primary-100 text-primary-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? " bg-opacity-50 text-green-900 border border-green-300 shadow-sm"
+                      : "text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900"
                   }`
                 }
               >
@@ -219,12 +223,12 @@ const Sidebar = ({
           </nav>
 
           {/* Bottom section: Profile, Help, Settings, Logout */}
-          <div className="flex-shrink-0 border-t border-gray-200 p-4 space-y-2 mt-auto">
+          <div className="flex-shrink-0 border-t border-green-200 p-4 space-y-2 mt-auto">
             <NavLink
               to="/profile"
               className={`flex items-center ${
                 isCollapsed ? "justify-center" : ""
-              } py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md`}
+              } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg transition-colors`}
             >
               <User className={`${isCollapsed ? "h-5 w-5" : "mr-3 h-5 w-5"}`} />
               {!isCollapsed && "Profile"}
@@ -234,7 +238,7 @@ const Sidebar = ({
               href="#"
               className={`flex items-center ${
                 isCollapsed ? "justify-center" : ""
-              } py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md`}
+              } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg transition-colors`}
             >
               <HelpCircle
                 className={`${isCollapsed ? "h-5 w-5" : "mr-3 h-5 w-5"}`}
@@ -246,7 +250,7 @@ const Sidebar = ({
               href="#"
               className={`flex items-center ${
                 isCollapsed ? "justify-center" : ""
-              } py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md`}
+              } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg transition-colors`}
             >
               <Settings
                 className={`${isCollapsed ? "h-5 w-5" : "mr-3 h-5 w-5"}`}
@@ -258,13 +262,22 @@ const Sidebar = ({
               onClick={handleLogout}
               className={`flex items-center ${
                 isCollapsed ? "justify-center" : ""
-              } py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md w-full`}
+              } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg w-full transition-colors`}
             >
               <LogOut
                 className={`${isCollapsed ? "h-5 w-5" : "mr-3 h-5 w-5"}`}
               />
               {!isCollapsed && "Sign out"}
             </button>
+
+            {/* User email */}
+            {!isCollapsed && (
+              <div className="pt-2 mt-2 border-t border-green-200">
+                <div className="text-xs text-green-700 px-2">
+                  Logged in as: <span className="font-medium">{currentUser?.email}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

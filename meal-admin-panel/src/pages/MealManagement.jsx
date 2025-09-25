@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo,useEffect } from "react";
 import {
   Plus,
   Search,
@@ -76,8 +76,25 @@ const MealManagement = () => {
   const [copyingMeal, setCopyingMeal] = useState(null);
   const [targetMessTypes, setTargetMessTypes] = useState([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  // At the top of your component, initialize the state
+  const [viewMode, setViewMode] = useState("grid"); // Default to grid initially
 
+  // Add this useEffect to load from localStorage after component mounts
+  useEffect(() => {
+  const savedViewMode = localStorage.getItem('mealViewMode');
+  console.log('Loaded from localStorage:', savedViewMode);
+  if (savedViewMode) {
+    setViewMode(savedViewMode);
+  }
+}, []);
+
+const handleViewModeChange = (mode) => {
+  console.log('Changing view mode to:', mode);
+  setViewMode(mode);
+  localStorage.setItem('mealViewMode', mode);
+  console.log('Saved to localStorage:', localStorage.getItem('mealViewMode'));
+};
   // Calculate meal counts by type
   const mealCounts = useMemo(() => {
     return {
@@ -218,14 +235,23 @@ const MealManagement = () => {
     <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-green-900">
-            Meal Management
-          </h1>
-        </div>
+        <motion.div
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900">
+              Meal Management
+            </h1>
+            <p className="text-xs sm:text-sm text-green-700 mt-1">
+              Organize and track daily meals
+            </p>
+          </div>
+        </motion.div>
 
-        <div className="flex items-center gap-3">
-
+        <div className="flex justify-center sm:justify-start items-center gap-3">
           <motion.button
             onClick={() => setIsFormOpen(true)}
             whileHover={{ scale: 1.05 }}
@@ -234,6 +260,7 @@ const MealManagement = () => {
           >
             <Plus className="h-5 w-5 mr-2" />
             <span className="hidden sm:inline">Add Meal</span>
+            <span className="sm:hidden">Add</span>
           </motion.button>
         </div>
       </div>
@@ -315,85 +342,165 @@ const MealManagement = () => {
         </motion.div>
       </div>
 
-      {/* Mobile Filter Toggle */}
-      <div className="md:hidden mb-4">
-        <button
-          onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-          className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
-        >
-          <span className="flex items-center">
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </span>
-          <span className="text-sm text-gray-500">
-            {mobileFiltersOpen ? "Hide" : "Show"}
-          </span>
-        </button>
-      </div>
+      {/* Mobile grid Controls */}
+{/* Mobile Controls */}
+<div className="md:hidden mb-4">
+  <div className="flex items-center justify-between gap-3">
+    <button
+      onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+      className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg text-sm font-medium text-gray-700 hover:bg-white/90 transition-all"
+    >
+      <Filter className="h-4 w-4" />
+      Filters
+      {(selectedCategory !== "all" || selectedMessType !== "all") && (
+        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+      )}
+    </button>
 
-      {/* Filters and Search */}
-      <div
-        className={`bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 mb-6 ${
-          mobileFiltersOpen ? "block" : "hidden md:block"
+    <div className="flex bg-white/40 backdrop-blur-sm rounded-lg p-1 border border-white/30">
+      <button
+        onClick={() => handleViewModeChange("grid")}
+        className={`p-2 rounded transition-all ${
+          viewMode === "grid" ? "bg-white/80 shadow-sm" : "text-gray-600"
         }`}
       >
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search Meals
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search meals..."
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        <Grid className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => handleViewModeChange("list")}
+        className={`p-2 rounded transition-all ${
+          viewMode === "list" ? "bg-white/80 shadow-sm" : "text-gray-600"
+        }`}
+      >
+        <List className="h-4 w-4" />
+      </button>
+    </div>
+  </div>
+</div>
+
+      {/* Desktop Controls - One Line */}
+      <div className="hidden md:flex items-center gap-4 mb-6">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search meals..."
+            className="w-64 pl-10 pr-4 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-3">
+          <select
+            className="px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 transition-all"
+            value={selectedMessType}
+            onChange={(e) => setSelectedMessType(e.target.value)}
+          >
+            <option value="all">All Types</option>
+            {messTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 transition-all"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="all">All Categories</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 disabled:opacity-50 transition-all"
+            value={selectedSubcategory}
+            onChange={(e) => setSelectedSubcategory(e.target.value)}
+            disabled={selectedCategory === "all"}
+          >
+            <option value="all">All Subcategories</option>
+            {availableSubcategories.map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* View Toggle */}
+        <div className="flex bg-white/40 backdrop-blur-sm rounded-lg p-1 border border-white/30 ml-auto">
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-2 rounded transition-all ${
+              viewMode === "grid" ? "bg-white/80 shadow-sm" : "text-gray-600"
+            }`}
+          >
+            <Grid className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={`p-2 rounded transition-all ${
+              viewMode === "list" ? "bg-white/80 shadow-sm" : "text-gray-600"
+            }`}
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Filters Panel - Search Removed */}
+      <div
+        className={`md:hidden bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg mb-4 ${
+          mobileFiltersOpen ? "block" : "hidden"
+        }`}
+      >
+        <div className="p-4 space-y-4">
+          {/* Search Completely Removed from Mobile */}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mess Type
+              </label>
+              <select
+                className="w-full px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all"
+                value={selectedMessType}
+                onChange={(e) => setSelectedMessType(e.target.value)}
+              >
+                <option value="all">All Types</option>
+                {messTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mess Type
-            </label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={selectedMessType}
-              onChange={(e) => {
-                setSelectedMessType(e.target.value);
-                setSelectedSubcategory("all");
-              }}
-            >
-              <option value="all">All Types</option>
-              {messTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setSelectedSubcategory("all");
-              }}
-            >
-              <option value="all">All Categories</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </option>
-              ))}
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
+              <select
+                className="w-full px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
@@ -401,98 +508,99 @@ const MealManagement = () => {
               Subcategory
             </label>
             <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-50"
+              className="w-full px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 disabled:opacity-50 transition-all"
               value={selectedSubcategory}
               onChange={(e) => setSelectedSubcategory(e.target.value)}
-              disabled={
-                selectedCategory === "all" || selectedMessType === "all"
-              }
+              disabled={selectedCategory === "all"}
             >
-              {availableSubcategories.map((subcategory) => (
-                <option key={subcategory} value={subcategory}>
-                  {subcategory === "all" ? "All Subcategories" : subcategory}
+              <option value="all">All Subcategories</option>
+              {availableSubcategories.map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
                 </option>
               ))}
             </select>
           </div>
         </div>
-
-        {/* Active Filters Indicator */}
-        {(searchTerm ||
-          selectedCategory !== "all" ||
-          selectedMessType !== "all" ||
-          selectedSubcategory !== "all") && (
-          <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">Active filters:</span>
-              {searchTerm && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                  Search: "{searchTerm}"
-                </span>
-              )}
-              {selectedMessType !== "all" && (
-                <span
-                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                    getMessTypeColors(selectedMessType).light
-                  } ${getMessTypeColors(selectedMessType).text}`}
-                >
-                  Type: {selectedMessType}
-                </span>
-              )}
-              {selectedCategory !== "all" && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                  Category: {selectedCategory}
-                </span>
-              )}
-
-              {selectedSubcategory !== "all" && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
-                  Sub: {selectedSubcategory}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={clearFilters}
-              className="text-sm text-red-600 hover:text-red-800 whitespace-nowrap"
-            >
-              Clear all filters
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Results Count and View Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-        <p className="text-sm text-gray-600">
-          Showing {filteredMeals.length} of {meals.length} meals
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 hidden sm:block">View:</span>
-          <div className="flex bg-gray-100 rounded-lg p-1">
+      {/* Active Filters */}
+      {(searchTerm ||
+        selectedCategory !== "all" ||
+        selectedMessType !== "all" ||
+        selectedSubcategory !== "all") && (
+        <div className="mb-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-gray-600">Active filters:</span>
+
+            {searchTerm && (
+              <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
+                Search: "{searchTerm}"
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+
+            {selectedMessType !== "all" && (
+              <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
+                Type: {selectedMessType}
+                <button
+                  onClick={() => setSelectedMessType("all")}
+                  className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+
+            {selectedCategory !== "all" && (
+              <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
+                Category: {selectedCategory}
+                <button
+                  onClick={() => setSelectedCategory("all")}
+                  className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+
+            {selectedSubcategory !== "all" && (
+              <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
+                Subcategory: {selectedSubcategory}
+                <button
+                  onClick={() => setSelectedSubcategory("all")}
+                  className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+
             <button
-              onClick={() => setViewMode("grid")}
-              className={`p-2 rounded-md ${
-                viewMode === "grid" ? "bg-white shadow-sm" : "text-gray-500"
-              }`}
+              onClick={clearFilters}
+              className="text-sm text-red-600 hover:text-red-800 font-medium transition-colors"
             >
-              <Grid className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-2 rounded-md ${
-                viewMode === "list" ? "bg-white shadow-sm" : "text-gray-500"
-              }`}
-            >
-              <List className="h-4 w-4" />
+              Clear all
             </button>
           </div>
         </div>
+      )}
+
+      {/* Results Count */}
+      <div className="mb-4">
+        <p className="text-sm text-gray-600 px-4 py-2 inline-block ">
+          Showing {filteredMeals.length} of {meals.length} meals
+        </p>
       </div>
 
       {/* Meals Display - Grid View */}
       {viewMode === "grid" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           <AnimatePresence>
             {filteredMeals.map((meal, index) => {
               const mealColors = getMessTypeColors(meal.messType);
@@ -503,8 +611,9 @@ const MealManagement = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                  className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
                 >
+                  {/* Image/Icon Section */}
                   <div
                     className={`h-32 overflow-hidden relative ${mealColors.bg}`}
                   >
@@ -516,27 +625,30 @@ const MealManagement = () => {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Utensils className="h-12 w-12 text-gray-400" />
+                        <Utensils className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
                       </div>
                     )}
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${mealColors.light} ${mealColors.text}`}
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${mealColors.light} ${mealColors.text}`}
                       >
                         {meal.messType}
                       </span>
                     </div>
                   </div>
 
-                  <div className="p-4">
-                    <h3 className="font-medium text-gray-900 truncate">
+                  {/* Content Section */}
+                  <div className="p-3 sm:p-4">
+                    <h3 className="font-medium text-gray-900 text-sm sm:text-base truncate mb-1">
                       {meal.name}
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+
+                    {/* Description hidden on mobile */}
+                    <p className="hidden sm:block text-sm text-gray-500 line-clamp-2 mb-3">
                       {meal.description}
                     </p>
 
-                    <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center justify-between">
                       <div className="text-xs text-gray-500 capitalize">
                         {meal.category} • {meal.subcategory || "General"}
                       </div>
@@ -582,115 +694,212 @@ const MealManagement = () => {
       {/* Meals Display - List View */}
       {viewMode === "list" && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Meal
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                    Category
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                    Subcategory
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                <AnimatePresence>
-                  {filteredMeals.map((meal, index) => {
-                    const mealColors = getMessTypeColors(meal.messType);
-                    return (
-                      <motion.tr
-                        key={meal.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.2, delay: index * 0.05 }}
-                        className="hover:bg-gray-50"
-                      >
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div
-                              className={`flex-shrink-0 h-10 w-10 rounded-lg overflow-hidden flex items-center justify-center ${mealColors.bg}`}
+          <div className="hidden sm:block">
+            {" "}
+            {/* Desktop Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Meal
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                      Subcategory
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  <AnimatePresence>
+                    {filteredMeals.map((meal, index) => {
+                      const mealColors = getMessTypeColors(meal.messType);
+                      return (
+                        <motion.tr
+                          key={meal.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.2, delay: index * 0.05 }}
+                          className="hover:bg-gray-50"
+                        >
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div
+                                className={`flex-shrink-0 h-10 w-10 rounded-lg overflow-hidden flex items-center justify-center ${mealColors.bg}`}
+                              >
+                                {meal.image ? (
+                                  <img
+                                    src={meal.image}
+                                    alt={meal.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <Utensils className="h-5 w-5 text-gray-400" />
+                                )}
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {meal.name}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                            {meal.category}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 capitalize hidden md:table-cell">
+                            {meal.subcategory || "-"}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${mealColors.light} ${mealColors.text}`}
                             >
-                              {meal.image ? (
-                                <img
-                                  src={meal.image}
-                                  alt={meal.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <Utensils className="h-5 w-5 text-gray-400" />
-                              )}
+                              {meal.messType}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex items-center justify-end space-x-1">
+                              <motion.button
+                                onClick={() => handleEdit(meal)}
+                                className="text-indigo-600 hover:text-indigo-900 p-1"
+                                title="Edit meal"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </motion.button>
+                              <motion.button
+                                onClick={() => handleCopyToOtherMessTypes(meal)}
+                                className="text-yellow-600 hover:text-yellow-900 p-1"
+                                title="Copy to other mess types"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </motion.button>
+                              <motion.button
+                                onClick={() => handleDelete(meal.id, meal.path)}
+                                className="text-red-600 hover:text-red-900 p-1"
+                                title="Delete meal"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </motion.button>
                             </div>
-                            <div className="ml-3">
-                              <div className="text-sm font-medium text-gray-900">
-                                {meal.name}
-                              </div>
-                              <div className="text-xs text-gray-500 line-clamp-1 sm:hidden">
-                                {meal.category}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 capitalize hidden sm:table-cell">
-                          {meal.category}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 capitalize hidden md:table-cell">
-                          {meal.subcategory || "-"}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${mealColors.light} ${mealColors.text}`}
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="sm:hidden">
+            <div className="divide-y divide-gray-200">
+              <AnimatePresence>
+                {filteredMeals.map((meal, index) => {
+                  const mealColors = getMessTypeColors(meal.messType);
+                  return (
+                    <motion.div
+                      key={meal.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                      className="p-4 hover:bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center flex-1 min-w-0">
+                          <div
+                            className={`flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden flex items-center justify-center ${mealColors.bg} mr-3`}
                           >
-                            {meal.messType}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-1">
-                            <motion.button
-                              onClick={() => handleEdit(meal)}
-                              className="text-indigo-600 hover:text-indigo-900 p-1"
-                              title="Edit meal"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </motion.button>
-                            <motion.button
-                              onClick={() => handleCopyToOtherMessTypes(meal)}
-                              className="text-yellow-600 hover:text-yellow-900 p-1"
-                              title="Copy to other mess types"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </motion.button>
-                            <motion.button
-                              onClick={() => handleDelete(meal.id, meal.path)}
-                              className="text-red-600 hover:text-red-900 p-1"
-                              title="Delete meal"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </motion.button>
+                            {meal.image ? (
+                              <img
+                                src={meal.image}
+                                alt={meal.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Utensils className="h-6 w-6 text-gray-400" />
+                            )}
                           </div>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </AnimatePresence>
-              </tbody>
-            </table>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between">
+                              <div className="min-w-0">
+                                <h3 className="text-sm font-medium text-gray-900 truncate">
+                                  {meal.name}
+                                </h3>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <span className="text-xs text-gray-500 capitalize">
+                                    {meal.category}
+                                  </span>
+                                  {meal.subcategory && (
+                                    <>
+                                      <span className="text-gray-300">•</span>
+                                      <span className="text-xs text-gray-500 capitalize">
+                                        {meal.subcategory}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <span
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0 ${mealColors.light} ${mealColors.text}`}
+                              >
+                                {meal.messType}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-1 ml-3">
+                          <motion.button
+                            onClick={() => handleEdit(meal)}
+                            className="text-indigo-600 hover:text-indigo-900 p-1"
+                            title="Edit meal"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </motion.button>
+                          <motion.button
+                            onClick={() => handleCopyToOtherMessTypes(meal)}
+                            className="text-yellow-600 hover:text-yellow-900 p-1"
+                            title="Copy to other mess types"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </motion.button>
+                          <motion.button
+                            onClick={() => handleDelete(meal.id, meal.path)}
+                            className="text-red-600 hover:text-red-900 p-1"
+                            title="Delete meal"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
           </div>
 
           {filteredMeals.length === 0 && (
