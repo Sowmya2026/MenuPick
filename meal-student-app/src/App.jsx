@@ -8,22 +8,21 @@ import {
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { MealProvider } from "./context/MealContext";
 import { MenuProvider } from "./context/MenuContext";
-import { FeedbackProvider } from "./context/FeedbackContext";
 import { Toaster } from "react-hot-toast";
 import { useState, useEffect } from "react";
-import { NotificationProvider } from "./context/NotificationContext"; // REMOVE useNotification import
+import { NotificationProvider } from "./context/NotificationContext";
 
 import MainNavbar from "./components/MainNavbar";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import MealSelection from "./pages/MealSelection";
-import MealDetail from "./pages/MealDetail";
 import Feedback from "./pages/Feedback";
 import Auth from "./pages/Auth";
 import Splash from "./pages/Splash";
 import Onboarding from "./pages/Onboarding";
 import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
+import Notifications from "./pages/Notifications";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -90,8 +89,6 @@ const RouteHandler = () => {
 
   return (
     <>
-      {/* REMOVED TestNotificationHandler - No test code */}
-      
       <Routes>
         {/* Public home page for guests */}
         <Route path="/home" element={<Home />} />
@@ -135,17 +132,6 @@ const RouteHandler = () => {
         />
 
         <Route
-          path="/meal/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <MealDetail />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
           path="/feedback"
           element={
             <ProtectedRoute>
@@ -162,6 +148,17 @@ const RouteHandler = () => {
             <ProtectedRoute>
               <Layout>
                 <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Notifications />
               </Layout>
             </ProtectedRoute>
           }
@@ -261,11 +258,9 @@ function App() {
       <AuthProvider>
         <MealProvider>
           <MenuProvider>
-            <FeedbackProvider>
-              <NotificationProvider>
-                <AppContent />
-              </NotificationProvider>
-            </FeedbackProvider>
+            <NotificationProvider>
+              <AppContent />
+            </NotificationProvider>
           </MenuProvider>
         </MealProvider>
       </AuthProvider>

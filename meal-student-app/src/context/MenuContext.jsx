@@ -178,198 +178,206 @@ const messMenus = {
       }
     }
   },
-  'non-veg': {
-    color: 'red',
-    timings: {
-      breakfast: "7:00 AM - 9:00 AM",
-      lunch: "12:00 PM - 2:00 PM",
-      snacks: "5:00 PM - 6:00 PM",
-      dinner: "7:00 PM - 9:00 PM"
-    },
-    days: {
-      Monday: {
-        breakfast: [
-          "Onion Upma, Sambar, Coconut Chutney, Medu Vada",
-          "Aloo paratha, Tomato onion gravy",
-          "Masala Omelette",
-          "Boiled Eggs",
-          "Tea, Milk, Coffee",
-          "Bread, Butter, Jam"
-        ],
-        lunch: [
-          "Chapati, Chicken Gravy",
-          "Coriander Rice/ Vangi Bath, Bhindi Fry",
-          "White Rice, Drumstick Sambar, Curd",
-          "Chicken Fry",
-          "Fruit Banana",
-          "Lemon Mint Juice"
-        ],
-        snacks: ["Veg Noodles/Red Patha + Sauce", "Tea, Coffee, Milk"],
-        dinner: [
-          "Chapati, Bhature, Chicken Masala",
-          "Vegetable Semiya, Chutney",
-          "White Rice, Rasam, Butter Milk, Dry Vazhakkai Fry",
-          "Chicken 65",
-          "Salad (Carrot, Cucumber)",
-          "Mosambi"
-        ]
-      },
-      Tuesday: {
-        breakfast: [
-          "Idlyupma, Coconut Milk, Vada Curry",
-          "Veg Khichadi, Paruppu vada, Chutney",
-          "Boiled Egg",
-          "Egg Bhurji",
-          "Tea, Milk, Coffee",
-          "Wheat Bread, Butter, Jam"
-        ],
-        lunch: [
-          "Phulka, Chicken Butter Masala",
-          "Plain kuzhambu with fried Onions",
-          "White Rice, Green Dhal, Cabbage Poriyal, Rasam, Curd",
-          "Chicken Curry",
-          "Fruit Watermelon",
-          "Lemon Juice"
-        ],
-        snacks: ["Chicken Burger/Sandwich", "Tea, Coffee, Milk"],
-        dinner: [
-          "Phulka, Chicken Masala",
-          "Chicken Biryani, Raita, Gobi 65",
-          "White Rice, Rasam, Butter Milk",
-          "Egg Curry",
-          "Salad (Carrot, Beetroot, Cucumber)",
-          "Ice Cream"
-        ]
-      },
-      Wednesday: {
-        breakfast: [
-          "Idly, Groundnut Chutney, Sambar",
-          "Pav Bhaji, Masala, Chopped Onion",
-          "Egg Omelette",
-          "Tea, Milk, Coffee",
-          "Bread, Butter, Jam"
-        ],
-        lunch: [
-          "Phulka, Chicken Kadai Masala",
-          "Kashmiri Pulav",
-          "White Rice, Dhal, Beetroot Poriyal, Rasam, Curd",
-          "Chicken Fry",
-          "Fruit Jack Fruit",
-          "Jal Jeera"
-        ],
-        snacks: ["Boiled Sweet Corn (Salt + Masala)", "Tea, Coffee, Milk"],
-        dinner: [
-          "Phulka, Chapathi, Chicken curry",
-          "Chana Sambar, Tomato Thovaiyal",
-          "White Rice, Dhal, Rasam, French Fries, Butter Milk",
-          "Chicken Lollipop",
-          "Salad, Fruit Custard"
-        ]
-      },
-      Thursday: {
-        breakfast: [
-          "Mini Dosa, Sambar, Chutney",
-          "Vada",
-          "Boiled Eggs",
-          "Egg Bhurji",
-          "Tea, Milk, Coffee",
-          "Bread, Butter, Jam"
-        ],
-        lunch: [
-          "Chicken Fried Rice, Gobi Manchurian",
-          "White Rice, Raddish Sambar, Rasam, Curd",
-          "Chicken Curry",
-          "Fruit Salad",
-          "Lemon Juice"
-        ],
-        snacks: ["Vada Pav / Papdi Chat", "Tea, Coffee, Milk"],
-        dinner: [
-          "Phulka, Tomato Egg Gravy",
-          "Chilly Podi Idly, Chutney, Sambar",
-          "White Rice, Mor kuzhambu, Rasam, Beans Poriyal, Butter Milk, Bread",
-          "Chicken Roast",
-          "Salad, Milk"
-        ]
-      },
-      Friday: {
-        breakfast: [
-          "Poori, Aloo Sabji",
-          "Dosa, Sambhar, Kara Chutney",
-          "Omelette",
-          "Egg Curry",
-          "Tea, Milk, Coffee",
-          "Wheat Bread, Butter, Jam"
-        ],
-        lunch: [
-          "Phulka, Jeera Dhal, Palak Paneer",
-          "Bisibelbath, Potato Chips",
-          "White Rice, Bhindi puli kolambu, Carrot Poriyal, Rasam, Curd",
-          "Chicken Masala",
-          "Fruit Lemon Juice",
-          "Fruit Papaya"
-        ],
-        snacks: ["Non-Veg Samosa, Green chutney", "Tea, Coffee, Milk"],
-        dinner: [
-          "Paratha (Chicken Salna with pieces)",
-          "Idly Veg Kurma, Chutney",
-          "White Rice, Rasam, Butter Milk, Yam Poriyal",
-          "Chicken 65",
-          "Gulab Jamun, Milk, Salad"
-        ]
-      },
-      Saturday: {
-        breakfast: [
-          "Red Rice Puttu, Kadala Curry, Grated coconut, Banana, Sugar +Ghee",
-          "Paneer paratha, Curd, Pickle",
-          "Egg Bhurji",
-          "Fruit Salt+Pepper",
-          "Tea, Milk, Coffee",
-          "Bread, Butter, Jam"
-        ],
-        lunch: [
-          "Ajwain Chapatti, Mixed Veg Kadai Gravy",
-          "Egg Pepper Rice, Veg Ball Manchurian",
-          "White Rice, Moochai Karakolambu, Keerai poriyal, Rasam, Curd",
-          "Chicken Curry",
-          "Lemon Mint Juice",
-          "Salad (Carrot, Cucumber)"
-        ],
-        snacks: ["Pani Puri", "Tea, Coffee, Milk"],
-        dinner: [
-          "Chapatti, Navarathna Kurma",
-          "Masala Dosa, Sambar, Kara chutney",
-          "White Rice, Black Dhal Rasam, Kovakkai Poriyal, Butter Milk",
-          "Chicken Fry",
-          "Milk, Salad (Carrot, Beetroot, Cucumber)"
-        ]
-      },
-      Sunday: {
-        breakfast: [
-          "Pongal, Vada, Sambar, White Chutney",
-          "Veg Poha, Onion Chutney",
-          "Egg Omelette",
-          "Tea, Milk, Coffee",
-          "Bread, Butter, Jam"
-        ],
-        lunch: [
-          "Chicken, Onion Paratha, Brinjal Curry, Chutney",
-          "Chapatti, Dhal Tadka",
-          "White Rice, Rasam, Fruit Curd Rice, Pickle",
-          "Chicken Biryani",
-          "Pineapple Kesari, Lemon Juice (salt and pepper)"
-        ],
-        snacks: ["Bread Pakora", "Tea, Coffee, Milk"],
-        dinner: [
-          "Phulka, White Peas Gravy",
-          "Panneer Sabda",
-          "White Rice, Tomato Rasam, Poriyal, Butter Milk",
-          "Egg Curry",
-          "Milk, Salad, Pappad",
-          "Fruit Pineapple"
-        ]
-      }
-    }
+  'non-veg':{
+  color: 'red',
+  timings: {
+    breakfast: "7:00 AM - 9:00 AM",
+    lunch: "12:00 PM - 2:00 PM",
+    snacks: "5:00 PM - 6:00 PM",
+    dinner: "7:00 PM - 9:00 PM"
   },
+  days: {
+    Monday: {
+      breakfast: [
+        "Idly, Pesarattu Vada, Sambar, Mint Chutney, Podi, Oil",
+        "Omelette with spinach",
+        "Pari, Aloo Masala (peas & carrot sabzi)",
+        "Tea, Milk, Coffee",
+        "Bread, Butter, Jam"
+      ],
+      lunch: [
+        "Phulka, Soya Gravy",
+        "Tomato Rice with green beans",
+        "White Rice, Radish Sambar, Rasam, Poriyal, Curd",
+        "Paruppu Podi, Ghee, Thovaiyal, Pickle, Papad",
+        "Fruit - Pineapple, Lemon Mint Juice"
+      ],
+      snacks: [
+        "White Paratha / Veg Samosa, Green Chutney",
+        "Tea, Coffee, Milk"
+      ],
+      dinner: [
+        "Chapathi, Paneer Butter Masala / Panner Gravy",
+        "Veg Kurma / Tomato Onion Chutney",
+        "White Rice, Rasam, Dhal, Dry Bhindi Fry, Butter Milk",
+        "Salad (Carrot, Cucumber, Tomato)",
+        "Ice Cream, Milk"
+      ]
+    },
+    Tuesday: {
+      breakfast: [
+        "Paneer Paratha, Tomato Onion Gravy, Curd",
+        "Ghee Pongal, Vada, Vegetable Sambar, Coconut Chutney",
+        "Boiled Egg",
+        "Tea, Milk, Coffee",
+        "Bread, Butter, Jam"
+      ],
+      lunch: [
+        "Chapathi, Green Peas Masala / Paneer Butter Masala with capsicum",
+        "Mint Rice / Coconut Rice",
+        "White Rice, Mor Kulambu, Pepper Rasam, Carrot Beans Poriyal, Curd",
+        "Paruppu Podi, Gingelly Oil, Thovaiyal, Pickle, Bat Fryums",
+        "Payasam, Lemon Mint Juice"
+      ],
+      snacks: [
+        "Boiled Sweet Corn / Roasted Corn",
+        "Tea, Coffee, Milk"
+      ],
+      dinner: [
+        "Phulka, Palak / Tofu Curry",
+        "Adai Dosa, Tomato Onion Chutney, Sambar",
+        "White Rice, Black Dhal, Rasam, Cabbage Poriyal, Butter Milk",
+        "Salad (Carrot, Beetroot, Cucumber)",
+        "Milk, Banana"
+      ]
+    },
+    Wednesday: {
+      breakfast: [
+        "Thin Dosa, Vada Curry, Onion Chutney",
+        "Veg Khichadi",
+        "Egg Bhurji with onions & tomato",
+        "Tea, Milk, Coffee",
+        "Bread, Butter, Jam"
+      ],
+      lunch: [
+        "Ajwain Chapathi, Dragon Chicken / Tandoori Chicken",
+        "Veg Pulav (extra beans, carrot) / Jeera Rice",
+        "White Rice, Mix Veg Paruppu, Rasam, Cluster Beans Poriyal, Curd",
+        "Paruppu Podi, Gingelly Oil, Thovaiyal, Pickle, Papad",
+        "Nannari Juice"
+      ],
+      snacks: [
+        "Pani Puri / Dahi Puri",
+        "Tea, Coffee, Milk"
+      ],
+      dinner: [
+        "Roti, Mushroom Masala",
+        "Veg Biryani with cauliflower & beans, Raita",
+        "White Rice, Rasam, French Fries, Butter Milk",
+        "Fruit Custard",
+        "Milk"
+      ]
+    },
+    Thursday: {
+      breakfast: [
+        "Pav Bhaji (extra cabbage & beans), Masala, Chopped Onion and chili",
+        "Crispy Dosa, Peanut Chutney, Sambar, Tomato Chutney",
+        "French Toast",
+        "Tea, Milk, Coffee",
+        "Bread, Butter, Jam"
+      ],
+      lunch: [
+        "Phulka, Dal Makhani with spinach",
+        "Bisibelebath with beans, carrot & drumstick",
+        "White Rice, Karamani Kara Puli Kulambu, Rasam, Dry Keerai Poriyal, Curd",
+        "Paruppu Podi, Ghee, Thovaiyal, Pickle, Potato Chips",
+        "Jal Jeera, Fruit - Watermelon"
+      ],
+      snacks: [
+        "Banana Bajji / Onion Pakoda",
+        "Tea, Coffee, Milk"
+      ],
+      dinner: [
+        "Phulka, Egg Curry",
+        "Masala Dosa, Carrot Chutney, Sambar",
+        "White Rice, Dhal, Rasam, Dry Yam Varuval, Butter Milk",
+        "Salad",
+        "Milk, Jalebi"
+      ]
+    },
+    Friday: {
+      breakfast: [
+        "Idiyappam, Coconut Milk, Veg Stew (extra carrot & beans)",
+        "Potato Poha, Onion / Aloo Paratha, Curd, Pickle",
+        "Boiled Egg",
+        "Tea, Milk, Coffee",
+        "Wheat Bread, Butter, Jam"
+      ],
+      lunch: [
+        "Phulka, Paneer Tikka Masala",
+        "Tamarind Rice / Mango Rice",
+        "White Rice, Drumstick Sambar, Pudalangai Poriyal, Rasam, Curd",
+        "Paruppu Podi, Ghee, Paruppu Thovaiyal, Pickle, Appalam, Fruit Salad",
+        "Lemon Mint Juice"
+      ],
+      snacks: [
+        "Sambar Vada (extra veggies) / Bhel Puri with separate veggies",
+        "Tea, Coffee, Milk"
+      ],
+      dinner: [
+        "Wheat Paratha (Chettinad Chicken Gravy / Kadai Chicken Gravy)",
+        "Idly, Tomato Veg Kurma, Chutney",
+        "White Rice, Rasam, Butter Milk",
+        "Gulab Jamun",
+        "Salad"
+      ]
+    },
+    Saturday: {
+      breakfast: [
+        "White Puttu, Kadala Curry, Grated Coconut, Banana, Sugar + Ghee",
+        "Veg Paratha, Curd, Pickle",
+        "Boiled Egg",
+        "Tea, Milk, Coffee",
+        "Bread, Butter, Jam"
+      ],
+      lunch: [
+        "Palak Chappathi, Dal Pumpkin",
+        "Egg Fried Rice with capsicum, Veg Manchurian with cabbage & beans",
+        "White Rice, Green Dhal Curry, Beetroot Poriyal, Rasam, Curd",
+        "Paruppu Podi, Ghee, Thovaiyal, Pickle, Papad",
+        "Lemon Juice"
+      ],
+      snacks: [
+        "Sundal (with grated coconut) / Channa Chat (cucumber, onion, carrot)",
+        "Tea, Coffee, Milk"
+      ],
+      dinner: [
+        "Chapatti, Aloo Dum Gravy / Aloo Peas Gravy / Chole Bhature, White Channa Masala, Mirchi Masala",
+        "Veg Semiya / Tomato Sevai, Chutney",
+        "White Rice, Dhal, Rasam, Gobi 65, Butter Milk",
+        "Salad (Carrot, Beetroot, Cucumber)",
+        "Milk"
+      ]
+    },
+    Sunday: {
+      breakfast: [
+        "Podi Onion Dosa, Sambar, Chutney",
+        "Sabudana Khichdi with carrot and beans",
+        "Tea, Milk, Coffee",
+        "Bread, Butter, Jam"
+      ],
+      lunch: [
+        "Chettinad Hyderabadi Dum Chicken Biryani",
+        "Chicken Gravy with pieces, Onion Rasala, Brinjal Curry, Boiled Egg, Gobi 65",
+        "Phulka, Black Channa Dal Curry",
+        "White Rice, Rasam, Curd Rice, Pickle",
+        "Bread Halwa, Lemon Mint Juice"
+      ],
+      snacks: [
+        "Burger (patty, tomato, cucumber) Sauce / Kachori, Kesar Chutney",
+        "Tea, Coffee, Milk"
+      ],
+      dinner: [
+        "Phulka, Rajma Curry",
+        "Methi Pulav",
+        "White Rice, Sambar pumpkin, Tomato Rasam, Carrot Poriyal",
+        "Butter Milk, Papad",
+        "Fruit - Papaya"
+      ]
+    }
+  }
+},
+
   special: {
     color: 'violet',
     timings: {

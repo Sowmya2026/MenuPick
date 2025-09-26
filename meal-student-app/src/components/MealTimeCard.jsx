@@ -1,18 +1,13 @@
-import { useState } from 'react';
 import { Clock, ChevronDown, ChevronUp, Utensils, Coffee, Sun, Moon, ChefHat } from 'lucide-react';
 
 const MealTimeCard = ({ 
   mealTime, 
   timing, 
   items,
-  messType = 'veg' 
+  messType = 'veg',
+  isExpanded = false,
+  onToggleExpand
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-  };
-
   // Get color classes based on mess type
   const getMessColorClasses = () => {
     switch (messType) {
@@ -73,9 +68,29 @@ const MealTimeCard = ({
 
   const mealIcon = getMealIcon();
 
+  // Handle card click - expand/collapse on desktop, only button click on mobile
+  const handleCardClick = (e) => {
+    // Prevent triggering on button click (let button handle its own click)
+    if (e.target.closest('button')) {
+      return;
+    }
+    
+    // On desktop, allow clicking anywhere on card to toggle
+    if (window.innerWidth >= 768) {
+      onToggleExpand();
+    }
+  };
+
+  // Handle button click specifically
+  const handleButtonClick = (e) => {
+    e.stopPropagation(); // Prevent card click from firing
+    onToggleExpand();
+  };
+
   return (
     <div 
-      className={`rounded-xl p-4 transition-all duration-300 border-2 ${messColors.borderColor} bg-white hover:shadow-md ${messColors.shadow} mx-2 md:mx-0`}
+      className={`rounded-xl p-4 transition-all duration-300 border-2 ${messColors.borderColor} bg-white hover:shadow-md ${messColors.shadow} mx-4 md:mx-0 cursor-pointer md:cursor-default`}
+      onClick={handleCardClick}
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center">
@@ -94,7 +109,7 @@ const MealTimeCard = ({
         </div>
         
         <button 
-          onClick={toggleExpand}
+          onClick={handleButtonClick}
           className={`p-1.5 rounded-full transition-colors ${messColors.accentColor} ${messColors.hoverBg} md:p-2`}
           aria-label={isExpanded ? "Collapse meals" : "Expand meals"}
         >

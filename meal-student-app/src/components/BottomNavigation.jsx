@@ -1,12 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Utensils, User } from 'lucide-react';
+import { Home, Utensils, User, MessageSquare, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useMenu } from '../context/MenuContext';
+import { useNotification } from '../context/NotificationContext'; // ADD THIS IMPORT
 
 const BottomNavigation = () => {
   const location = useLocation();
   const { currentUser } = useAuth();
   const { selectedMess } = useMenu();
+  const { activeNotifications } = useNotification(); // ADD NOTIFICATION HOOK
 
   const getColorTheme = () => {
     const colors = {
@@ -22,6 +24,8 @@ const BottomNavigation = () => {
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
     { path: '/selection', icon: Utensils, label: 'Meals' },
+    { path: '/feedback', icon: MessageSquare, label: 'Feedback' }, // ADD FEEDBACK
+    { path: '/notifications', icon: Bell, label: 'Alerts', isNotification: true }, // ADD NOTIFICATIONS
     { path: '/profile', icon: User, label: 'Profile' },
   ];
 
@@ -33,6 +37,7 @@ const BottomNavigation = () => {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
+          const hasNotifications = item.isNotification && activeNotifications.length > 0;
           
           return (
             <Link
@@ -42,13 +47,25 @@ const BottomNavigation = () => {
                 isActive ? 'transform -translate-y-0.5' : ''
               }`}
             >
+              {/* Notification Badge */}
+              {hasNotifications && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[8px] rounded-full h-3 w-3 flex items-center justify-center border border-white z-10">
+                  {activeNotifications.length > 9 ? '9+' : activeNotifications.length}
+                </span>
+              )}
+              
               {/* Super Compact Icon */}
-              <div className={`p-1.5 rounded-lg transition-all duration-200 ${
+              <div className={`p-1.5 rounded-lg transition-all duration-200 relative ${
                 isActive 
                   ? `${theme.bg} text-white shadow-xs` 
                   : 'text-gray-400 group-hover:text-gray-600'
               }`}>
                 <Icon size={14} />
+                
+                {/* Pulse animation for active notifications */}
+                {hasNotifications && !isActive && (
+                  <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></div>
+                )}
               </div>
               
               {/* Micro Label */}

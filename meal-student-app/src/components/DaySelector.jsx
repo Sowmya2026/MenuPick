@@ -83,7 +83,7 @@ const DaySelector = ({ days, selectedDay, onSelect, messType = 'veg' }) => {
   };
 
   return (
-    <div className="mb-6 md:mb-8">
+    <div className="mb-5 md:mb-6 mt-4 md:mt-6 ml-4 md:ml-2 mr-4 md:mr-2">
       
       <div className="flex justify-between md:justify-start md:gap-3">
         {days.map(day => {
@@ -106,7 +106,7 @@ const DaySelector = ({ days, selectedDay, onSelect, messType = 'veg' }) => {
                     : `${colors.default}`
                   }
                   ${isMobile 
-                    ? 'h-10 w-10 text-sm' 
+                    ? 'h-9 w-9 text-sm' 
                     : 'h-12 w-12 text-base'
                   }
                   hover:scale-105 active:scale-95
