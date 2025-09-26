@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useMeal } from "../context/MealContext";
+import { useNotification } from "../context/NotificationContext";
 import {
   User,
   Mail,
@@ -16,11 +17,24 @@ import {
   Beef,
   Star,
   BookOpen,
+  Utensils,
+  AlertCircle,
+  Settings,
 } from "lucide-react";
 
 export default function Profile() {
   const { currentUser, logout, updateUserProfile } = useAuth();
   const { preferences } = useMeal();
+  const { 
+    notifications, 
+    updateNotificationPreference,
+    hasPermission,
+    permissionStatus,
+    requestNotificationPermission,
+    togglePushNotifications,
+    checkPermissionStatus
+  } = useNotification();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     displayName: "",
@@ -31,12 +45,9 @@ export default function Profile() {
     allergies: [],
     messPreference: "veg",
   });
-  const [notifications, setNotifications] = useState({
-    mealReminders: true,
-    preferenceUpdates: true,
-    specialOffers: false,
-    monthlyReports: true,
-  });
+
+  // Local state for toggle UI feedback
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -53,6 +64,11 @@ export default function Profile() {
     }
   }, [currentUser]);
 
+  // Check permission status on component mount
+  useEffect(() => {
+    checkPermissionStatus();
+  }, [checkPermissionStatus]);
+
   // Get color theme based on mess preference
   const getMessColorTheme = (messType = formData.messPreference) => {
     switch (messType) {
@@ -62,8 +78,8 @@ export default function Profile() {
           gradient: 'from-green-500 to-green-600',
           light: 'green-50',
           border: 'green-200',
-          text: 'green-600',
-          bg: 'green-500'
+          text: 'text-green-600',
+          bg: 'bg-green-500'
         };
       case 'non-veg':
         return {
@@ -71,8 +87,8 @@ export default function Profile() {
           gradient: 'from-red-500 to-red-600',
           light: 'red-50',
           border: 'red-200',
-          text: 'red-600',
-          bg: 'red-500'
+          text: 'text-red-600',
+          bg: 'bg-red-500'
         };
       case 'special':
         return {
@@ -80,8 +96,8 @@ export default function Profile() {
           gradient: 'from-purple-500 to-purple-600',
           light: 'purple-50',
           border: 'purple-200',
-          text: 'purple-600',
-          bg: 'purple-500'
+          text: 'text-purple-600',
+          bg: 'bg-purple-500'
         };
       default:
         return {
@@ -89,8 +105,8 @@ export default function Profile() {
           gradient: 'from-green-500 to-green-600',
           light: 'green-50',
           border: 'green-200',
-          text: 'green-600',
-          bg: 'green-500'
+          text: 'text-green-600',
+          bg: 'bg-green-500'
         };
     }
   };
@@ -130,6 +146,74 @@ export default function Profile() {
       color: "purple",
     },
   ];
+
+  // Handle meal reminder toggle with proper error handling
+  const handleMealReminderToggle = async (enabled) => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // If enabling and push notifications are disabled, suggest enabling them
+      if (enabled && !notifications.pushNotifications && permissionStatus !== 'denied') {
+        // Allow meal reminders to be enabled without push notifications
+        // User will get in-app notifications only
+        updateNotificationPreference('mealReminders', enabled);
+      } 
+      // If enabling but push notifications are blocked
+      else if (enabled && permissionStatus === 'denied') {
+        // Still enable meal reminders for in-app notifications
+        updateNotificationPreference('mealReminders', enabled);
+      }
+      else {
+        // Simple toggle for meal reminders
+        updateNotificationPreference('mealReminders', enabled);
+      }
+    } catch (error) {
+      console.log('Error toggling meal reminders:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle push notification toggle with better error handling
+  const handlePushNotificationToggle = async (enabled) => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      const success = await togglePushNotifications(enabled);
+      
+      // If toggling failed, revert the UI toggle
+      if (!success && enabled) {
+        // The toggle will remain off due to the async nature
+        console.log('Push notification toggle was reverted due to permission issues');
+      }
+    } catch (error) {
+      console.log('Error toggling push notifications:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Open browser settings guide
+  const openBrowserSettingsGuide = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    let guideUrl = '';
+    
+    if (userAgent.includes('chrome')) {
+      guideUrl = 'https://support.google.com/chrome/answer/3220216';
+    } else if (userAgent.includes('firefox')) {
+      guideUrl = 'https://support.mozilla.org/en-US/kb/push-notifications-firefox';
+    } else if (userAgent.includes('safari')) {
+      guideUrl = 'https://support.apple.com/guide/safari/manage-website-notifications-sfri40734/mac';
+    } else {
+      guideUrl = 'https://www.howtogeek.com/355088/how-to-enable-and-disable-web-notifications-in-chrome/';
+    }
+    
+    window.open(guideUrl, '_blank');
+  };
 
   const handleSave = async () => {
     try {
@@ -185,13 +269,6 @@ export default function Profile() {
     }));
   };
 
-  const toggleNotification = (key) => {
-    setNotifications((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
   if (!currentUser) {
     return (
       <div className="text-center py-8 px-4 md:py-12">
@@ -231,7 +308,7 @@ export default function Profile() {
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className={`flex items-center text-${colorTheme.text} hover:text-${colorTheme.primary}-700 text-sm`}
+                  className={`flex items-center ${colorTheme.text} hover:text-${colorTheme.primary}-700 text-sm`}
                 >
                   <Edit3 size={14} className="mr-1 md:size-4" />
                   Edit
@@ -440,32 +517,162 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Right Column - Sidebar */}
+       {/* Right Column - Sidebar */}
         <div className="space-y-4 md:space-y-6">
-          {/* Notifications Card */}
+          {/* Notifications Card - UPDATED */}
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center md:text-xl md:mb-4">
               <Bell size={18} className="mr-2 md:size-5" />
               Notifications
             </h2>
-            <div className="space-y-3">
-              {Object.entries(notifications).map(([key, value]) => (
-                <label key={key} className="flex items-center justify-between">
-                  <span className="text-xs text-gray-700 capitalize md:text-sm">
-                    {key.replace(/([A-Z])/g, " $1").toLowerCase()}
-                  </span>
+            <div className="space-y-4">
+              {/* Meal Reminder Toggle - FIXED */}
+              <div className="border-b border-gray-100 pb-3">
+                <label className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Utensils size={16} className="text-green-600 mr-2" />
+                    <span className="text-xs font-medium text-gray-700 md:text-sm">
+                      Meal Reminders
+                    </span>
+                  </div>
                   <div className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={value}
-                      onChange={() => toggleNotification(key)}
+                      checked={notifications.mealReminders}
+                      onChange={(e) => handleMealReminderToggle(e.target.checked)}
+                      disabled={isProcessing}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 md:w-11 md:h-6"></div>
+                    <div className={`w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600 md:w-11 md:h-6 ${isProcessing ? 'opacity-50' : ''}`}></div>
                   </div>
                 </label>
-              ))}
+                <p className="text-xs text-gray-500 mt-1">
+                  15min before start, 30min before end
+                </p>
+                {!notifications.mealReminders && (
+                  <div className="flex items-center mt-1 text-xs text-amber-600">
+                    <AlertCircle size={12} className="mr-1" />
+                    Meal reminders are disabled
+                  </div>
+                )}
+              </div>
+
+              {/* Push Notifications Toggle - FIXED */}
+              <div className="border-b border-gray-100 pb-3">
+                <label className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Bell size={16} className="text-blue-600 mr-2" />
+                    <span className="text-xs font-medium text-gray-700 md:text-sm">
+                      Push Notifications
+                    </span>
+                  </div>
+                  <div className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={notifications.pushNotifications && hasPermission}
+                      onChange={(e) => handlePushNotificationToggle(e.target.checked)}
+                      disabled={isProcessing || permissionStatus === 'denied'}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 md:w-11 md:h-6 ${isProcessing || permissionStatus === 'denied' ? 'opacity-50' : ''}`}></div>
+                  </div>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Receive notifications when app is closed
+                </p>
+                {permissionStatus === 'denied' && (
+                  <div className="flex items-center mt-1 text-xs text-red-600">
+                    <AlertCircle size={12} className="mr-1" />
+                    <button 
+                      onClick={openBrowserSettingsGuide}
+                      className="underline hover:no-underline"
+                    >
+                      Enable in browser settings
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Other Notification Toggles */}
+              {Object.entries(notifications)
+                .filter(([key]) => key !== 'mealReminders' && key !== 'pushNotifications')
+                .map(([key, value]) => (
+                  <label key={key} className="flex items-center justify-between">
+                    <span className="text-xs text-gray-700 capitalize md:text-sm">
+                      {key.replace(/([A-Z])/g, " $1").toLowerCase()}
+                    </span>
+                    <div className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={value}
+                        onChange={(e) => updateNotificationPreference(key, e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 md:w-11 md:h-6"></div>
+                    </div>
+                  </label>
+                ))}
             </div>
+          </div>
+
+          {/* Notification Status Card - IMPROVED */}
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center md:text-xl md:mb-4">
+              <Settings size={18} className="mr-2 md:size-5" />
+              Notification Status
+            </h2>
+            <div className="space-y-2 text-xs md:text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Meal Reminders</span>
+                <span className={`font-medium ${notifications.mealReminders ? 'text-green-600' : 'text-red-600'}`}>
+                  {notifications.mealReminders ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Push Notifications</span>
+                <span className={`font-medium ${notifications.pushNotifications && hasPermission ? 'text-green-600' : 'text-red-600'}`}>
+                  {notifications.pushNotifications && hasPermission ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Browser Permission</span>
+                <span className={`font-medium ${
+                  permissionStatus === 'granted' ? 'text-green-600' : 
+                  permissionStatus === 'denied' ? 'text-red-600' : 'text-amber-600'
+                }`}>
+                  {permissionStatus === 'granted' ? 'Granted' : 
+                   permissionStatus === 'denied' ? 'Blocked' : 'Not Set'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Notification Type</span>
+                <span className="font-medium text-blue-600">
+                  {hasPermission ? 'Push + In-app' : 'In-app Only'}
+                </span>
+              </div>
+            </div>
+            
+            {permissionStatus === 'denied' && (
+              <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-800 mb-2">
+                  🔔 Notifications are blocked in your browser settings.
+                </p>
+                <button 
+                  onClick={openBrowserSettingsGuide}
+                  className="text-xs text-red-700 underline hover:no-underline"
+                >
+                  Learn how to enable them
+                </button>
+              </div>
+            )}
+            
+            {notifications.mealReminders && !hasPermission && permissionStatus !== 'denied' && (
+              <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-800">
+                  💡 Enable push notifications to get reminders when the app is closed.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Account Stats Card */}

@@ -4,6 +4,7 @@ import DaySelector from "../components/DaySelector";
 import MealTimeCard from "../components/MealTimeCard";
 import { Leaf, Beef, Star, Calendar, Utensils, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
+import Layout from '../components/Layout';
 
 const Home = () => {
   const { currentUser } = useAuth();
@@ -157,6 +158,7 @@ const Home = () => {
   }, [isOpen, isMobile]);
 
   return (
+    <Layout>
     <div className="bg-white space-y-4 px-3 py-3 md:space-y-8 md:px-0 md:py-6">
       {/* Header Section */}
       <div className="text-center">
@@ -252,6 +254,7 @@ const Home = () => {
         </div>
       )}
     </div>
+    </Layout>
   );
 };
 

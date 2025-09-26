@@ -47,7 +47,7 @@ const PublicNavbar = () => {
   };
 
   return (
-    <nav className="bg-white relative border-b border-gray-100">
+    <nav className="bg-white relative">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-3">
           {/* Logo */}

@@ -37,21 +37,21 @@ const DaySelector = ({ days, selectedDay, onSelect, messType = 'veg' }) => {
     switch (messType) {
       case 'veg':
         return {
-          selected: 'from-green-500 to-green-700',
+          selected: 'bg-green-600',
           today: 'bg-green-100 text-green-900 border-green-300 shadow-md', // Enhanced today style
           todayDot: 'bg-green-500',
           default: 'bg-green-50 text-green-700 border-green-100 hover:bg-green-100'
         };
       case 'non-veg':
         return {
-          selected: 'from-red-500 to-red-700',
+          selected: 'bg-red-600',
           today: 'bg-red-100 text-red-900 border-red-300 shadow-md',
           todayDot: 'bg-red-500',
           default: 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100'
         };
       case 'special':
         return {
-          selected: 'from-purple-500 to-purple-700',
+          selected: 'bg-purple-600',
           today: 'bg-purple-100 text-purple-900 border-purple-300 shadow-md',
           todayDot: 'bg-purple-500',
           default: 'bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100'
