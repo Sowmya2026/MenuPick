@@ -27,25 +27,38 @@ import { Link } from "react-router-dom";
 // Define maximum items for student selections
 const MAX_ITEMS = {
   breakfast: {
-    'veg': { 'Tiffin': 14, 'Chutney': 7 },
-    'non-veg': { 'Tiffin': 14, 'Chutney': 7, 'Egg': 5 },
-    'special': { 'Tiffin': 14, 'Chutney': 7, 'Egg': 5, 'Juices': 7 }
+    veg: { Tiffin: 14, Chutney: 7 },
+    "non-veg": { Tiffin: 14, Chutney: 7, Egg: 5 },
+    special: { Tiffin: 14, Chutney: 7, Egg: 5, Juices: 7 },
   },
   lunch: {
-    'veg': { 'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3 },
-    'non-veg': {'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3, 'Chicken': 3 },
-    'special': { 'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3, 'Chicken': 3, 'Fish': 2 }
+    veg: { Rice: 7, Curry: 14, Accompaniments: 7, Dessert: 3 },
+    "non-veg": {
+      Rice: 7,
+      Curry: 14,
+      Accompaniments: 7,
+      Dessert: 3,
+      Chicken: 3,
+    },
+    special: {
+      Rice: 7,
+      Curry: 14,
+      Accompaniments: 7,
+      Dessert: 3,
+      Chicken: 3,
+      Fish: 2,
+    },
   },
   snacks: {
-    'veg': { 'Snacks': 7 },
-    'non-veg': { 'Snacks': 7 },
-    'special': { 'Snacks': 7 }
+    veg: { Snacks: 7 },
+    "non-veg": { Snacks: 7 },
+    special: { Snacks: 7 },
   },
   dinner: {
-    'veg': { 'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Accompaniments': 7 },
-    'non-veg': { 'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Fish': 2 },
-    'special': {'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Special Items': 3 }
-  }
+    veg: { Staples: 7, Curries: 14, "Side Dishes": 7, Accompaniments: 7 },
+    "non-veg": { Staples: 7, Curries: 14, "Side Dishes": 7, Fish: 2 },
+    special: { Staples: 7, Curries: 14, "Side Dishes": 7, "Special Items": 3 },
+  },
 };
 
 export default function Analytics() {
@@ -61,7 +74,7 @@ export default function Analytics() {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [viewMode, setViewMode] = useState(() => {
     // Load view mode from localStorage or default to "grid"
-    const savedViewMode = localStorage.getItem('analyticsViewMode');
+    const savedViewMode = localStorage.getItem("analyticsViewMode");
     return savedViewMode || "grid";
   });
   const [exportLoading, setExportLoading] = useState({});
@@ -113,13 +126,13 @@ export default function Analytics() {
       setWindowWidth(window.innerWidth);
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Save view mode to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('analyticsViewMode', viewMode);
+    localStorage.setItem("analyticsViewMode", viewMode);
   }, [viewMode]);
 
   // Load all students and their selections from Firebase
@@ -283,12 +296,10 @@ export default function Analytics() {
 
   // Get all meals for list view (without subcategory filter)
   const getAllMealsForListView = () => {
-    let filtered = meals.filter(
-      (meal) => meal.messType === selectedMessType
-    );
+    let filtered = meals.filter((meal) => meal.messType === selectedMessType);
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter(meal => meal.category === selectedCategory);
+      filtered = filtered.filter((meal) => meal.category === selectedCategory);
     }
 
     // Sort by selection count (highest first)
@@ -302,36 +313,37 @@ export default function Analytics() {
   // Get top meals within limits for a specific mess type
   const getTopMealsWithinLimits = (messType) => {
     const topMeals = [];
-    
-    categories.forEach(category => {
+
+    categories.forEach((category) => {
       if (MAX_ITEMS[category] && MAX_ITEMS[category][messType]) {
         const subcategoryLimits = MAX_ITEMS[category][messType];
-        
-        Object.keys(subcategoryLimits).forEach(subcategory => {
+
+        Object.keys(subcategoryLimits).forEach((subcategory) => {
           const limit = subcategoryLimits[subcategory];
-          
+
           // Get meals for this category, mess type, and subcategory
-          const categoryMeals = meals.filter(meal => 
-            meal.category === category && 
-            meal.messType === messType && 
-            meal.subcategory === subcategory
+          const categoryMeals = meals.filter(
+            (meal) =>
+              meal.category === category &&
+              meal.messType === messType &&
+              meal.subcategory === subcategory
           );
-          
+
           // Sort by selection count and take top items within limit
           const topCategoryMeals = categoryMeals
-            .map(meal => ({
+            .map((meal) => ({
               ...meal,
               selectionCount: getSelectionCount(meal.id),
-              selectionPercentage: getSelectionPercentage(meal.id, messType)
+              selectionPercentage: getSelectionPercentage(meal.id, messType),
             }))
             .sort((a, b) => b.selectionCount - a.selectionCount)
             .slice(0, limit);
-          
+
           topMeals.push(...topCategoryMeals);
         });
       }
     });
-    
+
     return topMeals;
   };
 
@@ -339,34 +351,34 @@ export default function Analytics() {
   const createMessTypeExcelData = (messType) => {
     const data = [];
     const topMeals = getTopMealsWithinLimits(messType);
-    
+
     // Header row
     data.push([
       "Category",
-      "Subcategory", 
+      "Subcategory",
       "Meal Name",
       "Description",
       "Total Selections",
       "Selection Percentage",
-      "Limit"
+      "Limit",
     ]);
-    
+
     // Group by category and subcategory for better organization
     const groupedMeals = {};
-    
-    topMeals.forEach(meal => {
+
+    topMeals.forEach((meal) => {
       const key = `${meal.category}-${meal.subcategory}`;
       if (!groupedMeals[key]) {
         groupedMeals[key] = [];
       }
       groupedMeals[key].push(meal);
     });
-    
+
     // Add data rows
-    Object.keys(groupedMeals).forEach(key => {
-      const [category, subcategory] = key.split('-');
+    Object.keys(groupedMeals).forEach((key) => {
+      const [category, subcategory] = key.split("-");
       const mealsInGroup = groupedMeals[key];
-      
+
       mealsInGroup.forEach((meal, index) => {
         data.push([
           category.charAt(0).toUpperCase() + category.slice(1),
@@ -375,27 +387,27 @@ export default function Analytics() {
           meal.description || "-",
           meal.selectionCount,
           `${meal.selectionPercentage}%`,
-          meal.limit
+          meal.limit,
         ]);
       });
-      
+
       // Add empty row between groups
       data.push([]);
     });
-    
+
     return data;
   };
 
   // Export specific mess type to Excel
   const exportMessTypeToExcel = async (messType) => {
-    setExportLoading(prev => ({ ...prev, [messType]: true }));
-    
+    setExportLoading((prev) => ({ ...prev, [messType]: true }));
+
     try {
       const data = createMessTypeExcelData(messType);
       const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, `${messType} Meals`);
-      
+
       // Set column widths
       const colWidths = [
         { wch: 15 }, // Category
@@ -404,41 +416,52 @@ export default function Analytics() {
         { wch: 40 }, // Description
         { wch: 15 }, // Total Selections
         { wch: 20 }, // Selection Percentage
-        { wch: 10 }  // Limit
+        { wch: 10 }, // Limit
       ];
-      ws['!cols'] = colWidths;
-      
+      ws["!cols"] = colWidths;
+
       // Style header row
-      if (ws['!ref']) {
-        const range = XLSX.utils.decode_range(ws['!ref']);
+      if (ws["!ref"]) {
+        const range = XLSX.utils.decode_range(ws["!ref"]);
         for (let C = range.s.c; C <= range.e.c; ++C) {
           const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
           if (ws[cellAddress]) {
             ws[cellAddress].s = {
               font: { bold: true, color: { rgb: "FFFFFF" } },
-              fill: { fgColor: { rgb: messType === 'veg' ? "16A34A" : messType === 'non-veg' ? "DC2626" : "7C3AED" } }
+              fill: {
+                fgColor: {
+                  rgb:
+                    messType === "veg"
+                      ? "16A34A"
+                      : messType === "non-veg"
+                      ? "DC2626"
+                      : "7C3AED",
+                },
+              },
             };
           }
         }
       }
-      
-      const filename = `${messType}-mess-meals-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      const filename = `${messType}-mess-meals-${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
       XLSX.writeFile(wb, filename);
     } catch (error) {
       console.error(`Error exporting ${messType} data:`, error);
       alert(`Error exporting ${messType} data. Please try again.`);
     } finally {
-      setExportLoading(prev => ({ ...prev, [messType]: false }));
+      setExportLoading((prev) => ({ ...prev, [messType]: false }));
     }
   };
 
   // Export combined Excel with all mess data
   const exportCombinedExcel = async () => {
-    setExportLoading(prev => ({ ...prev, 'combined': true }));
-    
+    setExportLoading((prev) => ({ ...prev, combined: true }));
+
     try {
       const wb = XLSX.utils.book_new();
-      
+
       // Summary Sheet
       const summaryData = [
         ["MEAL ANALYTICS SUMMARY REPORT", "", "", "", ""],
@@ -448,40 +471,54 @@ export default function Analytics() {
         ["Total Students Registered", selectionStats.totalStudents, "", "", ""],
         ["Total Students Submitted", selectionStats.submitted, "", "", ""],
         ["Total Pending", selectionStats.pending, "", "", ""],
-        ["Overall Participation Rate", `${selectionStats.participationRate}%`, "", "", ""],
+        [
+          "Overall Participation Rate",
+          `${selectionStats.participationRate}%`,
+          "",
+          "",
+          "",
+        ],
         ["", "", "", "", ""],
         ["MESS TYPE BREAKDOWN", "", "", "", ""],
-        ["Mess Type", "Total Students", "Submitted", "Pending", "Participation Rate"]
+        [
+          "Mess Type",
+          "Total Students",
+          "Submitted",
+          "Pending",
+          "Participation Rate",
+        ],
       ];
-      
-      messTypes.forEach(messType => {
+
+      messTypes.forEach((messType) => {
         const stats = messTypeDistribution[messType];
         summaryData.push([
           messType.charAt(0).toUpperCase() + messType.slice(1),
           stats.total,
           stats.submitted,
           stats.pending,
-          `${stats.participationRate}%`
+          `${stats.participationRate}%`,
         ]);
       });
-      
+
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
-      
+
       // Individual Mess Type Sheets
-      messTypes.forEach(messType => {
+      messTypes.forEach((messType) => {
         const data = createMessTypeExcelData(messType);
         const ws = XLSX.utils.aoa_to_sheet(data);
         XLSX.utils.book_append_sheet(wb, ws, `${messType} Meals`);
       });
-      
-      const filename = `meal-analytics-complete-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      const filename = `meal-analytics-complete-${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
       XLSX.writeFile(wb, filename);
     } catch (error) {
-      console.error('Error exporting combined data:', error);
-      alert('Error exporting combined data. Please try again.');
+      console.error("Error exporting combined data:", error);
+      alert("Error exporting combined data. Please try again.");
     } finally {
-      setExportLoading(prev => ({ ...prev, 'combined': false }));
+      setExportLoading((prev) => ({ ...prev, combined: false }));
     }
   };
 
@@ -607,39 +644,53 @@ export default function Analytics() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <motion.div
-            className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
+            className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full sm:w-auto"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900">
-                Meal Analytics
-              </h1>
-              <p className="text-xs sm:text-sm text-green-700 mt-1">
-                Analyze eating patterns and insights
-              </p>
+            <div className="w-full sm:w-auto">
+              <div className="flex justify-between items-start sm:block w-full">
+                <div>
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900">
+                    Meal Analytics
+                  </h1>
+                  <p className="text-xs sm:text-sm text-green-700 mt-1">
+                    Analyze eating patterns and insights
+                  </p>
+                </div>
+
+                {/* Mobile Download Button - Visible only on mobile */}
+                <button
+                  onClick={exportCombinedExcel}
+                  disabled={exportLoading["combined"]}
+                  className="sm:hidden flex items-center gap-1 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {exportLoading["combined"] ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <Download className="h-3 w-3" />
+                  )}
+                  <span>All</span>
+                </button>
+              </div>
             </div>
           </motion.div>
 
-          {/* Download Buttons */}
-          <div className="flex flex-wrap gap-2">
-            {/* Combined Download Button */}
-            <button
-              onClick={exportCombinedExcel}
-              disabled={exportLoading['combined']}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {exportLoading['combined'] ? (
-                <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
-              ) : (
-                <Download className="h-3 w-3" />
-              )}
-              <FileSpreadsheet className="h-3 w-3" />
-              <span className="hidden sm:inline">All Data</span>
-              <span className="sm:hidden">All</span>
-            </button>
-          </div>
+          {/* Desktop Download Button - Hidden on mobile */}
+          <button
+            onClick={exportCombinedExcel}
+            disabled={exportLoading["combined"]}
+            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {exportLoading["combined"] ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            <FileSpreadsheet className="h-4 w-4" />
+            All Data
+          </button>
         </div>
 
         {/* Mess Type Cards */}
@@ -759,9 +810,11 @@ export default function Analytics() {
                     }}
                     disabled={exportLoading[messType]}
                     className={`w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      messType === 'veg' ? 'bg-green-600 hover:bg-green-700' : 
-                      messType === 'non-veg' ? 'bg-red-600 hover:bg-red-700' : 
-                      'bg-purple-600 hover:bg-purple-700'
+                      messType === "veg"
+                        ? "bg-green-600 hover:bg-green-700"
+                        : messType === "non-veg"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-purple-600 hover:bg-purple-700"
                     } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     {exportLoading[messType] ? (
@@ -890,7 +943,9 @@ export default function Analytics() {
                       className="h-4 w-4 md:h-5 md:w-5 mr-2"
                       style={{ color: currentColors.primary }}
                     />
-                    {viewMode === "grid" ? "Available Meals" : "All Meals Overview"}
+                    {viewMode === "grid"
+                      ? "Available Meals"
+                      : "All Meals Overview"}
                   </h2>
                 </div>
 
@@ -926,7 +981,9 @@ export default function Analytics() {
                     style={{ color: currentColors.primary }}
                   >
                     <TrendingUpIcon className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden sm:inline">Sorted by popularity</span>
+                    <span className="hidden sm:inline">
+                      Sorted by popularity
+                    </span>
                   </div>
                 </div>
               </div>
@@ -935,7 +992,9 @@ export default function Analytics() {
               <div className="flex items-center justify-between mt-2 md:hidden">
                 <span className="text-xs" style={{ color: currentColors.text }}>
                   {selectedMessType} • {selectedCategory} •{" "}
-                  {viewMode === "grid" ? selectedSubcategory : "All Subcategories"}
+                  {viewMode === "grid"
+                    ? selectedSubcategory
+                    : "All Subcategories"}
                 </span>
 
                 <button
@@ -952,7 +1011,9 @@ export default function Analytics() {
               <div className="hidden md:flex items-center justify-between mt-2">
                 <span className="text-sm" style={{ color: currentColors.text }}>
                   {selectedMessType} • {selectedCategory} •{" "}
-                  {viewMode === "grid" ? selectedSubcategory : "All Subcategories"}
+                  {viewMode === "grid"
+                    ? selectedSubcategory
+                    : "All Subcategories"}
                 </span>
 
                 <button
@@ -974,7 +1035,9 @@ export default function Analytics() {
                   <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
                     {filteredMeals.map((meal, index) => {
                       const selectionCount = getSelectionCount(meal.id);
-                      const selectionPercentage = getSelectionPercentage(meal.id);
+                      const selectionPercentage = getSelectionPercentage(
+                        meal.id
+                      );
                       const isTopMeal = index === 0 && selectionCount > 0;
 
                       return (
@@ -1099,23 +1162,40 @@ export default function Analytics() {
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meal Details</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcategory</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selections</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selection %</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Meal Details
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Subcategory
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Selections
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Selection %
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {listViewMeals.map((meal, index) => {
                         const selectionCount = getSelectionCount(meal.id);
-                        const selectionPercentage = getSelectionPercentage(meal.id);
-                        
+                        const selectionPercentage = getSelectionPercentage(
+                          meal.id
+                        );
+
                         return (
-                          <tr key={meal.id} className="hover:bg-gray-50 transition-colors">
+                          <tr
+                            key={meal.id}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div>
-                                <div className="text-sm font-medium text-gray-900">{meal.name}</div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {meal.name}
+                                </div>
                                 <div className="text-sm text-gray-500 truncate max-w-xs">
                                   {meal.description || "No description"}
                                 </div>
@@ -1128,10 +1208,14 @@ export default function Analytics() {
                               {meal.subcategory}
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{selectionCount}</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {selectionCount}
+                              </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="text-sm font-medium text-gray-700">{selectionPercentage}%</span>
+                              <span className="text-sm font-medium text-gray-700">
+                                {selectionPercentage}%
+                              </span>
                             </td>
                           </tr>
                         );
@@ -1142,8 +1226,12 @@ export default function Analytics() {
                   {listViewMeals.length === 0 && (
                     <div className="text-center py-12">
                       <ChefHat className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No meals found</h3>
-                      <p className="text-gray-600">Try adjusting your filters to see more results.</p>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No meals found
+                      </h3>
+                      <p className="text-gray-600">
+                        Try adjusting your filters to see more results.
+                      </p>
                     </div>
                   )}
                 </div>
