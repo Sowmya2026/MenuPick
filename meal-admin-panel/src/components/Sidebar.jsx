@@ -21,6 +21,7 @@ const navigation = [
   { name: "Meal Management", href: "/meals", icon: Utensils },
   { name: "Analytics", href: "/analytics", icon: BarChart },
   { name: "Feedback", href: "/feedback", icon: MessageSquare },
+  { name: "Profile", href: "/profile", icon: User },
 ];
 
 const Sidebar = ({
@@ -106,7 +107,7 @@ const Sidebar = ({
               <div className="flex items-center justify-center px-4 mb-4">
                 <h1 className="text-lg font-bold text-green-900">Meal Admin</h1>
               </div>
-              
+
               {/* Navigation */}
               <nav className="px-3 space-y-1">
                 {navigation.map((item) => (
@@ -131,9 +132,10 @@ const Sidebar = ({
               {/* User info */}
               <div className="mt-auto px-4 py-3 border-t border-gray-200">
                 <div className="text-xs text-gray-500 mb-3 px-2">
-                  Logged in as: <span className="font-medium">{currentUser?.email}</span>
+                  Logged in as:{" "}
+                  <span className="font-medium">{currentUser?.email}</span>
                 </div>
-                
+
                 {/* Bottom actions */}
                 <div className="space-y-1">
                   <a
@@ -274,22 +276,13 @@ const Sidebar = ({
             {!isCollapsed && (
               <div className="pt-2 mt-2 border-t border-green-200">
                 <div className="text-xs text-green-700 px-2">
-                  Logged in as: <span className="font-medium">{currentUser?.email}</span>
+                  Logged in as:{" "}
+                  <span className="font-medium">{currentUser?.email}</span>
                 </div>
               </div>
             )}
           </div>
         </div>
-      </div>
-
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 right-4 z-50">
-        <button
-          className="text-gray-500 hover:text-gray-700 focus:outline-none p-1.5 rounded-lg hover:bg-gray-100 transition-all duration-200"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <Menu className="h-6 w-6" />
-        </button>
       </div>
     </>
   );
