@@ -12,10 +12,41 @@ import {
   Filter,
   Crown,
   TrendingUp as TrendingUpIcon,
+  Download,
+  FileSpreadsheet,
+  LayoutGrid,
+  Table,
+  BarChart3,
 } from "lucide-react";
 import { db } from "../firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import * as XLSX from "xlsx";
+import { Link } from "react-router-dom";
+
+// Define maximum items for student selections
+const MAX_ITEMS = {
+  breakfast: {
+    'veg': { 'Tiffin': 14, 'Chutney': 7 },
+    'non-veg': { 'Tiffin': 14, 'Chutney': 7, 'Egg': 5 },
+    'special': { 'Tiffin': 14, 'Chutney': 7, 'Egg': 5, 'Juices': 7 }
+  },
+  lunch: {
+    'veg': { 'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3 },
+    'non-veg': {'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3, 'Chicken': 3 },
+    'special': { 'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3, 'Chicken': 3, 'Fish': 2 }
+  },
+  snacks: {
+    'veg': { 'Snacks': 7 },
+    'non-veg': { 'Snacks': 7 },
+    'special': { 'Snacks': 7 }
+  },
+  dinner: {
+    'veg': { 'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Accompaniments': 7 },
+    'non-veg': { 'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Fish': 2 },
+    'special': {'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Special Items': 3 }
+  }
+};
 
 export default function Analytics() {
   const { meals, categories, messTypes, getSubcategories } = useMeal();
@@ -28,6 +59,13 @@ export default function Analytics() {
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    // Load view mode from localStorage or default to "grid"
+    const savedViewMode = localStorage.getItem('analyticsViewMode');
+    return savedViewMode || "grid";
+  });
+  const [exportLoading, setExportLoading] = useState({});
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   // Color scheme for different mess types
   const messTypeColors = {
@@ -41,6 +79,7 @@ export default function Analytics() {
       light: "bg-green-100",
       card: "bg-gradient-to-br from-green-50 to-emerald-50",
       badge: "bg-green-500",
+      headerBg: "bg-green-50",
     },
     "non-veg": {
       bg: "bg-red-50",
@@ -52,6 +91,7 @@ export default function Analytics() {
       light: "bg-red-100",
       card: "bg-gradient-to-br from-red-50 to-orange-50",
       badge: "bg-red-500",
+      headerBg: "bg-red-50",
     },
     special: {
       bg: "bg-purple-50",
@@ -63,8 +103,24 @@ export default function Analytics() {
       light: "bg-purple-100",
       card: "bg-gradient-to-br from-purple-50 to-violet-50",
       badge: "bg-purple-500",
+      headerBg: "bg-purple-50",
     },
   };
+
+  // Track window width for responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Save view mode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('analyticsViewMode', viewMode);
+  }, [viewMode]);
 
   // Load all students and their selections from Firebase
   useEffect(() => {
@@ -183,7 +239,32 @@ export default function Analytics() {
     };
   });
 
-  // Get meals for selected mess type, category and subcategory - sorted by selection count
+  // Get selection count for a meal
+  const getSelectionCount = (mealId, messType = "all") => {
+    let count = 0;
+    studentSelections.forEach((selection) => {
+      if (selection.selections && selection.selections[mealId]) {
+        if (messType === "all" || selection.messType === messType) {
+          count++;
+        }
+      }
+    });
+    return count;
+  };
+
+  // Get selection percentage for a meal
+  const getSelectionPercentage = (mealId, messType = null) => {
+    const count = getSelectionCount(mealId);
+    const targetMessType = messType || selectedMessType;
+    const totalStudentsInMessType =
+      messTypeDistribution[targetMessType]?.total || 0;
+
+    if (totalStudentsInMessType === 0) return 0;
+
+    return Math.round((count / totalStudentsInMessType) * 100);
+  };
+
+  // Get filtered meals based on current selections
   const getFilteredMeals = () => {
     const filtered = meals.filter(
       (meal) =>
@@ -200,26 +281,208 @@ export default function Analytics() {
     });
   };
 
-  // Get selection count for a meal
-  const getSelectionCount = (mealId) => {
-    let count = 0;
-    studentSelections.forEach((selection) => {
-      if (selection.selections && selection.selections[mealId]) {
-        count++;
-      }
+  // Get all meals for list view (without subcategory filter)
+  const getAllMealsForListView = () => {
+    let filtered = meals.filter(
+      (meal) => meal.messType === selectedMessType
+    );
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(meal => meal.category === selectedCategory);
+    }
+
+    // Sort by selection count (highest first)
+    return filtered.sort((a, b) => {
+      const countA = getSelectionCount(a.id);
+      const countB = getSelectionCount(b.id);
+      return countB - countA;
     });
-    return count;
   };
 
-  // Get selection percentage for a meal
-  const getSelectionPercentage = (mealId) => {
-    const count = getSelectionCount(mealId);
-    const totalStudentsInMessType =
-      messTypeDistribution[selectedMessType]?.total || 0;
+  // Get top meals within limits for a specific mess type
+  const getTopMealsWithinLimits = (messType) => {
+    const topMeals = [];
+    
+    categories.forEach(category => {
+      if (MAX_ITEMS[category] && MAX_ITEMS[category][messType]) {
+        const subcategoryLimits = MAX_ITEMS[category][messType];
+        
+        Object.keys(subcategoryLimits).forEach(subcategory => {
+          const limit = subcategoryLimits[subcategory];
+          
+          // Get meals for this category, mess type, and subcategory
+          const categoryMeals = meals.filter(meal => 
+            meal.category === category && 
+            meal.messType === messType && 
+            meal.subcategory === subcategory
+          );
+          
+          // Sort by selection count and take top items within limit
+          const topCategoryMeals = categoryMeals
+            .map(meal => ({
+              ...meal,
+              selectionCount: getSelectionCount(meal.id),
+              selectionPercentage: getSelectionPercentage(meal.id, messType)
+            }))
+            .sort((a, b) => b.selectionCount - a.selectionCount)
+            .slice(0, limit);
+          
+          topMeals.push(...topCategoryMeals);
+        });
+      }
+    });
+    
+    return topMeals;
+  };
 
-    if (totalStudentsInMessType === 0) return 0;
+  // Create Excel data for a specific mess type
+  const createMessTypeExcelData = (messType) => {
+    const data = [];
+    const topMeals = getTopMealsWithinLimits(messType);
+    
+    // Header row
+    data.push([
+      "Category",
+      "Subcategory", 
+      "Meal Name",
+      "Description",
+      "Total Selections",
+      "Selection Percentage",
+      "Limit"
+    ]);
+    
+    // Group by category and subcategory for better organization
+    const groupedMeals = {};
+    
+    topMeals.forEach(meal => {
+      const key = `${meal.category}-${meal.subcategory}`;
+      if (!groupedMeals[key]) {
+        groupedMeals[key] = [];
+      }
+      groupedMeals[key].push(meal);
+    });
+    
+    // Add data rows
+    Object.keys(groupedMeals).forEach(key => {
+      const [category, subcategory] = key.split('-');
+      const mealsInGroup = groupedMeals[key];
+      
+      mealsInGroup.forEach((meal, index) => {
+        data.push([
+          category.charAt(0).toUpperCase() + category.slice(1),
+          subcategory.charAt(0).toUpperCase() + subcategory.slice(1),
+          meal.name,
+          meal.description || "-",
+          meal.selectionCount,
+          `${meal.selectionPercentage}%`,
+          meal.limit
+        ]);
+      });
+      
+      // Add empty row between groups
+      data.push([]);
+    });
+    
+    return data;
+  };
 
-    return Math.round((count / totalStudentsInMessType) * 100);
+  // Export specific mess type to Excel
+  const exportMessTypeToExcel = async (messType) => {
+    setExportLoading(prev => ({ ...prev, [messType]: true }));
+    
+    try {
+      const data = createMessTypeExcelData(messType);
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `${messType} Meals`);
+      
+      // Set column widths
+      const colWidths = [
+        { wch: 15 }, // Category
+        { wch: 15 }, // Subcategory
+        { wch: 25 }, // Meal Name
+        { wch: 40 }, // Description
+        { wch: 15 }, // Total Selections
+        { wch: 20 }, // Selection Percentage
+        { wch: 10 }  // Limit
+      ];
+      ws['!cols'] = colWidths;
+      
+      // Style header row
+      if (ws['!ref']) {
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
+          if (ws[cellAddress]) {
+            ws[cellAddress].s = {
+              font: { bold: true, color: { rgb: "FFFFFF" } },
+              fill: { fgColor: { rgb: messType === 'veg' ? "16A34A" : messType === 'non-veg' ? "DC2626" : "7C3AED" } }
+            };
+          }
+        }
+      }
+      
+      const filename = `${messType}-mess-meals-${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, filename);
+    } catch (error) {
+      console.error(`Error exporting ${messType} data:`, error);
+      alert(`Error exporting ${messType} data. Please try again.`);
+    } finally {
+      setExportLoading(prev => ({ ...prev, [messType]: false }));
+    }
+  };
+
+  // Export combined Excel with all mess data
+  const exportCombinedExcel = async () => {
+    setExportLoading(prev => ({ ...prev, 'combined': true }));
+    
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      // Summary Sheet
+      const summaryData = [
+        ["MEAL ANALYTICS SUMMARY REPORT", "", "", "", ""],
+        ["Generated on:", new Date().toLocaleDateString(), "", "", ""],
+        ["", "", "", "", ""],
+        ["OVERALL STATISTICS", "", "", "", ""],
+        ["Total Students Registered", selectionStats.totalStudents, "", "", ""],
+        ["Total Students Submitted", selectionStats.submitted, "", "", ""],
+        ["Total Pending", selectionStats.pending, "", "", ""],
+        ["Overall Participation Rate", `${selectionStats.participationRate}%`, "", "", ""],
+        ["", "", "", "", ""],
+        ["MESS TYPE BREAKDOWN", "", "", "", ""],
+        ["Mess Type", "Total Students", "Submitted", "Pending", "Participation Rate"]
+      ];
+      
+      messTypes.forEach(messType => {
+        const stats = messTypeDistribution[messType];
+        summaryData.push([
+          messType.charAt(0).toUpperCase() + messType.slice(1),
+          stats.total,
+          stats.submitted,
+          stats.pending,
+          `${stats.participationRate}%`
+        ]);
+      });
+      
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+      
+      // Individual Mess Type Sheets
+      messTypes.forEach(messType => {
+        const data = createMessTypeExcelData(messType);
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, `${messType} Meals`);
+      });
+      
+      const filename = `meal-analytics-complete-${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, filename);
+    } catch (error) {
+      console.error('Error exporting combined data:', error);
+      alert('Error exporting combined data. Please try again.');
+    } finally {
+      setExportLoading(prev => ({ ...prev, 'combined': false }));
+    }
   };
 
   // Refresh data
@@ -229,19 +492,17 @@ export default function Analytics() {
 
   // Circular progress component with fixed 100% display
   const CircularProgress = ({ percentage, colorClass, size = "md" }) => {
-    // Responsive size classes - mobile first, then desktop
     const sizeClass =
       size === "sm" ? "w-10 h-10 md:w-12 md:h-12" : "w-14 h-14 md:w-16 md:h-16";
 
     const textSize =
       size === "sm" ? "text-[10px] md:text-xs" : "text-xs md:text-sm";
 
-    // Responsive radius calculation
     const getRadius = (isMobile = false) => {
       if (size === "sm") {
-        return isMobile ? 17 : 22; // sm: mobile 15, desktop 18
+        return isMobile ? 17 : 22;
       } else {
-        return isMobile ? 22 : 27; // md: mobile 22, desktop 27
+        return isMobile ? 22 : 27;
       }
     };
 
@@ -332,11 +593,13 @@ export default function Analytics() {
   }
 
   const filteredMeals = getFilteredMeals();
+  const listViewMeals = getAllMealsForListView();
   const currentSubcategories = getSubcategories(
     selectedCategory,
     selectedMessType
   );
   const currentColors = messTypeColors[selectedMessType];
+  const isMobile = windowWidth < 768;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 p-4 sm:p-6">
@@ -358,9 +621,28 @@ export default function Analytics() {
               </p>
             </div>
           </motion.div>
+
+          {/* Download Buttons */}
+          <div className="flex flex-wrap gap-2">
+            {/* Combined Download Button */}
+            <button
+              onClick={exportCombinedExcel}
+              disabled={exportLoading['combined']}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exportLoading['combined'] ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+              ) : (
+                <Download className="h-3 w-3" />
+              )}
+              <FileSpreadsheet className="h-3 w-3" />
+              <span className="hidden sm:inline">All Data</span>
+              <span className="sm:hidden">All</span>
+            </button>
+          </div>
         </div>
 
-        {/* Mess Type Selection */}
+        {/* Mess Type Cards */}
         <div className="grid grid-cols-3 gap-2 md:grid-cols-3 md:gap-4">
           {messTypes.map((messType) => {
             const messData = messTypeDistribution[messType] || {
@@ -468,11 +750,33 @@ export default function Analytics() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Download Button for this Mess Type */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      exportMessTypeToExcel(messType);
+                    }}
+                    disabled={exportLoading[messType]}
+                    className={`w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      messType === 'veg' ? 'bg-green-600 hover:bg-green-700' : 
+                      messType === 'non-veg' ? 'bg-red-600 hover:bg-red-700' : 
+                      'bg-purple-600 hover:bg-purple-700'
+                    } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {exportLoading[messType] ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                    ) : (
+                      <Download className="h-3 w-3" />
+                    )}
+                    <span>Download</span>
+                  </button>
                 </div>
               </div>
             );
           })}
         </div>
+
         <div className="space-y-4 md:space-y-6">
           <div
             className={`
@@ -481,8 +785,8 @@ export default function Analytics() {
     ${
       isFilterVisible
         ? isCategoryOpen
-          ? "max-h-96 opacity-100 p-3 md:p-6 mb-4 overflow-visible" // Use overflow-visible when dropdown is open
-          : "max-h-96 opacity-100 p-3 md:p-6 mb-4 overflow-hidden" // Use overflow-hidden when dropdown is closed
+          ? "max-h-96 opacity-100 p-3 md:p-6 mb-4 overflow-visible"
+          : "max-h-96 opacity-100 p-3 md:p-6 mb-4 overflow-hidden"
         : "max-h-0 opacity-0 p-0 md:max-h-0 md:opacity-0 md:mb-0 overflow-hidden"
     }
          `}
@@ -512,6 +816,19 @@ export default function Analytics() {
                   {isCategoryOpen && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
                       <div className="p-1 md:p-2 grid grid-cols-1 gap-0.5 md:gap-1">
+                        <button
+                          onClick={() => {
+                            setSelectedCategory("all");
+                            setIsCategoryOpen(false);
+                          }}
+                          className={`px-2 py-1.5 md:px-3 md:py-2 text-left rounded-md transition-colors text-xs md:text-sm ${
+                            selectedCategory === "all"
+                              ? "bg-indigo-100 text-green-800 font-medium"
+                              : "hover:bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          All Categories
+                        </button>
                         {categories.map((category) => (
                           <button
                             key={category}
@@ -535,32 +852,34 @@ export default function Analytics() {
                 </div>
               </div>
 
-              {/* Subcategory Selector */}
-              <div className="md:flex-1">
-                <h3 className="text-xs md:text-sm font-semibold text-gray-900 mb-1 md:mb-2">
-                  Subcategory
-                </h3>
-                <div className="flex flex-wrap gap-1 md:gap-2">
-                  {currentSubcategories.map((subcategory) => (
-                    <button
-                      key={subcategory}
-                      onClick={() => setSelectedSubcategory(subcategory)}
-                      className={`px-2 py-1.5 md:px-3 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all ${
-                        selectedSubcategory === subcategory
-                          ? `bg-gradient-to-r ${currentColors.gradient} text-white shadow-md`
-                          : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                      }`}
-                    >
-                      {subcategory}
-                    </button>
-                  ))}
+              {/* Subcategory Selector - Only show in grid view */}
+              {viewMode === "grid" && (
+                <div className="md:flex-1">
+                  <h3 className="text-xs md:text-sm font-semibold text-gray-900 mb-1 md:mb-2">
+                    Subcategory
+                  </h3>
+                  <div className="flex flex-wrap gap-1 md:gap-2">
+                    {currentSubcategories.map((subcategory) => (
+                      <button
+                        key={subcategory}
+                        onClick={() => setSelectedSubcategory(subcategory)}
+                        className={`px-2 py-1.5 md:px-3 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all ${
+                          selectedSubcategory === subcategory
+                            ? `bg-gradient-to-r ${currentColors.gradient} text-white shadow-md`
+                            : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                        }`}
+                      >
+                        {subcategory}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-          {/* Available Meals - Sorted by popularity */}
+
+          {/* View Mode Toggle and Header */}
           <div className="bg-white rounded-lg md:rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Header with dynamic colors */}
             <div
               className={`border-b ${currentColors.border} px-3 md:px-6 py-3 md:py-4 ${currentColors.headerBg}`}
             >
@@ -571,16 +890,44 @@ export default function Analytics() {
                       className="h-4 w-4 md:h-5 md:w-5 mr-2"
                       style={{ color: currentColors.primary }}
                     />
-                    Available Meals
+                    {viewMode === "grid" ? "Available Meals" : "All Meals Overview"}
                   </h2>
                 </div>
 
-                <div
-                  className="flex items-center text-xs md:text-sm"
-                  style={{ color: currentColors.primary }}
-                >
-                  <TrendingUpIcon className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                  <span className="hidden sm:inline">Sorted by popularity</span>
+                <div className="flex items-center gap-4">
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={`p-2 rounded-md transition-all ${
+                        viewMode === "grid"
+                          ? "bg-white shadow-sm text-gray-900"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                      title="Grid View"
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={`p-2 rounded-md transition-all ${
+                        viewMode === "list"
+                          ? "bg-white shadow-sm text-gray-900"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                      title="List View"
+                    >
+                      <Table className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div
+                    className="flex items-center text-xs md:text-sm"
+                    style={{ color: currentColors.primary }}
+                  >
+                    <TrendingUpIcon className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                    <span className="hidden sm:inline">Sorted by popularity</span>
+                  </div>
                 </div>
               </div>
 
@@ -588,7 +935,7 @@ export default function Analytics() {
               <div className="flex items-center justify-between mt-2 md:hidden">
                 <span className="text-xs" style={{ color: currentColors.text }}>
                   {selectedMessType} • {selectedCategory} •{" "}
-                  {selectedSubcategory}
+                  {viewMode === "grid" ? selectedSubcategory : "All Subcategories"}
                 </span>
 
                 <button
@@ -605,7 +952,7 @@ export default function Analytics() {
               <div className="hidden md:flex items-center justify-between mt-2">
                 <span className="text-sm" style={{ color: currentColors.text }}>
                   {selectedMessType} • {selectedCategory} •{" "}
-                  {selectedSubcategory}
+                  {viewMode === "grid" ? selectedSubcategory : "All Subcategories"}
                 </span>
 
                 <button
@@ -618,129 +965,187 @@ export default function Analytics() {
                 </button>
               </div>
             </div>
-            {/* Meals Grid */}
-            <div className="p-3 md:p-6">
-              {filteredMeals.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-                  {filteredMeals.map((meal, index) => {
-                    const selectionCount = getSelectionCount(meal.id);
-                    const selectionPercentage = getSelectionPercentage(meal.id);
-                    const isTopMeal = index === 0 && selectionCount > 0;
 
-                    return (
-                      <div
-                        key={meal.id}
-                        className={`relative rounded-lg md:rounded-xl p-3 md:p-4 shadow-sm border transition-all hover:shadow-md ${currentColors.card} ${currentColors.border}`}
-                      >
-                        {/* Top meal badge */}
-                        {isTopMeal && (
-                          <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 z-10">
-                            <div
-                              className={`flex items-center px-1.5 py-0.5 md:px-2 md:py-1 rounded-full ${currentColors.bg} ${currentColors.text} border shadow-md text-[10px] md:text-xs`}
-                            >
-                              <Crown className="h-2 w-2 md:h-3 md:w-3 mr-0.5" />
-                              <span className="font-bold">Top</span>
+            {/* Content based on view mode */}
+            <div className="p-3 md:p-6">
+              {viewMode === "grid" ? (
+                // Grid View
+                filteredMeals.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+                    {filteredMeals.map((meal, index) => {
+                      const selectionCount = getSelectionCount(meal.id);
+                      const selectionPercentage = getSelectionPercentage(meal.id);
+                      const isTopMeal = index === 0 && selectionCount > 0;
+
+                      return (
+                        <div
+                          key={meal.id}
+                          className={`relative rounded-lg md:rounded-xl p-3 md:p-4 shadow-sm border transition-all hover:shadow-md ${currentColors.card} ${currentColors.border}`}
+                        >
+                          {/* Top meal badge */}
+                          {isTopMeal && (
+                            <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 z-10">
+                              <div
+                                className={`flex items-center px-1.5 py-0.5 md:px-2 md:py-1 rounded-full ${currentColors.bg} ${currentColors.text} border shadow-md text-[10px] md:text-xs`}
+                              >
+                                <Crown className="h-2 w-2 md:h-3 md:w-3 mr-0.5" />
+                                <span className="font-bold">Top</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Meal Image and Progress */}
+                          <div className="flex items-center justify-between mb-3 gap-2">
+                            <div className="h-12 w-12 md:h-16 md:w-16 bg-white rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm border">
+                              {meal.image ? (
+                                <img
+                                  src={meal.image}
+                                  alt={meal.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <ChefHat className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
+                              )}
+                            </div>
+
+                            <div className="flex-shrink-0">
+                              <CircularProgress
+                                percentage={selectionPercentage}
+                                colorClass={currentColors.progress}
+                                size={isMobile ? "sm" : "md"}
+                              />
                             </div>
                           </div>
-                        )}
 
-                        {/* Meal Image and Progress */}
-                        <div className="flex items-center justify-between mb-3 gap-2">
-                          <div className="h-12 w-12 md:h-16 md:w-16 bg-white rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm border">
-                            {meal.image ? (
-                              <img
-                                src={meal.image}
-                                alt={meal.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <ChefHat className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
+                          {/* Meal Name */}
+                          <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-1 line-clamp-1">
+                            {meal.name}
+                          </h3>
+
+                          {/* Description */}
+                          <p className="text-xs text-gray-600 mb-2 md:mb-3 hidden md:line-clamp-2">
+                            {meal.description}
+                          </p>
+
+                          {/* Selection Stats */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">
+                                Selected by
+                              </span>
+                              <span className="text-xs font-semibold text-gray-900">
+                                {selectionCount}
+                              </span>
+                            </div>
+
+                            {/* Ranking indicator */}
+                            {index < 3 && selectionCount > 0 && (
+                              <div className="flex items-center">
+                                <div
+                                  className={`w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold text-white ${currentColors.badge}`}
+                                >
+                                  {index + 1}
+                                </div>
+                                <span className="text-[10px] md:text-xs text-gray-600 ml-1">
+                                  {index === 0
+                                    ? "Most popular"
+                                    : index === 1
+                                    ? "2nd most"
+                                    : "3rd most"}
+                                </span>
+                              </div>
                             )}
                           </div>
 
-                          <div className="flex-shrink-0">
-                            <CircularProgress
-                              percentage={selectionPercentage}
-                              colorClass={currentColors.progress}
-                              size={window.innerWidth < 768 ? "sm" : "md"}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Meal Name */}
-                        <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-1 line-clamp-1">
-                          {meal.name}
-                        </h3>
-
-                        {/* Description */}
-                        <p className="text-xs text-gray-600 mb-2 md:mb-3 hidden md:line-clamp-2">
-                          {meal.description}
-                        </p>
-
-                        {/* Selection Stats */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-600">
-                              Selected by
-                            </span>
-                            <span className="text-xs font-semibold text-gray-900">
-                              {selectionCount}
-                            </span>
-                          </div>
-
-                          {/* Ranking indicator */}
-                          {index < 3 && selectionCount > 0 && (
-                            <div className="flex items-center">
-                              <div
-                                className={`w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold text-white ${currentColors.badge}`}
-                              >
-                                {index + 1}
-                              </div>
-                              <span className="text-[10px] md:text-xs text-gray-600 ml-1">
-                                {index === 0
-                                  ? "Most popular"
-                                  : index === 1
-                                  ? "2nd most"
-                                  : "3rd most"}
-                              </span>
+                          {/* Tags */}
+                          {meal.tags && meal.tags.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {meal.tags.slice(0, 1).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-800 border border-gray-300"
+                                >
+                                  {tag.length > 8
+                                    ? `${tag.substring(0, 8)}..`
+                                    : tag}
+                                </span>
+                              ))}
+                              {meal.tags.length > 1 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-800 border border-gray-300">
+                                  +{meal.tags.length - 1}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
-
-                        {/* Tags */}
-                        {meal.tags && meal.tags.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {meal.tags.slice(0, 1).map((tag) => (
-                              <span
-                                key={tag}
-                                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-800 border border-gray-300"
-                              >
-                                {tag.length > 8
-                                  ? `${tag.substring(0, 8)}..`
-                                  : tag}
-                              </span>
-                            ))}
-                            {meal.tags.length > 1 && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-800 border border-gray-300">
-                                +{meal.tags.length - 1}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Empty State for Grid View */
+                  <div className="text-center py-6 md:py-12 bg-gray-50 rounded-lg border border-gray-200">
+                    <ChefHat className="h-6 w-6 md:h-12 md:w-12 text-gray-400 mx-auto mb-2 md:mb-4" />
+                    <h3 className="text-sm md:text-lg font-medium text-gray-900 mb-1 md:mb-2">
+                      No meals available
+                    </h3>
+                    <p className="text-gray-600 text-xs md:text-base">
+                      Try selecting a different category or subcategory
+                    </p>
+                  </div>
+                )
               ) : (
-                /* Empty State */
-                <div className="text-center py-6 md:py-12 bg-gray-50 rounded-lg border border-gray-200">
-                  <ChefHat className="h-6 w-6 md:h-12 md:w-12 text-gray-400 mx-auto mb-2 md:mb-4" />
-                  <h3 className="text-sm md:text-lg font-medium text-gray-900 mb-1 md:mb-2">
-                    No meals available
-                  </h3>
-                  <p className="text-gray-600 text-xs md:text-base">
-                    Try selecting a different category or subcategory
-                  </p>
+                // List View
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meal Details</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcategory</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selections</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selection %</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {listViewMeals.map((meal, index) => {
+                        const selectionCount = getSelectionCount(meal.id);
+                        const selectionPercentage = getSelectionPercentage(meal.id);
+                        
+                        return (
+                          <tr key={meal.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{meal.name}</div>
+                                <div className="text-sm text-gray-500 truncate max-w-xs">
+                                  {meal.description || "No description"}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                              {meal.category}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                              {meal.subcategory}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{selectionCount}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span className="text-sm font-medium text-gray-700">{selectionPercentage}%</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  {listViewMeals.length === 0 && (
+                    <div className="text-center py-12">
+                      <ChefHat className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No meals found</h3>
+                      <p className="text-gray-600">Try adjusting your filters to see more results.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -12,6 +12,8 @@ import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import Profile from './pages/Profile';
 
+// Add this route
+
 // Route reset component to ensure dashboard loads on reload
 function RouteReset() {
   const location = useLocation();
