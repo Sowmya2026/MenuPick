@@ -237,7 +237,7 @@ const MealManagement = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <motion.div
-            className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
+            className="flex justify-between items-center w-full sm:w-auto gap-3"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -250,9 +250,21 @@ const MealManagement = () => {
                 Organize and track daily meals
               </p>
             </div>
+
+            {/* Mobile Add Button */}
+            <motion.button
+              onClick={() => setIsFormOpen(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="sm:hidden bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-3 py-2 rounded-lg font-medium flex items-center transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="sr-only">Add Meal</span>
+            </motion.button>
           </motion.div>
 
-          <div className="flex justify-center sm:justify-start items-center gap-3">
+          {/* Desktop Add Button */}
+          <div className="hidden sm:flex justify-center sm:justify-start items-center gap-3">
             <motion.button
               onClick={() => setIsFormOpen(true)}
               whileHover={{ scale: 1.05 }}
@@ -260,8 +272,7 @@ const MealManagement = () => {
               className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-colors"
             >
               <Plus className="h-5 w-5 mr-2" />
-              <span className="hidden sm:inline">Add Meal</span>
-              <span className="sm:hidden">Add</span>
+              <span>Add Meal</span>
             </motion.button>
           </div>
         </div>
