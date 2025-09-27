@@ -21,7 +21,6 @@ const navigation = [
   { name: "Meal Management", href: "/meals", icon: Utensils },
   { name: "Analytics", href: "/analytics", icon: BarChart },
   { name: "Feedback", href: "/feedback", icon: MessageSquare },
-  { name: "Profile", href: "/profile", icon: User },
 ];
 
 const Sidebar = ({
