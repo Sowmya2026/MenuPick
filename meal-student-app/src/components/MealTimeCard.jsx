@@ -1,4 +1,5 @@
 import { Clock, ChevronDown, ChevronUp, Utensils, Coffee, Sun, Moon, ChefHat } from 'lucide-react';
+import { useState } from 'react';
 
 const MealTimeCard = ({ 
   mealTime, 
@@ -8,6 +9,8 @@ const MealTimeCard = ({
   isExpanded = false,
   onToggleExpand
 }) => {
+  const [isTapping, setIsTapping] = useState(false);
+
   // Get color classes based on mess type
   const getMessColorClasses = () => {
     switch (messType) {
@@ -18,7 +21,9 @@ const MealTimeCard = ({
           accentColor: 'text-green-600',
           dotColor: 'bg-green-400',
           shadow: 'shadow-green-100',
-          hoverBg: 'hover:bg-green-50'
+          hoverBg: 'hover:bg-green-50',
+          tapColor: 'bg-green-100',
+          activeShadow: 'shadow-green-200'
         };
       case 'non-veg':
         return {
@@ -27,7 +32,9 @@ const MealTimeCard = ({
           accentColor: 'text-red-600',
           dotColor: 'bg-red-400',
           shadow: 'shadow-red-100',
-          hoverBg: 'hover:bg-red-50'
+          hoverBg: 'hover:bg-red-50',
+          tapColor: 'bg-red-100',
+          activeShadow: 'shadow-red-200'
         };
       case 'special':
         return {
@@ -36,7 +43,9 @@ const MealTimeCard = ({
           accentColor: 'text-purple-600',
           dotColor: 'bg-purple-400',
           shadow: 'shadow-purple-100',
-          hoverBg: 'hover:bg-purple-50'
+          hoverBg: 'hover:bg-purple-50',
+          tapColor: 'bg-purple-100',
+          activeShadow: 'shadow-purple-200'
         };
       default:
         return {
@@ -45,7 +54,9 @@ const MealTimeCard = ({
           accentColor: 'text-green-600',
           dotColor: 'bg-green-400',
           shadow: 'shadow-green-100',
-          hoverBg: 'hover:bg-green-50'
+          hoverBg: 'hover:bg-green-50',
+          tapColor: 'bg-green-100',
+          activeShadow: 'shadow-green-200'
         };
     }
   };
@@ -68,6 +79,19 @@ const MealTimeCard = ({
 
   const mealIcon = getMealIcon();
 
+  // Touch event handlers for mobile
+  const handleTouchStart = () => {
+    setIsTapping(true);
+  };
+
+  const handleTouchEnd = () => {
+    setIsTapping(false);
+  };
+
+  const handleTouchMove = () => {
+    setIsTapping(false);
+  };
+
   // Handle card click - expand/collapse on desktop, only button click on mobile
   const handleCardClick = (e) => {
     // Prevent triggering on button click (let button handle its own click)
@@ -81,6 +105,19 @@ const MealTimeCard = ({
     }
   };
 
+  // Handle mobile card tap
+  const handleMobileTap = (e) => {
+    // Prevent triggering on button click
+    if (e.target.closest('button')) {
+      return;
+    }
+    
+    // On mobile, allow tapping anywhere on card to toggle
+    if (window.innerWidth < 768) {
+      onToggleExpand();
+    }
+  };
+
   // Handle button click specifically
   const handleButtonClick = (e) => {
     e.stopPropagation(); // Prevent card click from firing
@@ -89,10 +126,28 @@ const MealTimeCard = ({
 
   return (
     <div 
-      className={`rounded-xl p-6 md:p-4 transition-all duration-300 border-2 ${messColors.borderColor} bg-white hover:shadow-md ${messColors.shadow} mx-5 mt-1 md:mx-0 cursor-pointer md:cursor-default`}
+      className={`rounded-xl p-6 md:p-4 transition-all duration-300 border-2 ${messColors.borderColor} bg-white hover:shadow-md ${messColors.shadow} mx-5 mt-1 md:mx-0 cursor-pointer md:cursor-default relative overflow-hidden ${
+        isTapping ? `${messColors.tapColor} ${messColors.activeShadow} scale-[0.98]` : ''
+      }`}
       onClick={handleCardClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={(e) => {
+        handleTouchEnd();
+        handleMobileTap(e);
+      }}
+      onTouchMove={handleTouchMove}
+      onMouseDown={() => window.innerWidth < 768 && setIsTapping(true)}
+      onMouseUp={() => window.innerWidth < 768 && setIsTapping(false)}
+      onMouseLeave={() => setIsTapping(false)}
     >
-      <div className="flex items-center justify-between mb-3">
+      {/* Ripple effect for mobile */}
+      {isTapping && (
+        <div 
+          className={`absolute inset-0 ${messColors.tapColor} transition-opacity duration-200 opacity-50`}
+        />
+      )}
+      
+      <div className="flex items-center justify-between mb-3 relative z-10">
         <div className="flex items-center">
           <div className={`p-2 rounded-lg mr-3 ${messColors.bgColor} md:p-3 md:rounded-xl md:mr-4`}>
             {mealIcon}
@@ -110,7 +165,11 @@ const MealTimeCard = ({
         
         <button 
           onClick={handleButtonClick}
-          className={`p-1.5 rounded-full transition-colors ${messColors.accentColor} ${messColors.hoverBg} md:p-2`}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className={`p-1.5 rounded-full transition-colors ${messColors.accentColor} ${messColors.hoverBg} md:p-2 relative z-20 ${
+            isTapping ? 'scale-95' : ''
+          }`}
           aria-label={isExpanded ? "Collapse meals" : "Expand meals"}
         >
           {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -118,7 +177,7 @@ const MealTimeCard = ({
       </div>
       
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-gray-100 animate-fadeIn md:mt-4 md:pt-4">
+        <div className="mt-3 pt-3 border-t border-gray-100 animate-fadeIn md:mt-4 md:pt-4 relative z-10">
           <div className="flex items-center mb-2 md:mb-3">
             <ChefHat size={14} className={`${messColors.accentColor} mr-2 md:size-4`} />
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide md:text-sm">

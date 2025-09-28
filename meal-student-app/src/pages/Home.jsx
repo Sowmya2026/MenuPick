@@ -63,9 +63,9 @@ const Home = () => {
 
   // Toggle individual card expand state
   const toggleCardExpand = (mealTime) => {
-    setExpandedCards(prev => ({
+    setExpandedCards((prev) => ({
       ...prev,
-      [mealTime]: !prev[mealTime]
+      [mealTime]: !prev[mealTime],
     }));
   };
 
@@ -190,7 +190,11 @@ const Home = () => {
         {/* Header Section */}
         <div className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-12">
           <div className="text-center">
-            <h1 className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(selectedMess)} mb-3 sm:mb-4 md:mb-5`}>
+            <h1
+              className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(
+                selectedMess
+              )} mb-3 sm:mb-4 md:mb-5`}
+            >
               Campus Dining
             </h1>
 
@@ -228,11 +232,13 @@ const Home = () => {
               </div>
 
               {/* Dropdown */}
+              {/* In the Home component, update the dropdown container */}
               {isOpen && (
                 <div
-                  className={`absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[160px] sm:min-w-[180px] ${
+                  className={`absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px] sm:min-w-[180px] ${
                     isMobile ? "w-full" : ""
                   }`}
+                  style={{ zIndex: 9999 }} // Ensure dropdown appears above everything
                 >
                   {messTypes.map((mess) => (
                     <div
@@ -254,7 +260,9 @@ const Home = () => {
 
             {/* Menu title with colored text */}
             <h2
-              className={`text-lg font-semibold font-serif sm:text-xl md:text-2xl ${getColorClass(selectedMess)}`}
+              className={`text-lg font-semibold font-serif sm:text-xl md:text-2xl ${getColorClass(
+                selectedMess
+              )}`}
             >
               {selectedMessDetails.name} Menu
             </h2>
