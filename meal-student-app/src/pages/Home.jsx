@@ -186,9 +186,9 @@ const Home = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white ">
         {/* Header Section */}
-        <div className="px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-8">
+        <div className=" px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-8">
           <div className="text-center">
             <h1 className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(selectedMess)} mb-2 sm:mb-3 md:mb-4`}>
               Campus Dining

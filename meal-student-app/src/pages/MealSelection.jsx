@@ -30,6 +30,7 @@ const MealSelection = () => {
     saveStudentSelections,
     MAX_ITEMS,
     fetchStudentSelections,
+    clearStudentSelections, // Add this function to your context
   } = useMeal();
   const { currentUser } = useAuth();
   const [selectedMeals, setSelectedMeals] = useState({});
@@ -75,30 +76,58 @@ const MealSelection = () => {
     handleViewModeChange(newMode);
   };
 
-  // Effect to handle mess type changes
+  // Effect to handle mess type changes - CORRECTED LOGIC
   useEffect(() => {
     // Check if mess type has changed
     if (previousMessType !== userMessType) {
-      // Clear selections when mess type changes
-      if (Object.keys(selectedMeals).length > 0) {
-        setSelectedMeals({});
-        updateSelectionLimits({});
-        setHasSavedSelections(false);
-        setIsEditing(false);
-
-        // Show notification to user
-        toast.success(
-          `Mess type changed from ${previousMessType} to ${userMessType}. Selections have been cleared.`,
-          {
-            duration: 4000,
+      console.log(`Mess type changed from ${previousMessType} to ${userMessType}`);
+      
+      const handleMessTypeChange = async () => {
+        try {
+          // Clear selections from Firestore for the previous mess type
+          if (currentUser?.uid) {
+            await clearStudentSelections(currentUser.uid, previousMessType);
+            console.log(`Cleared selections for ${previousMessType} mess`);
           }
-        );
-      }
+          
+          // Clear local state
+          setSelectedMeals({});
+          updateSelectionLimits({});
+          setHasSavedSelections(false);
+          setIsEditing(false);
+          
+          // Load fresh selections for new mess type (should be empty)
+          const savedSelections = await fetchStudentSelections(currentUser.uid);
+          if (savedSelections && savedSelections.selections && savedSelections.messType === userMessType) {
+            setSelectedMeals(savedSelections.selections);
+            updateSelectionLimits(savedSelections.selections);
+            setHasSavedSelections(true);
+          } else {
+            // Ensure selections are empty for new mess type
+            setSelectedMeals({});
+            updateSelectionLimits({});
+            setHasSavedSelections(false);
+          }
 
+          // Show notification to user
+          toast.success(
+            `Mess type changed from ${previousMessType} to ${userMessType}. Previous selections have been cleared.`,
+            {
+              duration: 4000,
+            }
+          );
+        } catch (error) {
+          console.error("Error handling mess type change:", error);
+          toast.error("Error clearing previous selections");
+        }
+      };
+
+      handleMessTypeChange();
+      
       // Update previous mess type
       setPreviousMessType(userMessType);
     }
-  }, [userMessType, previousMessType, selectedMeals]);
+  }, [userMessType, previousMessType, currentUser, clearStudentSelections, fetchStudentSelections]);
 
   // Create a map of meal data for easy access
   useEffect(() => {
@@ -331,7 +360,7 @@ const MealSelection = () => {
     try {
       // Reload selections from Firestore
       const savedSelections = await fetchStudentSelections(currentUser.uid);
-      if (savedSelections && savedSelections.selections) {
+      if (savedSelections && savedSelections.selections && savedSelections.messType === userMessType) {
         setSelectedMeals(savedSelections.selections);
         updateSelectionLimits(savedSelections.selections);
       } else {
@@ -346,27 +375,32 @@ const MealSelection = () => {
     }
   };
 
-  // Load saved selections from Firestore on component mount
+  // Load saved selections from Firestore on component mount - CORRECTED LOGIC
   useEffect(() => {
     const loadSavedSelections = async () => {
       if (currentUser?.uid) {
         try {
           const savedSelections = await fetchStudentSelections(currentUser.uid);
-          if (savedSelections && savedSelections.selections) {
-            // Only load selections if they match the current mess type
-            if (savedSelections.messType === userMessType) {
-              setSelectedMeals(savedSelections.selections);
-              updateSelectionLimits(savedSelections.selections);
-              setHasSavedSelections(true);
-            } else {
-              // If mess type doesn't match, clear any loaded selections
-              setSelectedMeals({});
-              updateSelectionLimits({});
-              setHasSavedSelections(false);
-            }
+          
+          // Only load selections if they match the current mess type
+          if (savedSelections && savedSelections.selections && savedSelections.messType === userMessType) {
+            setSelectedMeals(savedSelections.selections);
+            updateSelectionLimits(savedSelections.selections);
+            setHasSavedSelections(true);
+            console.log(`Loaded ${Object.keys(savedSelections.selections).length} selections for ${userMessType} mess`);
+          } else {
+            // If mess type doesn't match, ensure selections are empty
+            setSelectedMeals({});
+            updateSelectionLimits({});
+            setHasSavedSelections(false);
+            console.log(`No selections found or mess type mismatch for ${userMessType}`);
           }
         } catch (error) {
           console.error("Error loading saved selections:", error);
+          // On error, ensure selections are empty
+          setSelectedMeals({});
+          updateSelectionLimits({});
+          setHasSavedSelections(false);
         }
       }
     };
@@ -456,7 +490,8 @@ const MealSelection = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-2 sm:px-4 font-sans">
+    <div className="min-h-screen bg-white ">
+    <div className="px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-8 font-sans">
       <div className="mb-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
           Monthly Meal Selection
@@ -752,6 +787,7 @@ const MealSelection = () => {
 
       {/* Compact Selection Summary */}
       <SelectionSummary />
+    </div>
     </div>
   );
 };
