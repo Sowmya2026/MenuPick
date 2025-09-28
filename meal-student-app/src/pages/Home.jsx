@@ -186,15 +186,15 @@ const Home = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-white ">
+      <div className="min-h-screen bg-white">
         {/* Header Section */}
-        <div className=" px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-8">
+        <div className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-12">
           <div className="text-center">
-            <h1 className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(selectedMess)} mb-2 sm:mb-3 md:mb-4`}>
+            <h1 className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(selectedMess)} mb-3 sm:mb-4 md:mb-5`}>
               Campus Dining
             </h1>
 
-            <p className="text-xs text-gray-700 italic font-light sm:text-sm md:text-base mb-2 sm:mb-3 md:mb-4">
+            <p className="text-xs text-gray-700 italic font-light sm:text-sm md:text-base mb-3 sm:mb-4 md:mb-5">
               "{randomQuote}"
             </p>
 
@@ -206,13 +206,13 @@ const Home = () => {
         </div>
 
         {/* Main Content */}
-        <div className="px-3 pb-4 sm:px-4 sm:pb-6 md:px-6 md:pb-8">
+        <div className="px-4 pb-6 sm:px-6 sm:pb-8 md:px-8 md:pb-12">
           {/* Mess Type Selector */}
-          <div className="flex items-center justify-center mb-4 sm:mb-5 md:mb-6 mess-selector-container">
-            <div className="relative mr-2 sm:mr-3">
+          <div className="flex items-center justify-center mb-5 sm:mb-6 md:mb-8 mess-selector-container">
+            <div className="relative mr-3 sm:mr-4">
               {/* Clickable area for dropdown */}
               <div
-                className="flex items-center p-2 bg-white border border-gray-300 rounded-lg cursor-pointer shadow-sm sm:p-2.5 md:p-3"
+                className="flex items-center p-3 bg-white border border-gray-300 rounded-lg cursor-pointer shadow-sm sm:p-3.5 md:p-4"
                 onClick={toggleDropdown}
                 onMouseEnter={() => !isMobile && setIsOpen(true)}
               >
@@ -220,7 +220,7 @@ const Home = () => {
                   {selectedMessDetails.icon}
                   <ChevronDown
                     size={16}
-                    className={`ml-1.5 text-gray-600 transition-transform sm:size-4 sm:ml-2 ${
+                    className={`ml-2 text-gray-600 transition-transform sm:size-4 sm:ml-2.5 ${
                       isOpen ? "rotate-180" : "rotate-0"
                     }`}
                   />
@@ -230,19 +230,19 @@ const Home = () => {
               {/* Dropdown */}
               {isOpen && (
                 <div
-                  className={`absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px] sm:min-w-[160px] ${
+                  className={`absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[160px] sm:min-w-[180px] ${
                     isMobile ? "w-full" : ""
                   }`}
                 >
                   {messTypes.map((mess) => (
                     <div
                       key={mess.id}
-                      className={`flex items-center p-2 hover:bg-gray-50 cursor-pointer transition-colors sm:p-2.5 md:p-3 ${
+                      className={`flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors sm:p-3.5 md:p-4 ${
                         selectedMess === mess.id ? "bg-gray-100" : ""
                       }`}
                       onClick={() => handleMessSelect(mess.id)}
                     >
-                      <div className="mr-2 sm:mr-3">{mess.icon}</div>
+                      <div className="mr-3 sm:mr-4">{mess.icon}</div>
                       <span className="text-sm text-gray-800 sm:text-base">
                         {mess.name}
                       </span>
@@ -263,7 +263,7 @@ const Home = () => {
           {selectedMess && (
             <div className="max-w-6xl mx-auto">
               {/* Day Selector */}
-              <div className="mb-3 sm:mb-4 md:mb-5">
+              <div className="mb-4 sm:mb-5 md:mb-6">
                 <DaySelector
                   days={days}
                   selectedDay={selectedDay}
@@ -274,7 +274,7 @@ const Home = () => {
               </div>
 
               {/* Meal Time Cards Grid */}
-              <div className="grid gap-3 grid-cols-1 xs:grid-cols-2 sm:gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-5">
+              <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 sm:gap-5 md:grid-cols-2 lg:grid-cols-4 md:gap-6">
                 {Object.entries(currentTimings).map(([mealTime, timing]) => (
                   <MealTimeCard
                     key={mealTime}
