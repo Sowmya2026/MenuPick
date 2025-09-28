@@ -89,7 +89,7 @@ const MealTimeCard = ({
 
   return (
     <div 
-      className={`rounded-xl p-4 transition-all duration-300 border-2 ${messColors.borderColor} bg-white hover:shadow-md ${messColors.shadow} mx-4 md:mx-0 cursor-pointer md:cursor-default`}
+      className={`rounded-xl p-6 md:p-4 transition-all duration-300 border-2 ${messColors.borderColor} bg-white hover:shadow-md ${messColors.shadow} mx-5 mb-1 mt-1 md:mx-0 cursor-pointer md:cursor-default`}
       onClick={handleCardClick}
     >
       <div className="flex items-center justify-between mb-3">
