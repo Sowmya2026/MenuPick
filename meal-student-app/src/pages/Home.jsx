@@ -202,7 +202,7 @@ const Home = () => {
               "{randomQuote}"
             </p>
 
-            <div className="flex items-center justify-center text-gray-600">
+            <div className="flex items-center justify-center text-gray-600 mb-4">
               <Calendar size={14} className="mr-1 sm:mr-2 sm:size-4" />
               <p className="text-xs sm:text-sm md:text-base">{currentDate}</p>
             </div>
