@@ -20,22 +20,22 @@ import {
   Utensils,
   AlertCircle,
   Settings,
-  ChefHat
+  ChefHat,
 } from "lucide-react";
 
 export default function Profile() {
   const { currentUser, logout, updateUserProfile } = useAuth();
   const { preferences } = useMeal();
-  const { 
-    notifications, 
+  const {
+    notifications,
     updateNotificationPreference,
     hasPermission,
     permissionStatus,
     requestNotificationPermission,
     togglePushNotifications,
-    checkPermissionStatus
+    checkPermissionStatus,
   } = useNotification();
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     displayName: "",
@@ -73,11 +73,11 @@ export default function Profile() {
   // Get gradient class for header based on mess type (same as home page)
   const getHeaderGradient = (messType = formData.messPreference) => {
     switch (messType) {
-      case 'veg':
+      case "veg":
         return "bg-gradient-to-r from-green-600 to-green-800";
-      case 'non-veg':
+      case "non-veg":
         return "bg-gradient-to-r from-red-600 to-red-800";
-      case 'special':
+      case "special":
         return "bg-gradient-to-r from-purple-600 to-purple-800";
       default:
         return "bg-gradient-to-r from-green-600 to-purple-600";
@@ -87,11 +87,11 @@ export default function Profile() {
   // Get color class based on mess type (same as home page)
   const getColorClass = (messType = formData.messPreference) => {
     switch (messType) {
-      case 'veg':
+      case "veg":
         return "text-green-600";
-      case 'non-veg':
+      case "non-veg":
         return "text-red-600";
-      case 'special':
+      case "special":
         return "text-purple-600";
       default:
         return "text-gray-800";
@@ -101,11 +101,11 @@ export default function Profile() {
   // Get mess icon (same as home page)
   const getMessIcon = () => {
     switch (formData.messPreference) {
-      case 'veg':
+      case "veg":
         return <Leaf size={20} className="text-green-600" />;
-      case 'non-veg':
+      case "non-veg":
         return <Beef size={20} className="text-red-600" />;
-      case 'special':
+      case "special":
         return <Star size={20} className="text-purple-600" />;
       default:
         return <Leaf size={20} className="text-green-600" />;
@@ -149,27 +149,30 @@ export default function Profile() {
   // Handle meal reminder toggle with proper error handling
   const handleMealReminderToggle = async (enabled) => {
     if (isProcessing) return;
-    
+
     setIsProcessing(true);
-    
+
     try {
       // If enabling and push notifications are disabled, suggest enabling them
-      if (enabled && !notifications.pushNotifications && permissionStatus !== 'denied') {
+      if (
+        enabled &&
+        !notifications.pushNotifications &&
+        permissionStatus !== "denied"
+      ) {
         // Allow meal reminders to be enabled without push notifications
         // User will get in-app notifications only
-        updateNotificationPreference('mealReminders', enabled);
-      } 
-      // If enabling but push notifications are blocked
-      else if (enabled && permissionStatus === 'denied') {
-        // Still enable meal reminders for in-app notifications
-        updateNotificationPreference('mealReminders', enabled);
+        updateNotificationPreference("mealReminders", enabled);
       }
-      else {
+      // If enabling but push notifications are blocked
+      else if (enabled && permissionStatus === "denied") {
+        // Still enable meal reminders for in-app notifications
+        updateNotificationPreference("mealReminders", enabled);
+      } else {
         // Simple toggle for meal reminders
-        updateNotificationPreference('mealReminders', enabled);
+        updateNotificationPreference("mealReminders", enabled);
       }
     } catch (error) {
-      console.log('Error toggling meal reminders:', error);
+      console.log("Error toggling meal reminders:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -178,19 +181,21 @@ export default function Profile() {
   // Handle push notification toggle with better error handling
   const handlePushNotificationToggle = async (enabled) => {
     if (isProcessing) return;
-    
+
     setIsProcessing(true);
-    
+
     try {
       const success = await togglePushNotifications(enabled);
-      
+
       // If toggling failed, revert the UI toggle
       if (!success && enabled) {
         // The toggle will remain off due to the async nature
-        console.log('Push notification toggle was reverted due to permission issues');
+        console.log(
+          "Push notification toggle was reverted due to permission issues"
+        );
       }
     } catch (error) {
-      console.log('Error toggling push notifications:', error);
+      console.log("Error toggling push notifications:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -199,19 +204,22 @@ export default function Profile() {
   // Open browser settings guide
   const openBrowserSettingsGuide = () => {
     const userAgent = navigator.userAgent.toLowerCase();
-    let guideUrl = '';
-    
-    if (userAgent.includes('chrome')) {
-      guideUrl = 'https://support.google.com/chrome/answer/3220216';
-    } else if (userAgent.includes('firefox')) {
-      guideUrl = 'https://support.mozilla.org/en-US/kb/push-notifications-firefox';
-    } else if (userAgent.includes('safari')) {
-      guideUrl = 'https://support.apple.com/guide/safari/manage-website-notifications-sfri40734/mac';
+    let guideUrl = "";
+
+    if (userAgent.includes("chrome")) {
+      guideUrl = "https://support.google.com/chrome/answer/3220216";
+    } else if (userAgent.includes("firefox")) {
+      guideUrl =
+        "https://support.mozilla.org/en-US/kb/push-notifications-firefox";
+    } else if (userAgent.includes("safari")) {
+      guideUrl =
+        "https://support.apple.com/guide/safari/manage-website-notifications-sfri40734/mac";
     } else {
-      guideUrl = 'https://www.howtogeek.com/355088/how-to-enable-and-disable-web-notifications-in-chrome/';
+      guideUrl =
+        "https://www.howtogeek.com/355088/how-to-enable-and-disable-web-notifications-in-chrome/";
     }
-    
-    window.open(guideUrl, '_blank');
+
+    window.open(guideUrl, "_blank");
   };
 
   const handleSave = async () => {
@@ -287,9 +295,13 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header Section - Same as home page */}
-      <div className="px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-8">
+      <div className="px-2 py-2 sm:px-4 sm:py-5 md:px-4 md:py-6">
         <div className="text-center">
-          <h1 className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(formData.messPreference)} mb-2 sm:mb-3 md:mb-4`}>
+          <h1
+            className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(
+              formData.messPreference
+            )} mb-[0px] sm:mb-3 md:mb-[0px]`}
+          >
             Profile Settings
           </h1>
         </div>
@@ -299,10 +311,12 @@ export default function Profile() {
       <div className="px-3 pb-4 sm:px-4 sm:pb-6 md:px-6 md:pb-8">
         {/* Mess Type Header - Same as home page */}
         <div className="flex items-center justify-center mb-4 sm:mb-5 md:mb-6">
-          <div className="flex items-center mr-2 sm:mr-3">
-            {getMessIcon()}
-          </div>
-          <h2 className={`text-lg font-semibold font-serif sm:text-xl md:text-2xl ${getColorClass(formData.messPreference)}`}>
+          <div className="flex items-center mr-2 sm:mr-3">{getMessIcon()}</div>
+          <h2
+            className={`text-lg font-semibold font-serif sm:text-xl md:text-2xl ${getColorClass(
+              formData.messPreference
+            )}`}
+          >
             Manage Your Account
           </h2>
         </div>
@@ -346,115 +360,127 @@ export default function Profile() {
                   )}
                 </div>
 
-               <div className="space-y-3 sm:space-y-4">
-  {/* First Row: Display Name and Student ID */}
-  <div className="grid grid-cols-2 gap-2 sm:gap-3">
-    {/* Display Name */}
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-gray-700">
-        Display Name
-      </label>
-      <input
-        type="text"
-        value={formData.displayName}
-        onChange={(e) =>
-          setFormData((prev) => ({
-            ...prev,
-            displayName: e.target.value,
-          }))
-        }
-        disabled={!isEditing}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-      />
-    </div>
+                <div className="space-y-3 sm:space-y-4">
+                  {/* First Row: Display Name and Student ID */}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    {/* Display Name */}
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-700">
+                        Display Name
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.displayName}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            displayName: e.target.value,
+                          }))
+                        }
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      />
+                    </div>
 
-    {/* Student ID */}
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-gray-700">
-        Student ID
-      </label>
-      <div className="relative">
-        <BookOpen size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          value={formData.studentId}
-          onChange={(e) =>
-            setFormData((prev) => ({
-              ...prev,
-              studentId: e.target.value,
-            }))
-          }
-          disabled={!isEditing}
-          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-        />
-      </div>
-    </div>
-  </div>
+                    {/* Student ID */}
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-700">
+                        Student ID
+                      </label>
+                      <div className="relative">
+                        <BookOpen
+                          size={14}
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        />
+                        <input
+                          type="text"
+                          value={formData.studentId}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              studentId: e.target.value,
+                            }))
+                          }
+                          disabled={!isEditing}
+                          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-  {/* Second Row: Email */}
-  <div className="space-y-1">
-    <label className="block text-xs font-medium text-gray-700">
-      Email
-    </label>
-    <div className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
-      <Mail size={14} className="text-gray-400 mr-2 flex-shrink-0" />
-      <span className="text-gray-600 text-sm truncate">
-        {currentUser.email}
-      </span>
-    </div>
-  </div>
+                  {/* Second Row: Email */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Email
+                    </label>
+                    <div className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
+                      <Mail
+                        size={14}
+                        className="text-gray-400 mr-2 flex-shrink-0"
+                      />
+                      <span className="text-gray-600 text-sm truncate">
+                        {currentUser.email}
+                      </span>
+                    </div>
+                  </div>
 
-  {/* Third Row: Phone Number, Member Since, Account Type */}
-  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-    {/* Phone Number */}
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-gray-700">
-        Phone Number
-      </label>
-      <input
-        type="tel"
-        value={formData.phone}
-        onChange={(e) =>
-          setFormData((prev) => ({ ...prev, phone: e.target.value }))
-        }
-        disabled={!isEditing}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md text-[13px] disabled:bg-gray-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-        placeholder="+1 (555) 000-0000"
-      />
-    </div>
+                  {/* Third Row: Phone Number, Member Since, Account Type */}
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    {/* Phone Number */}
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-700">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-[13px] disabled:bg-gray-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="+1 (555) 000-0000"
+                      />
+                    </div>
 
-    {/* Member Since */}
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-gray-700">
-        Member Since
-      </label>
-      <div className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
-        <span className="text-gray-600 text-[12px]">
-          {new Date(
-            currentUser.metadata?.creationTime || new Date()
-          ).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          })}
-        </span>
-      </div>
-    </div>
+                    {/* Member Since */}
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-700">
+                        Member Since
+                      </label>
+                      <div className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
+                        <span className="text-gray-600 text-[12px]">
+                          {new Date(
+                            currentUser.metadata?.creationTime || new Date()
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    </div>
 
-    {/* Account Type */}
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-gray-700">
-        Account Type
-      </label>
-      <div className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
-        <Shield size={14} className="text-gray-400 mr-2 flex-shrink-0" />
-        <span className="text-gray-600 text-sm capitalize">
-          {currentUser.accountType || 'email'}
-        </span>
-      </div>
-    </div>
-  </div>
-</div>
+                    {/* Account Type */}
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-700">
+                        Account Type
+                      </label>
+                      <div className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
+                        <Shield
+                          size={14}
+                          className="text-gray-400 mr-2 flex-shrink-0"
+                        />
+                        <span className="text-gray-600 text-sm capitalize">
+                          {currentUser.accountType || "email"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Mess Preference Card */}
@@ -484,7 +510,9 @@ export default function Profile() {
                       <span className={`text-${option.color}-600 mb-1`}>
                         {option.icon}
                       </span>
-                      <span className="text-xs text-center md:text-sm">{option.name}</span>
+                      <span className="text-xs text-center md:text-sm">
+                        {option.name}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -501,7 +529,9 @@ export default function Profile() {
                       key={option}
                       className={`flex items-center p-2 rounded-lg border cursor-pointer transition-colors text-xs md:text-sm md:p-3 ${
                         formData.dietaryPreferences.includes(option)
-                          ? `border-${getColorClass().split('-')[1]}-300 bg-${getColorClass().split('-')[1]}-50`
+                          ? `border-${getColorClass().split("-")[1]}-300 bg-${
+                              getColorClass().split("-")[1]
+                            }-50`
                           : "border-gray-200 hover:border-gray-300"
                       } ${!isEditing ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
@@ -510,7 +540,9 @@ export default function Profile() {
                         checked={formData.dietaryPreferences.includes(option)}
                         onChange={() => toggleDietaryPreference(option)}
                         disabled={!isEditing}
-                        className={`rounded ${getColorClass()} focus:ring-${getColorClass().split('-')[1]}-500 mr-2`}
+                        className={`rounded ${getColorClass()} focus:ring-${
+                          getColorClass().split("-")[1]
+                        }-500 mr-2`}
                       />
                       <span>{option}</span>
                     </label>
@@ -569,11 +601,17 @@ export default function Profile() {
                         <input
                           type="checkbox"
                           checked={notifications.mealReminders}
-                          onChange={(e) => handleMealReminderToggle(e.target.checked)}
+                          onChange={(e) =>
+                            handleMealReminderToggle(e.target.checked)
+                          }
                           disabled={isProcessing}
                           className="sr-only peer"
                         />
-                        <div className={`w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600 md:w-11 md:h-6 ${isProcessing ? 'opacity-50' : ''}`}></div>
+                        <div
+                          className={`w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600 md:w-11 md:h-6 ${
+                            isProcessing ? "opacity-50" : ""
+                          }`}
+                        ></div>
                       </div>
                     </label>
                     <p className="text-xs text-gray-500 mt-1">
@@ -599,21 +637,33 @@ export default function Profile() {
                       <div className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={notifications.pushNotifications && hasPermission}
-                          onChange={(e) => handlePushNotificationToggle(e.target.checked)}
-                          disabled={isProcessing || permissionStatus === 'denied'}
+                          checked={
+                            notifications.pushNotifications && hasPermission
+                          }
+                          onChange={(e) =>
+                            handlePushNotificationToggle(e.target.checked)
+                          }
+                          disabled={
+                            isProcessing || permissionStatus === "denied"
+                          }
                           className="sr-only peer"
                         />
-                        <div className={`w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 md:w-11 md:h-6 ${isProcessing || permissionStatus === 'denied' ? 'opacity-50' : ''}`}></div>
+                        <div
+                          className={`w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 md:w-11 md:h-6 ${
+                            isProcessing || permissionStatus === "denied"
+                              ? "opacity-50"
+                              : ""
+                          }`}
+                        ></div>
                       </div>
                     </label>
                     <p className="text-xs text-gray-500 mt-1">
                       Receive notifications when app is closed
                     </p>
-                    {permissionStatus === 'denied' && (
+                    {permissionStatus === "denied" && (
                       <div className="flex items-center mt-1 text-xs text-red-600">
                         <AlertCircle size={12} className="mr-1" />
-                        <button 
+                        <button
                           onClick={openBrowserSettingsGuide}
                           className="underline hover:no-underline"
                         >
@@ -625,9 +675,15 @@ export default function Profile() {
 
                   {/* Other Notification Toggles */}
                   {Object.entries(notifications)
-                    .filter(([key]) => key !== 'mealReminders' && key !== 'pushNotifications')
+                    .filter(
+                      ([key]) =>
+                        key !== "mealReminders" && key !== "pushNotifications"
+                    )
                     .map(([key, value]) => (
-                      <label key={key} className="flex items-center justify-between">
+                      <label
+                        key={key}
+                        className="flex items-center justify-between"
+                      >
                         <span className="text-xs text-gray-700 capitalize md:text-sm">
                           {key.replace(/([A-Z])/g, " $1").toLowerCase()}
                         </span>
@@ -635,7 +691,12 @@ export default function Profile() {
                           <input
                             type="checkbox"
                             checked={value}
-                            onChange={(e) => updateNotificationPreference(key, e.target.checked)}
+                            onChange={(e) =>
+                              updateNotificationPreference(
+                                key,
+                                e.target.checked
+                              )
+                            }
                             className="sr-only peer"
                           />
                           <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 md:w-11 md:h-6"></div>
@@ -654,40 +715,62 @@ export default function Profile() {
                 <div className="space-y-2 text-xs md:text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Meal Reminders</span>
-                    <span className={`font-medium ${notifications.mealReminders ? 'text-green-600' : 'text-red-600'}`}>
-                      {notifications.mealReminders ? 'Enabled' : 'Disabled'}
+                    <span
+                      className={`font-medium ${
+                        notifications.mealReminders
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {notifications.mealReminders ? "Enabled" : "Disabled"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Push Notifications</span>
-                    <span className={`font-medium ${notifications.pushNotifications && hasPermission ? 'text-green-600' : 'text-red-600'}`}>
-                      {notifications.pushNotifications && hasPermission ? 'Active' : 'Inactive'}
+                    <span
+                      className={`font-medium ${
+                        notifications.pushNotifications && hasPermission
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {notifications.pushNotifications && hasPermission
+                        ? "Active"
+                        : "Inactive"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Browser Permission</span>
-                    <span className={`font-medium ${
-                      permissionStatus === 'granted' ? 'text-green-600' : 
-                      permissionStatus === 'denied' ? 'text-red-600' : 'text-amber-600'
-                    }`}>
-                      {permissionStatus === 'granted' ? 'Granted' : 
-                       permissionStatus === 'denied' ? 'Blocked' : 'Not Set'}
+                    <span
+                      className={`font-medium ${
+                        permissionStatus === "granted"
+                          ? "text-green-600"
+                          : permissionStatus === "denied"
+                          ? "text-red-600"
+                          : "text-amber-600"
+                      }`}
+                    >
+                      {permissionStatus === "granted"
+                        ? "Granted"
+                        : permissionStatus === "denied"
+                        ? "Blocked"
+                        : "Not Set"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Notification Type</span>
                     <span className="font-medium text-blue-600">
-                      {hasPermission ? 'Push + In-app' : 'In-app Only'}
+                      {hasPermission ? "Push + In-app" : "In-app Only"}
                     </span>
                   </div>
                 </div>
-                
-                {permissionStatus === 'denied' && (
+
+                {permissionStatus === "denied" && (
                   <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-xs text-red-800 mb-2">
                       🔔 Notifications are blocked in your browser settings.
                     </p>
-                    <button 
+                    <button
                       onClick={openBrowserSettingsGuide}
                       className="text-xs text-red-700 underline hover:no-underline"
                     >
@@ -695,14 +778,17 @@ export default function Profile() {
                     </button>
                   </div>
                 )}
-                
-                {notifications.mealReminders && !hasPermission && permissionStatus !== 'denied' && (
-                  <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-xs text-blue-800">
-                      💡 Enable push notifications to get reminders when the app is closed.
-                    </p>
-                  </div>
-                )}
+
+                {notifications.mealReminders &&
+                  !hasPermission &&
+                  permissionStatus !== "denied" && (
+                    <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs text-blue-800">
+                        💡 Enable push notifications to get reminders when the
+                        app is closed.
+                      </p>
+                    </div>
+                  )}
               </div>
 
               {/* Account Stats Card */}
@@ -713,7 +799,9 @@ export default function Profile() {
                 <div className="space-y-2 md:space-y-3">
                   <div className="flex justify-between text-xs md:text-sm">
                     <span className="text-gray-600">Student ID</span>
-                    <span className="font-medium">{formData.studentId || 'Not set'}</span>
+                    <span className="font-medium">
+                      {formData.studentId || "Not set"}
+                    </span>
                   </div>
                   <div className="flex justify-between text-xs md:text-sm">
                     <span className="text-gray-600">Mess Preference</span>

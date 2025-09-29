@@ -529,14 +529,14 @@ const MealSelection = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Header Section - Same as home page */}
-      <div className="px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-8">
+      <div className="px-2 py-2 sm:px-4 sm:py-5 md:px-4 md:py-6">
         <div className="text-center">
           <h1
             className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(
               userMessType
-            )} mb-2 sm:mb-3 md:mb-4`}
+            )} mb-[0px] sm:mb-[0px] md:mb-[0px]`}
           >
-            Monthly Meal Selection
+            Meal Selection
           </h1>
         </div>
       </div>
