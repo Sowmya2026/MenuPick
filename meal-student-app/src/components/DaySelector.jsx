@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
+import { useMenu } from "../context/MenuContext";
 
 const DaySelector = ({ days, selectedDay, onSelect, messType = 'veg' }) => {
   const [isMobile, setIsMobile] = useState(false);

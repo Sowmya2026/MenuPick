@@ -3,7 +3,12 @@ import LoggedInNavbar from './Navbar';
 import PublicNavbar from './PublicNavbar';
 
 const MainNavbar = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, loading } = useAuth();
+
+  // Show nothing while loading to prevent flickering
+  if (loading) {
+    return null;
+  }
 
   return currentUser ? <LoggedInNavbar /> : <PublicNavbar />;
 };

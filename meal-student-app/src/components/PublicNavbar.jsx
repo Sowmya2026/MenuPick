@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Home, LogIn, User, Sparkles } from "lucide-react";
+import { Menu, X, Home, LogIn, UserPlus, User, Sparkles } from "lucide-react";
 
 const PublicNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -52,7 +52,7 @@ const PublicNavbar = () => {
         <div className="flex justify-between items-center py-3">
           {/* Logo */}
           <Link
-            to="/"
+            to="/home"
             className="flex items-center text-xl font-bold transition-all duration-300 hover:opacity-80"
           >
             <div className="w-8 h-8 mr-3 flex items-center justify-center">
@@ -167,7 +167,7 @@ const PublicNavbar = () => {
                 {/* Menu Items */}
                 <div className="py-2">
                   <Link
-                    to="/auth"
+                    to="/signin"
                     className="flex items-center px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 group"
                     onClick={() => setIsProfileOpen(false)}
                   >
@@ -175,7 +175,23 @@ const PublicNavbar = () => {
                       size={18}
                       className="mr-3 text-blue-500 group-hover:scale-110 transition-transform"
                     />
-                    <span>Sign In / Register</span>
+                    <span>Sign In</span>
+                    <Sparkles
+                      size={14}
+                      className="ml-auto text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
+                  </Link>
+
+                  <Link
+                    to="/signup"
+                    className="flex items-center px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 transition-all duration-300 group"
+                    onClick={() => setIsProfileOpen(false)}
+                  >
+                    <UserPlus
+                      size={18}
+                      className="mr-3 text-green-500 group-hover:scale-110 transition-transform"
+                    />
+                    <span>Create Account</span>
                     <Sparkles
                       size={14}
                       className="ml-auto text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -184,11 +200,11 @@ const PublicNavbar = () => {
 
                   <button
                     onClick={handleSkipForNow}
-                    className="flex items-center w-full text-left px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 transition-all duration-300 group"
+                    className="flex items-center w-full text-left px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 transition-all duration-300 group"
                   >
                     <Home
                       size={18}
-                      className="mr-3 text-green-500 group-hover:scale-110 transition-transform"
+                      className="mr-3 text-purple-500 group-hover:scale-110 transition-transform"
                     />
                     <span>Continue as Guest</span>
                     <Sparkles
@@ -208,20 +224,33 @@ const PublicNavbar = () => {
               </div>
             </div>
 
-            {/* Spacing between profile and login button */}
-            <div className="w-6"></div>
+            {/* Spacing between profile and auth buttons */}
+            <div className="w-4"></div>
 
-            {/* Login Button */}
-            <Link
-              to="/auth"
-              className="bg-gradient-to-r from-green-500 to-purple-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-300 shadow-md flex items-center group"
-            >
-              <LogIn
-                size={18}
-                className="mr-2 group-hover:scale-110 transition-transform"
-              />
-              Login
-            </Link>
+            {/* Separate Sign In and Sign Up Buttons */}
+            <div className="flex items-center space-x-2">
+              <Link
+                to="/signin"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 shadow-md flex items-center group"
+              >
+                <LogIn
+                  size={18}
+                  className="mr-2 group-hover:scale-110 transition-transform"
+                />
+                Sign In
+              </Link>
+              
+              <Link
+                to="/signup"
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 shadow-md flex items-center group"
+              >
+                <UserPlus
+                  size={18}
+                  className="mr-2 group-hover:scale-110 transition-transform"
+                />
+                Sign Up
+              </Link>
+            </div>
           </div>
 
           {/* Mobile menu button */}
@@ -265,14 +294,23 @@ const PublicNavbar = () => {
 
             <hr className="my-2 border-gray-200" />
 
-            {/* Mobile Guest Options */}
+            {/* Mobile Auth Options */}
             <Link
-              to="/auth"
+              to="/signin"
               className="flex items-center text-gray-700 p-3 rounded-lg transition-all duration-300 hover:bg-blue-50"
               onClick={() => setIsOpen(false)}
             >
               <LogIn size={20} className="mr-3 text-blue-600" />
-              Sign In / Register
+              Sign In
+            </Link>
+
+            <Link
+              to="/signup"
+              className="flex items-center text-gray-700 p-3 rounded-lg transition-all duration-300 hover:bg-green-50"
+              onClick={() => setIsOpen(false)}
+            >
+              <UserPlus size={20} className="mr-3 text-green-600" />
+              Create Account
             </Link>
 
             <button
@@ -280,9 +318,9 @@ const PublicNavbar = () => {
                 handleSkipForNow();
                 setIsOpen(false);
               }}
-              className="flex items-center text-gray-700 p-3 rounded-lg transition-all duration-300 hover:bg-green-50 text-left"
+              className="flex items-center text-gray-700 p-3 rounded-lg transition-all duration-300 hover:bg-purple-50 text-left"
             >
-              <Home size={20} className="mr-3 text-green-600" />
+              <Home size={20} className="mr-3 text-purple-600" />
               Continue as Guest
             </button>
 

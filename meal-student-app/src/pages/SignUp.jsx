@@ -14,8 +14,7 @@ import {
   X,
 } from "lucide-react";
 
-const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+const SignUp = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -28,21 +27,35 @@ const Auth = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [isGoogleSignUp, setIsGoogleSignUp] = useState(false);
+  const [googleUserData, setGoogleUserData] = useState(null);
   const {
-    loginWithGoogle,
-    loginWithEmail,
     signupWithEmail,
+    loginWithGoogle,
     authError,
     clearError,
     authLoading,
+    currentUser,
   } = useAuth();
   const navigate = useNavigate();
 
-  // Clear errors when component mounts or mode changes
+  // Clear errors when component mounts
   useEffect(() => {
     clearError();
     setLocalError("");
-  }, [isLogin, clearError]);
+  }, [clearError]);
+
+  // Redirect to complete profile if user signed up with Google but doesn't have profile data
+  useEffect(() => {
+    if (currentUser && isGoogleSignUp && !currentUser.displayName) {
+      navigate("/complete-profile", { 
+        state: { 
+          fromSignUp: true,
+          email: currentUser.email 
+        } 
+      });
+    }
+  }, [currentUser, isGoogleSignUp, navigate]);
 
   // Combine auth error and local error
   const error = authError || localError;
@@ -54,20 +67,6 @@ const Auth = () => {
       text: "text-green-600",
       bg: "bg-green-50",
       border: "border-green-200",
-    },
-    secondary: {
-      gradient: "from-red-500 to-pink-600",
-      gradientHover: "from-red-600 to-pink-700",
-      text: "text-red-600",
-      bg: "bg-red-50",
-      border: "border-red-200",
-    },
-    accent: {
-      gradient: "from-purple-500 to-indigo-600",
-      gradientHover: "from-purple-600 to-indigo-700",
-      text: "text-purple-600",
-      bg: "bg-purple-50",
-      border: "border-purple-200",
     },
   };
 
@@ -84,32 +83,54 @@ const Auth = () => {
   };
 
   const validateForm = () => {
-    if (!isLogin) {
-      if (formData.password.length < 6) {
-        setLocalError("Password must be at least 6 characters long");
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setLocalError("Passwords do not match");
-        return false;
-      }
-      if (!formData.displayName.trim()) {
-        setLocalError("Please enter your full name");
-        return false;
-      }
-      if (!formData.studentId.trim()) {
-        setLocalError("Please enter your student ID");
-        return false;
-      }
+    // Name validation - only letters and spaces
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!formData.displayName.trim()) {
+      setLocalError("Please enter your full name");
+      return false;
     }
+    if (!nameRegex.test(formData.displayName)) {
+      setLocalError("Name can only contain letters and spaces");
+      return false;
+    }
+
+    // Student ID validation - alphanumeric
+    const studentIdRegex = /^[a-zA-Z0-9]+$/;
+    if (!formData.studentId.trim()) {
+      setLocalError("Please enter your student ID");
+      return false;
+    }
+    if (!studentIdRegex.test(formData.studentId)) {
+      setLocalError("Student ID can only contain letters and numbers");
+      return false;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setLocalError("Please enter a valid email address");
+      return false;
+    }
+
+    // Password validation
+    if (formData.password.length < 6) {
+      setLocalError("Password must be at least 6 characters long");
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setLocalError("Passwords do not match");
+      return false;
+    }
+
     return true;
   };
 
-  const handleEmailAuth = async (e) => {
+  const handleEmailSignUp = async (e) => {
     e.preventDefault();
     clearError();
     setLocalError("");
     setIsLoading(true);
+    setIsGoogleSignUp(false);
 
     if (!validateForm()) {
       setIsLoading(false);
@@ -117,85 +138,51 @@ const Auth = () => {
     }
 
     try {
-      let result;
-      if (isLogin) {
-        result = await loginWithEmail(formData.email, formData.password);
-        
-        // Check if the error is due to user not found
-        if (!result.success && result.error?.includes('user-not-found')) {
-          setLocalError("You don't have an account. Kindly create one.");
-          setIsLoading(false);
-          return;
-        }
-      } else {
-        result = await signupWithEmail(formData.email, formData.password, {
-          displayName: formData.displayName,
-          studentId: formData.studentId,
-          messPreference: formData.messPreference,
-        });
-      }
+      const result = await signupWithEmail(formData.email, formData.password, {
+        displayName: formData.displayName.trim(),
+        studentId: formData.studentId.trim().toUpperCase(),
+        messPreference: formData.messPreference,
+      });
 
       if (result.success) {
-        navigate("/");
+        // Success message is handled via navigation state in AuthContext
+        // User will be redirected to /signin automatically
+      } else {
+        setLocalError(result.error || 'Registration failed');
       }
     } catch (error) {
-      console.error("Auth error:", error);
-      if (error.code === 'auth/user-not-found') {
-        setLocalError("You don't have an account. Kindly create one.");
-      } else if (error.code === 'auth/wrong-password') {
-        setLocalError("Invalid password. Please try again.");
-      } else if (error.code === 'auth/invalid-email') {
-        setLocalError("Invalid email address. Please check your email.");
-      } else {
-        setLocalError("An unexpected error occurred. Please try again.");
-      }
+      console.error("Sign up error:", error);
+      setLocalError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleAuth = async () => {
+  const handleGoogleSignUp = async () => {
     clearError();
     setLocalError("");
     setIsLoading(true);
+    setIsGoogleSignUp(true);
 
     try {
-      // For Google sign-in, only allow existing users
-      const result = await loginWithGoogle({ onlyExistingUsers: true });
+      const result = await loginWithGoogle();
 
       if (result.success) {
-        navigate("/");
+        // Google sign-up will redirect to complete-profile in AuthContext
+        // The useEffect above will handle the redirection
       } else if (result.error) {
         if (result.error.includes('user-not-found') || result.error.includes('no-existing-account')) {
-          setLocalError("Don't have an account? Create an account using Sign Up.");
+          setLocalError("Google sign-up failed. Please try again.");
         } else {
           setLocalError(result.error);
         }
       }
     } catch (error) {
-      console.error("Google auth error:", error);
-      if (error.code === 'auth/user-not-found') {
-        setLocalError("Don't have an account? Create an account using Sign Up.");
-      } else {
-        setLocalError("An unexpected error occurred. Please try again.");
-      }
+      console.error("Google sign-up error:", error);
+      setLocalError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
-    clearError();
-    setLocalError("");
-    setFormData({
-      email: "",
-      password: "",
-      confirmPassword: "",
-      displayName: "",
-      studentId: "",
-      messPreference: "veg",
-    });
   };
 
   const messOptions = [
@@ -203,10 +190,6 @@ const Auth = () => {
     { id: "non-veg", name: "Non-Veg", icon: "🍗", color: "red" },
     { id: "special", name: "Special", icon: "⭐", color: "purple" },
   ];
-
-  const handleSkip = () => {
-    navigate("/home");
-  };
 
   // Google SVG Icon
   const GoogleIcon = () => (
@@ -256,7 +239,7 @@ const Auth = () => {
 
             <div className="relative inline-block">
               <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 via-purple-600 to-red-600 bg-clip-text text-transparent mb-1">
-                {isLogin ? "Welcome Back" : "Join Us"}
+                Join Us
               </h2>
               <Sparkles
                 size={16}
@@ -264,11 +247,11 @@ const Auth = () => {
               />
             </div>
             <p className="text-sm sm:text-base text-gray-600 font-medium">
-              {isLogin ? "Sign in to continue" : "Create your account"}
+              Create your account
             </p>
           </div>
 
-          <form className="p-4 sm:p-6 space-y-4" onSubmit={handleEmailAuth}>
+          <form className="p-4 sm:p-6 space-y-4" onSubmit={handleEmailSignUp}>
             {/* Error Message */}
             {error && (
               <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-3 animate-shake relative">
@@ -291,91 +274,76 @@ const Auth = () => {
               </div>
             )}
 
-            {/* Info Message for Google Sign In (only in login mode) */}
-            {isLogin && (
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-3">
-                <div className="flex items-center space-x-2">
-                  <AlertCircle
-                    size={16}
-                    className="text-blue-500 flex-shrink-0"
+            <div className="space-y-3">
+              {/* Name and Student ID */}
+              <div className="space-y-2">
+                <div className="group relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-green-500" />
+                  <input
+                    name="displayName"
+                    type="text"
+                    required
+                    value={formData.displayName}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 text-sm border-2 border-gray-100 rounded-2xl focus:border-green-300 focus:ring-2 focus:ring-green-100 transition-all duration-300 bg-white/80"
+                    placeholder="Full name"
+                    disabled={isLoading}
+                    pattern="[a-zA-Z\s]+"
+                    title="Name can only contain letters and spaces"
                   />
-                  <p className="text-blue-600 text-xs font-medium">
-                    Google Sign-In is for existing users only. New users please create an account first.
-                  </p>
+                </div>
+
+                <div className="group relative">
+                  <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-red-500" />
+                  <input
+                    name="studentId"
+                    type="text"
+                    required
+                    value={formData.studentId}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 text-sm border-2 border-gray-100 rounded-2xl focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all duration-300 bg-white/80"
+                    placeholder="Student ID"
+                    disabled={isLoading}
+                    pattern="[a-zA-Z0-9]+"
+                    title="Student ID can only contain letters and numbers"
+                  />
                 </div>
               </div>
-            )}
 
-            <div className="space-y-3">
-              {!isLogin && (
-                <>
-                  {/* Name and Student ID */}
-                  <div className="space-y-2">
-                    <div className="group relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-green-500" />
+              {/* Mess Preference */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-2 ml-1">
+                  Mess Preference
+                </label>
+                <div className="flex gap-2">
+                  {messOptions.map((option) => (
+                    <label
+                      key={option.id}
+                      className="flex-1 cursor-pointer"
+                    >
                       <input
-                        name="displayName"
-                        type="text"
-                        required
-                        value={formData.displayName}
+                        type="radio"
+                        name="messPreference"
+                        value={option.id}
+                        checked={formData.messPreference === option.id}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-3 text-sm border-2 border-gray-100 rounded-2xl focus:border-green-300 focus:ring-2 focus:ring-green-100 transition-all duration-300 bg-white/80"
-                        placeholder="Full name"
+                        className="sr-only"
                         disabled={isLoading}
                       />
-                    </div>
-
-                    <div className="group relative">
-                      <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-red-500" />
-                      <input
-                        name="studentId"
-                        type="text"
-                        required
-                        value={formData.studentId}
-                        onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-3 text-sm border-2 border-gray-100 rounded-2xl focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all duration-300 bg-white/80"
-                        placeholder="Student ID"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Mess Preference */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-2 ml-1">
-                      Mess Preference
+                      <div
+                        className={`text-center py-2 px-1 rounded-xl border-2 transition-all duration-300 text-xs font-medium ${
+                          formData.messPreference === option.id
+                            ? `border-${option.color}-300 bg-${option.color}-50 text-${option.color}-600 scale-105 shadow-sm`
+                            : "border-gray-100 text-gray-500 hover:border-gray-200"
+                        } ${isLoading ? "opacity-50" : ""}`}
+                      >
+                        <div className="text-base mb-1">{option.icon}</div>
+                        {option.name}
+                      </div>
                     </label>
-                    <div className="flex gap-2">
-                      {messOptions.map((option) => (
-                        <label
-                          key={option.id}
-                          className="flex-1 cursor-pointer"
-                        >
-                          <input
-                            type="radio"
-                            name="messPreference"
-                            value={option.id}
-                            checked={formData.messPreference === option.id}
-                            onChange={handleInputChange}
-                            className="sr-only"
-                            disabled={isLoading}
-                          />
-                          <div
-                            className={`text-center py-2 px-1 rounded-xl border-2 transition-all duration-300 text-xs font-medium ${
-                              formData.messPreference === option.id
-                                ? `border-${option.color}-300 bg-${option.color}-50 text-${option.color}-600 scale-105 shadow-sm`
-                                : "border-gray-100 text-gray-500 hover:border-gray-200"
-                            } ${isLoading ? "opacity-50" : ""}`}
-                          >
-                            <div className="text-base mb-1">{option.icon}</div>
-                            {option.name}
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
+                  ))}
+                </div>
+              </div>
 
               {/* Email */}
               <div className="group relative">
@@ -417,34 +385,32 @@ const Auth = () => {
               </div>
 
               {/* Confirm Password */}
-              {!isLogin && (
-                <div className="group relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-purple-500" />
-                  <input
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    required
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-12 py-3 text-sm border-2 border-gray-100 rounded-2xl focus:border-purple-300 focus:ring-2 focus:ring-purple-100 transition-all duration-300 bg-white/80 disabled:opacity-50"
-                    placeholder="Confirm password"
-                    disabled={isLoading}
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-500 disabled:opacity-50"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    disabled={isLoading}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={16} />
-                    ) : (
-                      <Eye size={16} />
-                    )}
-                  </button>
-                </div>
-              )}
+              <div className="group relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-purple-500" />
+                <input
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-12 py-3 text-sm border-2 border-gray-100 rounded-2xl focus:border-purple-300 focus:ring-2 focus:ring-purple-100 transition-all duration-300 bg-white/80 disabled:opacity-50"
+                  placeholder="Confirm password"
+                  disabled={isLoading}
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-500 disabled:opacity-50"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Submit Button */}
@@ -456,10 +422,8 @@ const Auth = () => {
               {isLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                  {isLogin ? "Signing In..." : "Creating Account..."}
+                  Creating Account...
                 </div>
-              ) : isLogin ? (
-                "Sign In"
               ) : (
                 "Create Account"
               )}
@@ -472,15 +436,15 @@ const Auth = () => {
               </div>
               <div className="relative flex justify-center">
                 <span className="px-2 bg-white text-xs text-gray-400">
-                  or continue with
+                  or sign up with
                 </span>
               </div>
             </div>
 
-            {/* Google Sign In Button */}
+            {/* Google Sign Up Button */}
             <button
               type="button"
-              onClick={handleGoogleAuth}
+              onClick={handleGoogleSignUp}
               disabled={isLoading || authLoading}
               className="w-full flex items-center justify-center py-2.5 px-4 border-2 border-gray-100 rounded-2xl bg-white text-gray-600 hover:border-gray-200 hover:bg-gray-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -490,41 +454,23 @@ const Auth = () => {
                 <GoogleIcon />
               )}
               <span className="text-sm font-medium">
-                {authLoading ? "Signing in..." : "Continue with Google"}
+                {authLoading ? "Signing up..." : "Continue with Google"}
               </span>
             </button>
 
-            {/* Toggle Mode */}
+            {/* Already have account */}
             <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={toggleMode}
-                disabled={isLoading}
+              <Link
+                to="/signin"
                 className="text-xs text-gray-500 hover:text-purple-600 transition-colors duration-300 disabled:opacity-50"
               >
-                {isLogin
-                  ? "Don't have an account? "
-                  : "Already have an account? "}
+                Already have an account?{" "}
                 <span className="font-semibold text-purple-600 hover:underline">
-                  {isLogin ? "Sign up" : "Sign in"}
+                  Sign in
                 </span>
-              </button>
+              </Link>
             </div>
           </form>
-
-          {/* Skip Button */}
-          <div className="pb-4 px-6 text-center">
-            <button
-              onClick={handleSkip}
-              disabled={isLoading}
-              className="text-xs text-gray-400 hover:text-green-500 transition-colors duration-300 group disabled:opacity-50"
-            >
-              Skip for now{" "}
-              <span className="group-hover:translate-x-1 transition-transform inline-block">
-                →
-              </span>
-            </button>
-          </div>
         </div>
 
         {/* Decorative Bottom */}
@@ -537,4 +483,4 @@ const Auth = () => {
   );
 };
 
-export default Auth;
+export default SignUp;

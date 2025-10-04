@@ -204,10 +204,12 @@ export const authService = {
       const result = await createUserWithEmailAndPassword(auth, email, password)
       const user = result.user
       
+      console.log('✅ Firebase Auth user created:', user.uid)
+      
       // Create user in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
-        email: user.email,
+        email: user.email.toLowerCase().trim(),
         displayName: userData.displayName,
         studentId: userData.studentId,
         messPreference: userData.messPreference,
@@ -221,6 +223,7 @@ export const authService = {
         needsProfileCompletion: false
       })
       
+      console.log('✅ Firestore user profile created')
       return { success: true, user }
     } catch (error) {
       console.error('❌ Email signup error:', error)

@@ -1,15 +1,19 @@
 import { Clock, ChevronDown, ChevronUp, Utensils, Coffee, Sun, Moon, ChefHat } from 'lucide-react';
 import { useState } from 'react';
+import { useMenu } from "../context/MenuContext";
 
 const MealTimeCard = ({ 
   mealTime, 
-  timing, 
   items,
   messType = 'veg',
   isExpanded = false,
   onToggleExpand
 }) => {
   const [isTapping, setIsTapping] = useState(false);
+  const { selectedDay, getMealTiming } = useMenu();
+
+  // Get timing for the current meal time and day with error handling
+  const timing = getMealTiming(selectedDay, mealTime);
 
   // Get color classes based on mess type
   const getMessColorClasses = () => {
@@ -72,6 +76,8 @@ const MealTimeCard = ({
         return <Sun size={20} className={messColors.accentColor} />;
       case 'dinner':
         return <Moon size={20} className={messColors.accentColor} />;
+      case 'snacks':
+        return <Utensils size={20} className={messColors.accentColor} />;
       default:
         return <Utensils size={20} className={messColors.accentColor} />;
     }
@@ -181,7 +187,7 @@ const MealTimeCard = ({
           <div className="flex items-center mb-2 md:mb-3">
             <ChefHat size={14} className={`${messColors.accentColor} mr-2 md:size-4`} />
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide md:text-sm">
-              Today's Menu
+              {selectedDay}'s Menu
             </h4>
           </div>
           

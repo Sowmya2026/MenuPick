@@ -464,67 +464,192 @@ const MealSelection = () => {
     );
   }
 
-  // Selection Summary Component
-  const SelectionSummary = () => {
-    return (
-      <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-200">
-        <h4 className="text-xs font-medium text-gray-800 mb-2 flex items-center">
-          <Info className="h-3 w-3 mr-1.5 text-blue-500" />
+// Selection Summary Component with 3-column mobile grid and mess type colors
+const SelectionSummary = () => {
+  // Calculate totals for new features
+  const totalSelected = Object.values(selectionLimits).reduce((sum, limit) => sum + limit.currentCount, 0);
+  const totalAllowed = Object.values(selectionLimits).reduce((sum, limit) => sum + limit.maxAllowed, 0);
+  const limitedCategories = Object.values(selectionLimits).filter(limit => limit.currentCount >= limit.maxAllowed).length;
+
+  // Get color scheme based on mess type
+  const getMessColorScheme = () => {
+    switch (userMessType) {
+      case "veg":
+        return {
+          primary: "green",
+          light: "green-50",
+          border: "green-200",
+          text: "green-700",
+          progress: "green-500",
+          accent: "green-600"
+        };
+      case "non-veg":
+        return {
+          primary: "red",
+          light: "red-50",
+          border: "red-200",
+          text: "red-700",
+          progress: "red-500",
+          accent: "red-600"
+        };
+      case "special":
+        return {
+          primary: "purple",
+          light: "purple-50",
+          border: "purple-200",
+          text: "purple-700",
+          progress: "purple-500",
+          accent: "purple-600"
+        };
+      default:
+        return {
+          primary: "blue",
+          light: "blue-50",
+          border: "blue-200",
+          text: "blue-700",
+          progress: "blue-500",
+          accent: "blue-600"
+        };
+    }
+  };
+
+  const colors = getMessColorScheme();
+
+  return (
+    <div className={`mt-4 bg-${colors.light} rounded-lg p-3 border border-${colors.border}`}>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className={`text-xs font-medium text-${colors.text} flex items-center`}>
+          <Info className={`h-3 w-3 mr-1.5 text-${colors.accent}`} />
           Selection Limits Summary
         </h4>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-          {categories.map((category) => {
-            const subcategories = getSubcategories(category, userMessType);
-            return subcategories.map((subcategory) => {
-              const key = `${category}-${subcategory}`;
-              const limit = selectionLimits[key] || {
-                currentCount: 0,
-                maxAllowed: 0,
-              };
-
-              return (
-                <div
-                  key={key}
-                  className="bg-white rounded-md p-2 border border-gray-200"
-                >
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-medium text-gray-700 capitalize">
-                      {category} - {subcategory}
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        limit.currentCount >= limit.maxAllowed
-                          ? "text-red-600"
-                          : "text-green-600"
-                      }`}
-                    >
-                      {limit.currentCount}/{limit.maxAllowed}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div
-                      className={`h-1 rounded-full ${
-                        limit.currentCount >= limit.maxAllowed
-                          ? "bg-red-500"
-                          : "bg-green-500"
-                      }`}
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          (limit.currentCount / limit.maxAllowed) * 100
-                        )}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            });
-          })}
+        
+        {/* New: Quick stats summary */}
+        <div className="flex items-center space-x-3 text-xs">
+          <span className={`text-${colors.text}`}>
+            Total: <span className="font-semibold">{totalSelected}/{totalAllowed}</span>
+          </span>
+          {limitedCategories > 0 && (
+            <span className={`text-${colors.primary}-600 font-semibold`}>
+              {limitedCategories} limited
+            </span>
+          )}
         </div>
       </div>
-    );
-  };
+
+      {/* 3-column grid for mobile */}
+      <div className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-4 gap-2">
+        {categories.map((category) => {
+          const subcategories = getSubcategories(category, userMessType);
+          return subcategories.map((subcategory) => {
+            const key = `${category}-${subcategory}`;
+            const limit = selectionLimits[key] || {
+              currentCount: 0,
+              maxAllowed: 0,
+            };
+
+            const percentage = limit.maxAllowed > 0 
+              ? Math.min(100, (limit.currentCount / limit.maxAllowed) * 100)
+              : 0;
+
+            const isLimitReached = limit.currentCount >= limit.maxAllowed;
+            const isCloseToLimit = limit.currentCount >= limit.maxAllowed * 0.8 && !isLimitReached;
+
+            // Dynamic colors based on status and mess type
+            const getStatusColor = () => {
+              if (isLimitReached) {
+                return {
+                  text: "text-red-600",
+                  progress: "bg-red-500",
+                  bg: "bg-red-50",
+                  border: "border-red-200"
+                };
+              }
+              if (isCloseToLimit) {
+                return {
+                  text: "text-orange-600",
+                  progress: "bg-orange-500",
+                  bg: "bg-orange-50",
+                  border: "border-orange-200"
+                };
+              }
+              return {
+                text: `text-${colors.primary}-600`,
+                progress: `bg-${colors.progress}`,
+                bg: "bg-white",
+                border: "border-gray-200"
+              };
+            };
+
+            const statusColors = getStatusColor();
+
+            return (
+              <div
+                key={key}
+                className={`${statusColors.bg} rounded-md p-2 border ${statusColors.border} hover:shadow-sm transition-shadow duration-200`}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  {/* New: Truncate long text for mobile */}
+                  <span className={`text-xs font-medium ${statusColors.text} capitalize truncate mr-1`}>
+                    {category} - {subcategory}
+                  </span>
+                  <span
+                    className={`text-xs font-semibold flex-shrink-0 ${statusColors.text}`}
+                  >
+                    {limit.currentCount}/{limit.maxAllowed}
+                  </span>
+                </div>
+                
+                {/* Enhanced progress bar with warning state */}
+                <div className="w-full bg-gray-200 rounded-full h-1">
+                  <div
+                    className={`h-1 rounded-full transition-all duration-300 ${statusColors.progress}`}
+                    style={{
+                      width: `${percentage}%`,
+                    }}
+                  ></div>
+                </div>
+                
+                {/* New: Status indicator for mobile */}
+                <div className="mt-1 flex justify-between items-center">
+                  <span className={`text-[10px] ${statusColors.text}`}>
+                    {isLimitReached
+                      ? "Limit reached"
+                      : isCloseToLimit
+                      ? "Almost full"
+                      : `${limit.maxAllowed - limit.currentCount} left`
+                    }
+                  </span>
+                  {/* New: Percentage indicator */}
+                  <span className="text-[10px] text-gray-500 font-medium">
+                    {Math.round(percentage)}%
+                  </span>
+                </div>
+              </div>
+            );
+          });
+        })}
+      </div>
+
+      {/* New: Overall progress bar */}
+      <div className="mt-3 pt-3 border-t border-gray-200">
+        <div className="flex justify-between items-center mb-1">
+          <span className={`text-xs font-medium text-${colors.text}`}>Overall Progress</span>
+          <span className={`text-xs font-semibold text-${colors.text}`}>
+            {totalSelected}/{totalAllowed} ({Math.round((totalSelected / totalAllowed) * 100)}%)
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-1.5">
+          <div
+            className={`h-1.5 rounded-full bg-${colors.progress} transition-all duration-500`}
+            style={{
+              width: `${Math.min(100, (totalSelected / totalAllowed) * 100)}%`,
+            }}
+          ></div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
   return (
     <div className="min-h-screen bg-white">

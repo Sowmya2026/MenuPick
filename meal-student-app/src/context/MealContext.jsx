@@ -10,7 +10,8 @@ import {
   orderBy,
   serverTimestamp,
   setDoc,
-  getDoc
+  getDoc,
+  writeBatch
 } from 'firebase/firestore'
 import { db } from '../services/firebaseConfig'
 import toast from 'react-hot-toast'
@@ -183,11 +184,12 @@ export const MealProvider = ({ children }) => {
       const docSnap = await getDoc(selectionsRef)
       
       if (docSnap.exists()) {
+        const data = docSnap.data()
         setStudentSelections(prev => ({
           ...prev,
-          [studentId]: docSnap.data()
+          [studentId]: data
         }))
-        return docSnap.data()
+        return data
       }
       return null
     } catch (error) {
@@ -196,7 +198,59 @@ export const MealProvider = ({ children }) => {
     }
   }, [])
 
-  // Save student meal selections
+  // Clear non-veg selections when veg is selected
+  const clearNonVegSelections = useCallback(async (studentId, currentSelections = {}) => {
+    try {
+      const batch = writeBatch(db)
+      let hasNonVeg = false
+
+      // Identify non-veg selections to remove
+      Object.entries(currentSelections).forEach(([mealId, selection]) => {
+        if (selection.messType === 'non-veg') {
+          hasNonVeg = true
+          // Remove from Firestore (we'll handle this in the batch)
+        }
+      })
+
+      if (hasNonVeg) {
+        // Create a new selections object without non-veg items
+        const updatedSelections = {}
+        Object.entries(currentSelections).forEach(([mealId, selection]) => {
+          if (selection.messType !== 'non-veg') {
+            updatedSelections[mealId] = selection
+          }
+        })
+
+        // Update Firestore
+        const selectionsRef = doc(db, 'students', studentId, 'preferences', 'mealSelections')
+        batch.set(selectionsRef, { 
+          selections: updatedSelections,
+          updatedAt: serverTimestamp()
+        }, { merge: true })
+
+        await batch.commit()
+        
+        // Update local state
+        setStudentSelections(prev => ({
+          ...prev,
+          [studentId]: {
+            ...prev[studentId],
+            selections: updatedSelections
+          }
+        }))
+
+        toast.success('Non-veg selections cleared as you selected veg items')
+        return updatedSelections
+      }
+
+      return currentSelections
+    } catch (error) {
+      console.error('Error clearing non-veg selections:', error)
+      throw error
+    }
+  }, [])
+
+  // Save student meal selections with automatic non-veg cleanup
   const saveStudentSelections = async (studentId, messType, selections, mealDataMap) => {
     try {
       // Add category and subcategory information to each selection
@@ -212,10 +266,29 @@ export const MealProvider = ({ children }) => {
           }
         }
       })
-      
+
+      // Check if user is selecting veg items
+      const hasVegSelection = Object.values(selectionsWithDetails).some(
+        selection => selection.messType === 'veg'
+      )
+
+      let finalSelections = selectionsWithDetails
+
+      // If user is selecting veg items, clear all non-veg selections
+      if (hasVegSelection) {
+        // Get current selections to check for existing non-veg items
+        const currentSelections = studentSelections[studentId]?.selections || {}
+        
+        // Clear non-veg selections and get updated selections
+        finalSelections = await clearNonVegSelections(studentId, {
+          ...currentSelections,
+          ...selectionsWithDetails
+        })
+      }
+
       const selectionsData = {
-        messType,
-        selections: selectionsWithDetails,
+        messType: hasVegSelection ? 'veg' : messType, // Update messType if veg is selected
+        selections: finalSelections,
         updatedAt: serverTimestamp()
       }
       
@@ -232,6 +305,82 @@ export const MealProvider = ({ children }) => {
       return true
     } catch (error) {
       console.error('Error saving meal selections:', error)
+      throw error
+    }
+  }
+
+  // Add individual meal selection with veg/non-veg logic
+  const addMealSelection = async (studentId, mealId, mealData) => {
+    try {
+      const selectionData = {
+        [mealId]: {
+          category: mealData.category,
+          subcategory: mealData.subcategory,
+          messType: mealData.messType,
+          selectedAt: serverTimestamp()
+        }
+      }
+
+      // Get current selections
+      const currentSelections = studentSelections[studentId]?.selections || {}
+      
+      // Check if adding veg item
+      if (mealData.messType === 'veg') {
+        // Clear all non-veg selections when adding veg
+        await clearNonVegSelections(studentId, {
+          ...currentSelections,
+          ...selectionData
+        })
+      } else if (mealData.messType === 'non-veg') {
+        // Check if there are any existing veg selections
+        const hasVegSelections = Object.values(currentSelections).some(
+          selection => selection.messType === 'veg'
+        )
+        
+        if (hasVegSelections) {
+          toast.error('Cannot add non-veg items when veg items are already selected')
+          return false
+        }
+      }
+
+      // Proceed with normal save
+      await saveStudentSelections(studentId, mealData.messType, {
+        ...currentSelections,
+        ...selectionData
+      }, { [mealId]: mealData })
+
+      toast.success('Meal selection added successfully!')
+      return true
+    } catch (error) {
+      console.error('Error adding meal selection:', error)
+      throw error
+    }
+  }
+
+  // Remove meal selection
+  const removeMealSelection = async (studentId, mealId) => {
+    try {
+      const currentSelections = { ...studentSelections[studentId]?.selections }
+      delete currentSelections[mealId]
+
+      const selectionsData = {
+        selections: currentSelections,
+        updatedAt: serverTimestamp()
+      }
+
+      const selectionsRef = doc(db, 'students', studentId, 'preferences', 'mealSelections')
+      await setDoc(selectionsRef, selectionsData, { merge: true })
+
+      // Update local state
+      setStudentSelections(prev => ({
+        ...prev,
+        [studentId]: selectionsData
+      }))
+
+      toast.success('Meal selection removed successfully!')
+      return true
+    } catch (error) {
+      console.error('Error removing meal selection:', error)
       throw error
     }
   }
@@ -415,6 +564,9 @@ export const MealProvider = ({ children }) => {
     getRecentMeals,
     fetchStudentSelections,
     saveStudentSelections,
+    addMealSelection,
+    removeMealSelection,
+    clearNonVegSelections,
     fetchAllStudents,
     checkSubcategoryLimit,
     MAX_ITEMS

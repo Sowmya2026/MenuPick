@@ -12,17 +12,19 @@ import { Toaster } from "react-hot-toast";
 import { useState, useEffect } from "react";
 import { NotificationProvider } from "./context/NotificationContext";
 
-import MainNavbar from "./components/MainNavbar";
+import MainNavbar from "./components/MainNavbar"; // This now handles both navbars
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import MealSelection from "./pages/MealSelection";
 import Feedback from "./pages/Feedback";
-import Auth from "./pages/Auth";
+import SignUp from "./pages/SignUp";
+import SignIn from "./pages/SignIn";
 import Splash from "./pages/Splash";
 import Onboarding from "./pages/Onboarding";
 import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
 import Notifications from "./pages/Notifications";
+import ForgotPassword from "./pages/ForgotPassword";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -30,13 +32,13 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
 
   if (!currentUser) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/signin" replace state={{ from: location }} />;
   }
 
   return children;
 };
 
-// Public Route Component
+// Public Route Component (for auth pages when user is already logged in)
 const PublicRoute = ({ children }) => {
   const { currentUser } = useAuth();
 
@@ -52,7 +54,7 @@ const ProfileCompletionRoute = ({ children }) => {
   const { currentUser, needsProfileCompletion } = useAuth();
 
   if (!currentUser) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/signin" replace />;
   }
 
   if (!needsProfileCompletion) {
@@ -67,18 +69,22 @@ const RouteHandler = () => {
   const { currentUser, needsProfileCompletion } = useAuth();
   const location = useLocation();
 
+  // Redirect to complete profile if needed
   if (
     currentUser &&
     needsProfileCompletion &&
-    location.pathname !== "/complete-profile"
+    location.pathname !== "/complete-profile" &&
+    !location.pathname.startsWith("/auth")
   ) {
     return <Navigate to="/complete-profile" replace />;
   }
 
-  if (currentUser && location.pathname === "/auth") {
+  // Redirect away from auth pages if logged in
+  if (currentUser && (location.pathname === "/signin" || location.pathname === "/signup" || location.pathname === "/forgot-password")) {
     return <Navigate to="/" replace />;
   }
 
+  // Redirect away from complete profile if not needed
   if (
     currentUser &&
     !needsProfileCompletion &&
@@ -90,21 +96,33 @@ const RouteHandler = () => {
   return (
     <>
       <Routes>
-        {/* Public home page for guests */}
+        {/* Public routes - accessible to everyone */}
         <Route path="/home" element={<Home />} />
-
-        {/* Home route */}
+        
+        {/* Auth routes - only for non-logged in users */}
         <Route
-          path="/"
-          element={currentUser ? <Home /> : <Navigate to="/auth" replace />}
-        />
-
-        {/* Auth route */}
-        <Route
-          path="/auth"
+          path="/signup"
           element={
             <PublicRoute>
-              <Auth />
+              <SignUp />
+            </PublicRoute>
+          }
+        />
+        
+        <Route
+          path="/signin"
+          element={
+            <PublicRoute>
+              <SignIn />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPassword />
             </PublicRoute>
           }
         />
@@ -119,7 +137,16 @@ const RouteHandler = () => {
           }
         />
 
-        {/* Protected routes with Layout */}
+        {/* Protected routes - only for logged in users */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/selection"
           element={
@@ -171,7 +198,7 @@ const RouteHandler = () => {
             currentUser ? (
               <Navigate to="/" replace />
             ) : (
-              <Navigate to="/auth" replace />
+              <Navigate to="/home" replace />
             )
           }
         />
@@ -242,11 +269,14 @@ function AppContent() {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
-  // MAIN APP LAYOUT
+  // MAIN APP LAYOUT - MainNavbar handles both logged in and logged out states
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* MainNavbar will conditionally render the correct navbar */}
       <MainNavbar />
-      <RouteHandler />
+      <main className={currentUser && !needsProfileCompletion ? "pt-16" : ""}>
+        <RouteHandler />
+      </main>
       <Toaster position="top-right" />
     </div>
   );

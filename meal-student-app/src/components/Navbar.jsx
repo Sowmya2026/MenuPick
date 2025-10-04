@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useNotification } from "../context/NotificationContext"; // ADD THIS IMPORT
+import { useNotification } from "../context/NotificationContext";
+import { useMenu } from "../context/MenuContext"; // Add this import
 import {
   Menu,
   X,
@@ -21,23 +22,75 @@ import {
 const LoggedInNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false); // ADD THIS STATE
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { currentUser, logout } = useAuth();
   const { 
     activeNotifications, 
     clearNotification, 
     clearAllNotifications,
     notifications 
-  } = useNotification(); // ADD NOTIFICATION HOOK
+  } = useNotification();
+  const { selectedMess, getMessColor } = useMenu(); // Get mess context
   const navigate = useNavigate();
   const location = useLocation();
   const profileRef = useRef(null);
-  const notificationsRef = useRef(null); // ADD NOTIFICATIONS REF
+  const notificationsRef = useRef(null);
+
+  // Get color classes based on selected mess type
+  const getMessColorClasses = () => {
+    switch (selectedMess) {
+      case 'veg':
+        return {
+          primary: 'text-green-600',
+          hover: 'group-hover:text-green-600',
+          bg: 'bg-green-50',
+          border: 'border-green-200',
+          gradientFrom: 'from-green-200',
+          gradientTo: 'to-green-100',
+          profileGradient: 'from-green-200 via-green-200 to-green-300',
+          active: 'bg-green-50'
+        };
+      case 'non-veg':
+        return {
+          primary: 'text-red-600',
+          hover: 'group-hover:text-red-600',
+          bg: 'bg-red-50',
+          border: 'border-red-200',
+          gradientFrom: 'from-red-200',
+          gradientTo: 'to-red-100',
+          profileGradient: 'from-red-200 via-red-200 to-red-300',
+          active: 'bg-red-50'
+        };
+      case 'special':
+        return {
+          primary: 'text-purple-600',
+          hover: 'group-hover:text-purple-600',
+          bg: 'bg-purple-50',
+          border: 'border-purple-200',
+          gradientFrom: 'from-purple-200',
+          gradientTo: 'to-purple-100',
+          profileGradient: 'from-purple-200 via-purple-200 to-purple-300',
+          active: 'bg-purple-50'
+        };
+      default:
+        return {
+          primary: 'text-green-600',
+          hover: 'group-hover:text-green-600',
+          bg: 'bg-green-50',
+          border: 'border-green-200',
+          gradientFrom: 'from-green-200',
+          gradientTo: 'to-green-100',
+          profileGradient: 'from-green-200 via-green-200 to-green-300',
+          active: 'bg-green-50'
+        };
+    }
+  };
+
+  const messColors = getMessColorClasses();
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/home");
       setIsProfileOpen(false);
     } catch (error) {
       console.error("Failed to log out");
@@ -66,34 +119,34 @@ const LoggedInNavbar = () => {
     setIsOpen(false);
   }, [location.pathname]);
 
-  // Navigation items for logged-in users
+  // Navigation items for logged-in users - updated with dynamic colors
   const navItems = [
     {
       path: "/",
       icon: Home,
       label: "Home",
-      color: "text-green-600",
-      hoverColor: "group-hover:text-green-600",
-      bgColor: "bg-green-50",
-      theme: "green",
+      color: messColors.primary,
+      hoverColor: messColors.hover,
+      bgColor: messColors.bg,
+      borderColor: messColors.border,
     },
     {
       path: "/selection",
       icon: Utensils,
       label: "Meal Selection",
-      color: "text-red-600",
-      hoverColor: "group-hover:text-red-600",
-      bgColor: "bg-red-50",
-      theme: "red",
+      color: messColors.primary,
+      hoverColor: messColors.hover,
+      bgColor: messColors.bg,
+      borderColor: messColors.border,
     },
     {
       path: "/feedback",
       icon: MessageSquare,
       label: "Feedback",
-      color: "text-purple-600",
-      hoverColor: "group-hover:text-purple-600",
-      bgColor: "bg-purple-50",
-      theme: "purple",
+      color: messColors.primary,
+      hoverColor: messColors.hover,
+      bgColor: messColors.bg,
+      borderColor: messColors.border,
     },
   ];
 
@@ -123,7 +176,7 @@ const LoggedInNavbar = () => {
   };
 
   return (
-    <nav className="bg-white relative">
+    <nav className="bg-white fixed top-0 left-0 right-0 z-40">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-3">
           {/* Logo */}
@@ -153,7 +206,7 @@ const LoggedInNavbar = () => {
                 key={item.path}
                 to={item.path}
                 className={`flex flex-col items-center p-3 rounded-lg transition-all duration-300 group relative ${
-                  location.pathname === item.path ? item.bgColor : ""
+                  location.pathname === item.path ? messColors.active : ""
                 }`}
                 title={item.label}
               >
@@ -162,31 +215,31 @@ const LoggedInNavbar = () => {
                     size={20}
                     className={`${
                       location.pathname === item.path
-                        ? item.color
+                        ? messColors.primary
                         : "text-gray-700"
-                    } ${item.hoverColor} transition-colors duration-300`}
+                    } ${messColors.hover} transition-colors duration-300`}
                   />
                 </div>
 
                 {/* Hover Tooltip */}
                 <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
                   <div
-                    className={`px-3 py-2 rounded-lg shadow-lg ${item.bgColor} border border-${item.theme}-200`}
+                    className={`px-3 py-2 rounded-lg shadow-lg ${messColors.bg} ${messColors.border} border`}
                   >
                     <span
-                      className={`text-sm font-medium ${item.color} whitespace-nowrap`}
+                      className={`text-sm font-medium ${messColors.primary} whitespace-nowrap`}
                     >
                       {item.label}
                     </span>
                     <div
-                      className={`absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 ${item.bgColor} border-l border-t border-${item.theme}-200`}
+                      className={`absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 ${messColors.bg} ${messColors.border} border-l border-t`}
                     ></div>
                   </div>
                 </div>
               </Link>
             ))}
 
-            {/* ADD NOTIFICATIONS BELL ICON */}
+            {/* Notifications Bell Icon */}
             <div className="relative" ref={notificationsRef}>
               <button
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -218,7 +271,7 @@ const LoggedInNavbar = () => {
                 </div>
               </button>
 
-              {/* NOTIFICATIONS DROPDOWN */}
+              {/* Notifications Dropdown */}
               <div
                 className={`absolute right-0 mt-2 w-96 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl py-2 z-50 border border-white/50 transition-all duration-300 transform origin-top-right ${
                   isNotificationsOpen
@@ -336,7 +389,7 @@ const LoggedInNavbar = () => {
                     className="w-9 h-9 rounded-full border-2 border-gray-200 hover:border-green-400 transition-all duration-300 group-hover:scale-110"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center border-2 border-gray-200 hover:border-green-400 transition-all duration-300 group-hover:scale-110">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center border-2 border-gray-200 hover:border-green-400 transition-all duration-300 group-hover:scale-110 bg-gradient-to-r from-green-100 to-purple-100">
                     <User
                       size={18}
                       className="text-gray-600 group-hover:text-green-600 transition-colors"
@@ -346,11 +399,11 @@ const LoggedInNavbar = () => {
 
                 {/* Hover Tooltip */}
                 <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                  <div className="px-3 py-2 rounded-lg shadow-lg bg-green-50 border border-green-200">
-                    <span className="text-sm font-medium text-green-600 whitespace-nowrap">
+                  <div className={`px-3 py-2 rounded-lg shadow-lg ${messColors.bg} ${messColors.border} border`}>
+                    <span className={`text-sm font-medium ${messColors.primary} whitespace-nowrap`}>
                       Profile
                     </span>
-                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 bg-green-50 border-l border-t border-green-200"></div>
+                    <div className={`absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 ${messColors.bg} ${messColors.border} border-l border-t`}></div>
                   </div>
                 </div>
               </button>
@@ -365,7 +418,7 @@ const LoggedInNavbar = () => {
                 onMouseLeave={() => setIsProfileOpen(false)}
               >
                 {/* Header with user info */}
-                <div className="px-6 py-4 bg-gradient-to-r from-green-200 via-purple-200 to-red-200 rounded-t-2xl text-white">
+                <div className={`px-6 py-4 bg-gradient-to-r ${messColors.profileGradient} rounded-t-2xl text-white`}>
                   <div className="flex items-center space-x-3">
                     {currentUser?.photoURL ? (
                       <img
@@ -393,12 +446,12 @@ const LoggedInNavbar = () => {
                 <div className="py-2">
                   <Link
                     to="/profile"
-                    className="flex items-center px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 transition-all duration-300 group"
+                    className={`flex items-center px-6 py-3 text-gray-700 hover:bg-gradient-to-r ${messColors.gradientFrom} ${messColors.gradientTo} transition-all duration-300 group`}
                     onClick={() => setIsProfileOpen(false)}
                   >
                     <User
                       size={18}
-                      className="mr-3 text-green-500 group-hover:scale-110 transition-transform"
+                      className={`mr-3 ${messColors.primary} group-hover:scale-110 transition-transform`}
                     />
                     <span>My Profile</span>
                     <Sparkles
@@ -408,15 +461,15 @@ const LoggedInNavbar = () => {
                   </Link>
 
                   <Link
-                    to="/settings"
-                    className="flex items-center px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 transition-all duration-300 group"
+                    to="/notifications"
+                    className="flex items-center px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 group"
                     onClick={() => setIsProfileOpen(false)}
                   >
-                    <Settings
+                    <Bell
                       size={18}
-                      className="mr-3 text-purple-500 group-hover:scale-110 transition-transform"
+                      className="mr-3 text-blue-500 group-hover:scale-110 transition-transform"
                     />
-                    <span>Settings</span>
+                    <span>Notifications</span>
                     <Sparkles
                       size={14}
                       className="ml-auto text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -427,11 +480,11 @@ const LoggedInNavbar = () => {
 
                   <button
                     onClick={handleLogout}
-                    className="flex items-center w-full text-left px-6 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 transition-all duration-300 group"
+                    className="flex items-center w-full text-left px-6 py-3 text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 transition-all duration-300 group"
                   >
                     <LogOut
                       size={18}
-                      className="mr-3 text-red-500 group-hover:scale-110 transition-transform"
+                      className="mr-3 group-hover:scale-110 transition-transform"
                     />
                     <span>Logout</span>
                     <Sparkles
@@ -444,6 +497,7 @@ const LoggedInNavbar = () => {
             </div>
           </div>
 
+         
         </div>
 
       </div>

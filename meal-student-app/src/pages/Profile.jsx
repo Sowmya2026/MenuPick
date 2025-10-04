@@ -44,7 +44,7 @@ export default function Profile() {
     studentId: "",
     dietaryPreferences: [],
     allergies: [],
-    messPreference: "veg",
+    // messPreference will be set from currentUser and cannot be changed
   });
 
   // Local state for toggle UI feedback
@@ -60,7 +60,7 @@ export default function Profile() {
         studentId: currentUser.studentId || "",
         dietaryPreferences: currentUser.dietaryPreferences || [],
         allergies: currentUser.allergies || [],
-        messPreference: currentUser.messPreference || "veg",
+        // messPreference is read-only from currentUser
       }));
     }
   }, [currentUser]);
@@ -70,8 +70,9 @@ export default function Profile() {
     checkPermissionStatus();
   }, [checkPermissionStatus]);
 
-  // Get gradient class for header based on mess type (same as home page)
-  const getHeaderGradient = (messType = formData.messPreference) => {
+  // Get gradient class for header based on mess type
+  const getHeaderGradient = () => {
+    const messType = currentUser?.messPreference || "veg";
     switch (messType) {
       case "veg":
         return "bg-gradient-to-r from-green-600 to-green-800";
@@ -84,8 +85,9 @@ export default function Profile() {
     }
   };
 
-  // Get color class based on mess type (same as home page)
-  const getColorClass = (messType = formData.messPreference) => {
+  // Get color class based on mess type
+  const getColorClass = () => {
+    const messType = currentUser?.messPreference || "veg";
     switch (messType) {
       case "veg":
         return "text-green-600";
@@ -98,9 +100,10 @@ export default function Profile() {
     }
   };
 
-  // Get mess icon (same as home page)
+  // Get mess icon
   const getMessIcon = () => {
-    switch (formData.messPreference) {
+    const messType = currentUser?.messPreference || "veg";
+    switch (messType) {
       case "veg":
         return <Leaf size={20} className="text-green-600" />;
       case "non-veg":
@@ -109,6 +112,21 @@ export default function Profile() {
         return <Star size={20} className="text-purple-600" />;
       default:
         return <Leaf size={20} className="text-green-600" />;
+    }
+  };
+
+  // Get mess type display name
+  const getMessTypeDisplayName = () => {
+    const messType = currentUser?.messPreference || "veg";
+    switch (messType) {
+      case "veg":
+        return "Vegetarian";
+      case "non-veg":
+        return "Non-Vegetarian";
+      case "special":
+        return "Special";
+      default:
+        return "Vegetarian";
     }
   };
 
@@ -130,21 +148,7 @@ export default function Profile() {
     "Soy",
   ];
 
-  const messOptions = [
-    { id: "veg", name: "Vegetarian", icon: <Leaf size={16} />, color: "green" },
-    {
-      id: "non-veg",
-      name: "Non-Vegetarian",
-      icon: <Beef size={16} />,
-      color: "red",
-    },
-    {
-      id: "special",
-      name: "Special",
-      icon: <Star size={16} />,
-      color: "purple",
-    },
-  ];
+  // Remove messOptions array since users can't change mess preference
 
   // Handle meal reminder toggle with proper error handling
   const handleMealReminderToggle = async (enabled) => {
@@ -245,7 +249,7 @@ export default function Profile() {
         studentId: currentUser.studentId || "",
         dietaryPreferences: currentUser.dietaryPreferences || [],
         allergies: currentUser.allergies || [],
-        messPreference: currentUser.messPreference || "veg",
+        // messPreference remains read-only
       });
     }
     setIsEditing(false);
@@ -269,13 +273,6 @@ export default function Profile() {
     }));
   };
 
-  const setMessPreference = (preference) => {
-    setFormData((prev) => ({
-      ...prev,
-      messPreference: preference,
-    }));
-  };
-
   if (!currentUser) {
     return (
       <div className="text-center py-8 px-4 md:py-12">
@@ -294,28 +291,24 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header Section - Same as home page */}
+      {/* Header Section */}
       <div className="px-2 py-2 sm:px-4 sm:py-5 md:px-4 md:py-6">
         <div className="text-center">
           <h1
-            className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(
-              formData.messPreference
-            )} mb-[0px] sm:mb-3 md:mb-[0px]`}
+            className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient()} mb-[0px] sm:mb-3 md:mb-[0px]`}
           >
             Profile Settings
           </h1>
         </div>
       </div>
 
-      {/* Main Content - Same padding as home page */}
+      {/* Main Content */}
       <div className="px-3 pb-4 sm:px-4 sm:pb-6 md:px-6 md:pb-8">
-        {/* Mess Type Header - Same as home page */}
+        {/* Mess Type Header */}
         <div className="flex items-center justify-center mb-4 sm:mb-5 md:mb-6">
           <div className="flex items-center mr-2 sm:mr-3">{getMessIcon()}</div>
           <h2
-            className={`text-lg font-semibold font-serif sm:text-xl md:text-2xl ${getColorClass(
-              formData.messPreference
-            )}`}
+            className={`text-lg font-semibold font-serif sm:text-xl md:text-2xl ${getColorClass()}`}
           >
             Manage Your Account
           </h2>
@@ -483,39 +476,25 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Mess Preference Card */}
+              {/* Mess Information Card - Read Only */}
               <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-3 md:text-xl md:mb-4">
-                  Mess Preference
+                  Mess Information
                 </h2>
-                <p className="text-xs text-gray-600 mb-3 md:text-sm md:mb-4">
-                  Set your default mess type for the home page
-                </p>
-                <div className="grid grid-cols-3 gap-2 md:gap-3">
-                  {messOptions.map((option) => (
-                    <button
-                      key={option.id}
-                      onClick={() => isEditing && setMessPreference(option.id)}
-                      disabled={!isEditing}
-                      className={`p-2 rounded-lg border-2 flex flex-col items-center transition-colors md:p-3 ${
-                        formData.messPreference === option.id
-                          ? `border-${option.color}-500 bg-${option.color}-50`
-                          : "border-gray-200 hover:border-gray-300"
-                      } ${
-                        !isEditing
-                          ? "opacity-50 cursor-not-allowed"
-                          : "cursor-pointer"
-                      }`}
-                    >
-                      <span className={`text-${option.color}-600 mb-1`}>
-                        {option.icon}
-                      </span>
-                      <span className="text-xs text-center md:text-sm">
-                        {option.name}
-                      </span>
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center">
+                    {getMessIcon()}
+                    <span className="ml-2 text-sm font-medium text-gray-700">
+                      {getMessTypeDisplayName()} Mess
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
+                    Assigned
+                  </span>
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Your mess type is assigned by the administration and cannot be changed.
+                </p>
               </div>
 
               {/* Dietary Preferences Card */}
@@ -804,9 +783,9 @@ export default function Profile() {
                     </span>
                   </div>
                   <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-gray-600">Mess Preference</span>
+                    <span className="text-gray-600">Mess Type</span>
                     <span className="font-medium capitalize">
-                      {formData.messPreference}
+                      {getMessTypeDisplayName()}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs md:text-sm">
