@@ -15,6 +15,12 @@ import {
 import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import { toast } from "react-hot-toast";
+import {
+  showAlert,
+  showSuccess,
+  showError,
+  showInfo,
+} from "../utils/alertUtils";
 
 const NotificationContext = createContext();
 
@@ -28,6 +34,22 @@ export const NotificationProvider = ({ children }) => {
     monthlyReports: true,
     pushNotifications: false,
   });
+  // Add this useEffect to NotificationContext.js
+  useEffect(() => {
+    // Listen for test notifications
+    const handleTestNotification = (event) => {
+      const testNotification = event.detail;
+      setCurrentNotification(testNotification);
+      setShowNotification(true);
+      setActiveNotifications((prev) => [testNotification, ...prev.slice(0, 9)]);
+    };
+
+    window.addEventListener("test-notification", handleTestNotification);
+
+    return () => {
+      window.removeEventListener("test-notification", handleTestNotification);
+    };
+  }, []);
 
   const [activeNotifications, setActiveNotifications] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
@@ -35,6 +57,8 @@ export const NotificationProvider = ({ children }) => {
   const [fcmToken, setFcmToken] = useState(null);
   const [hasPermission, setHasPermission] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState("default");
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [hasShownInitialPrompt, setHasShownInitialPrompt] = useState(false);
 
   // Default color themes
   const defaultColorThemes = {
@@ -69,7 +93,7 @@ export const NotificationProvider = ({ children }) => {
       border: "border-blue-200",
       text: "text-blue-600",
       bg: "bg-blue-500",
-    }
+    },
   };
 
   // Check current permission status
@@ -99,11 +123,13 @@ export const NotificationProvider = ({ children }) => {
           fcmTokens: [...(userSnap.data().fcmTokens || []), token],
           notificationEnabled: true,
           lastTokenUpdate: new Date(),
+          notifications_enabled: true,
         });
       } else {
         await setDoc(userRef, {
           fcmTokens: [token],
           notificationEnabled: true,
+          notifications_enabled: true,
           createdAt: new Date(),
         });
       }
@@ -129,6 +155,7 @@ export const NotificationProvider = ({ children }) => {
         await updateDoc(userRef, {
           fcmTokens: updatedTokens,
           notificationEnabled: updatedTokens.length > 0,
+          notifications_enabled: updatedTokens.length > 0,
         });
       }
     } catch (error) {
@@ -162,7 +189,7 @@ export const NotificationProvider = ({ children }) => {
           await saveFCMTokenToFirestore(token);
         } catch (error) {
           // This is expected when permissions are denied - don't log as error
-          if (!error.message.includes('permission')) {
+          if (!error.message.includes("permission")) {
             console.log("Could not get FCM token:", error.message);
           }
         }
@@ -176,13 +203,114 @@ export const NotificationProvider = ({ children }) => {
     notifications.pushNotifications,
   ]);
 
-  // Request notification permission
+  // NEW: Show initial permission modal after sign-in
+  const showInitialPermissionModal = useCallback(() => {
+    if (!currentUser) return;
+
+    // Check if we've already shown the prompt for this user
+    const hasShown = localStorage.getItem(
+      `notification_prompt_shown_${currentUser.uid}`
+    );
+    if (hasShown) return;
+
+    const currentStatus = checkPermissionStatus();
+
+    // Only show if permission hasn't been decided yet
+    if (currentStatus === "default" && !hasShownInitialPrompt) {
+      setTimeout(() => {
+        setShowPermissionModal(true);
+        setHasShownInitialPrompt(true);
+      }, 2000); // Show after 2 seconds on home page
+    }
+  }, [currentUser, checkPermissionStatus, hasShownInitialPrompt]);
+
+  // NEW: Handle permission modal actions
+  const handleAllowNotifications = async () => {
+    try {
+      setShowPermissionModal(false);
+
+      // Mark as shown for this user
+      if (currentUser) {
+        localStorage.setItem(
+          `notification_prompt_shown_${currentUser.uid}`,
+          "true"
+        );
+      }
+
+      const permission = await Notification.requestPermission();
+      checkPermissionStatus();
+
+      if (permission === "granted") {
+        try {
+          const token = await getFCMToken();
+          setFcmToken(token);
+          await saveFCMTokenToFirestore(token);
+          setNotifications((prev) => ({ ...prev, pushNotifications: true }));
+          showSuccess(
+            "Notifications Enabled",
+            "You'll receive updates, alerts, and offers from MenuPick!"
+          );
+        } catch (error) {
+          // Permission granted but token failed - still enable notifications
+          setNotifications((prev) => ({ ...prev, pushNotifications: true }));
+          showSuccess(
+            "Notifications Enabled",
+            "You'll receive updates and alerts from MenuPick!"
+          );
+        }
+      } else {
+        // User denied permission
+        setNotifications((prev) => ({ ...prev, pushNotifications: false }));
+        if (currentUser) {
+          const userRef = doc(db, "users", currentUser.uid);
+          await updateDoc(userRef, {
+            notifications_enabled: false,
+          });
+        }
+      }
+    } catch (error) {
+      console.log("Error requesting notification permission:", error);
+      setShowPermissionModal(false);
+    }
+  };
+
+  const handleDenyNotifications = async () => {
+    setShowPermissionModal(false);
+
+    // Mark as shown for this user
+    if (currentUser) {
+      localStorage.setItem(
+        `notification_prompt_shown_${currentUser.uid}`,
+        "true"
+      );
+    }
+
+    // Save preference in database
+    setNotifications((prev) => ({ ...prev, pushNotifications: false }));
+
+    if (currentUser) {
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        await updateDoc(userRef, {
+          notifications_enabled: false,
+        });
+      } catch (error) {
+        console.error("Error updating notification preference:", error);
+      }
+    }
+  };
+
+  // Request notification permission (for manual enable from settings)
   const requestNotificationPermission = async () => {
     try {
       const currentStatus = checkPermissionStatus();
 
-      // If already denied, return gracefully
+      // If already denied, show alert and return
       if (currentStatus === "denied") {
+        showAlert(
+          "Permission Blocked",
+          "Please enable notifications manually from your device or browser settings."
+        );
         return "permission_denied";
       }
 
@@ -192,9 +320,11 @@ export const NotificationProvider = ({ children }) => {
           const token = await getFCMToken();
           setFcmToken(token);
           await saveFCMTokenToFirestore(token);
+          setNotifications((prev) => ({ ...prev, pushNotifications: true }));
           return token;
         } catch (error) {
           // Permission granted but token failed - this is okay
+          setNotifications((prev) => ({ ...prev, pushNotifications: true }));
           return "permission_granted";
         }
       }
@@ -209,15 +339,24 @@ export const NotificationProvider = ({ children }) => {
             const token = await getFCMToken();
             setFcmToken(token);
             await saveFCMTokenToFirestore(token);
-            toast.success("Push notifications enabled!");
+            setNotifications((prev) => ({ ...prev, pushNotifications: true }));
+            showSuccess(
+              "Notifications Enabled",
+              "Push notifications are now active!"
+            );
             return token;
           } catch (error) {
             // Permission granted but token failed
-            toast.success("Notifications enabled!");
+            setNotifications((prev) => ({ ...prev, pushNotifications: true }));
+            showSuccess(
+              "Notifications Enabled",
+              "You'll receive in-app notifications!"
+            );
             return "permission_granted";
           }
         } else {
           // Permission denied
+          setNotifications((prev) => ({ ...prev, pushNotifications: false }));
           return "permission_denied";
         }
       }
@@ -240,8 +379,9 @@ export const NotificationProvider = ({ children }) => {
       timestamp: new Date(),
       data: data || {},
       isPush: true,
-      colorTheme: defaultColorThemes[data?.messType] || defaultColorThemes.default,
-      messType: data?.messType || "default"
+      colorTheme:
+        defaultColorThemes[data?.messType] || defaultColorThemes.default,
+      messType: data?.messType || "default",
     };
 
     setCurrentNotification(notificationObj);
@@ -266,25 +406,19 @@ export const NotificationProvider = ({ children }) => {
       if (enable) {
         // If permission is already denied, show helpful message
         if (permissionStatus === "denied") {
-          toast.error(
-            "Notifications are blocked in your browser settings. Please enable them to receive push notifications.",
-            {
-              duration: 6000,
-              icon: "🔔",
-            }
+          showAlert(
+            "Permission Blocked",
+            "Please enable notifications manually from your device or browser settings."
           );
           return false;
         }
 
         const result = await requestNotificationPermission();
-        
+
         if (result === "permission_denied") {
-          toast.error(
-            "To enable push notifications, please allow notifications in your browser settings.",
-            {
-              duration: 5000,
-              icon: "🔔",
-            }
+          showAlert(
+            "Permission Required",
+            "To enable push notifications, please allow notifications in your browser settings."
           );
           return false;
         } else {
@@ -303,7 +437,10 @@ export const NotificationProvider = ({ children }) => {
           await removeFCMTokenFromFirestore(fcmToken);
         }
 
-        toast.success("Push notifications disabled");
+        showSuccess(
+          "Notifications Disabled",
+          "Push notifications have been turned off."
+        );
         return true;
       }
     } catch (error) {
@@ -345,6 +482,13 @@ export const NotificationProvider = ({ children }) => {
     checkPermissionStatus,
   ]);
 
+  // NEW: Show permission modal when user lands on home page
+  useEffect(() => {
+    if (currentUser && window.location.pathname === "/") {
+      showInitialPermissionModal();
+    }
+  }, [currentUser, showInitialPermissionModal]);
+
   // Load user preferences
   useEffect(() => {
     if (currentUser) {
@@ -358,6 +502,14 @@ export const NotificationProvider = ({ children }) => {
       const savedToken = localStorage.getItem(`fcm_token_${currentUser.uid}`);
       if (savedToken) {
         setFcmToken(savedToken);
+      }
+
+      // Check if we've shown the prompt before
+      const hasShownPrompt = localStorage.getItem(
+        `notification_prompt_shown_${currentUser.uid}`
+      );
+      if (hasShownPrompt) {
+        setHasShownInitialPrompt(true);
       }
     }
   }, [currentUser]);
@@ -421,12 +573,17 @@ export const NotificationProvider = ({ children }) => {
     fcmToken,
     saveFCMTokenToFirestore,
     removeFCMTokenFromFirestore,
+    showPermissionModal,
+    setShowPermissionModal,
+    handleAllowNotifications,
+    handleDenyNotifications,
   };
 
   return (
     <NotificationContext.Provider value={value}>
       {children}
       <NotificationPopup />
+      <PermissionModal />
     </NotificationContext.Provider>
   );
 };
@@ -441,14 +598,16 @@ const NotificationPopup = () => {
   const colorTheme = currentNotification.colorTheme || {
     border: "border-blue-200",
     gradient: "from-blue-500 to-blue-600",
-    text: "text-blue-600"
+    text: "text-blue-600",
   };
 
   const isStartNotification = currentNotification.subType === "start";
 
   return (
     <div className="fixed top-4 right-4 z-50 max-w-sm animate-fade-in">
-      <div className={`bg-white rounded-lg shadow-xl ${colorTheme.border} border-2 overflow-hidden`}>
+      <div
+        className={`bg-white rounded-lg shadow-xl ${colorTheme.border} border-2 overflow-hidden`}
+      >
         <div className={`bg-gradient-to-r ${colorTheme.gradient} p-4`}>
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-white text-sm">
@@ -474,25 +633,31 @@ const NotificationPopup = () => {
           </div>
         </div>
 
-        {isStartNotification && currentNotification.menuItems && currentNotification.menuItems.length > 0 && (
-          <div className="p-4 bg-white">
-            <div className="flex items-center mb-2">
-              <span className={`${colorTheme.text} font-semibold text-xs uppercase tracking-wide`}>
-                Today's Menu
-              </span>
+        {isStartNotification &&
+          currentNotification.menuItems &&
+          currentNotification.menuItems.length > 0 && (
+            <div className="p-4 bg-white">
+              <div className="flex items-center mb-2">
+                <span
+                  className={`${colorTheme.text} font-semibold text-xs uppercase tracking-wide`}
+                >
+                  Today's Menu
+                </span>
+              </div>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {currentNotification.menuItems.map((item, index) => (
+                  <div key={index} className="flex items-start">
+                    <span className={`${colorTheme.text} text-xs mr-2 mt-0.5`}>
+                      •
+                    </span>
+                    <span className="text-gray-700 text-xs leading-relaxed">
+                      {item}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {currentNotification.menuItems.map((item, index) => (
-                <div key={index} className="flex items-start">
-                  <span className={`${colorTheme.text} text-xs mr-2 mt-0.5`}>•</span>
-                  <span className="text-gray-700 text-xs leading-relaxed">
-                    {item}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          )}
 
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
           <div className="flex items-center justify-between">
@@ -508,6 +673,66 @@ const NotificationPopup = () => {
               </span>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// NEW: Permission Modal Component
+const PermissionModal = () => {
+  const {
+    showPermissionModal,
+    handleAllowNotifications,
+    handleDenyNotifications,
+  } = useContext(NotificationContext);
+
+  if (!showPermissionModal) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white rounded-2xl border-4 border-white shadow-2xl max-w-sm w-full mx-auto transform animate-scale-in">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-center rounded-t-2xl">
+          <div className="w-16 h-16 mx-auto mb-4 bg-white rounded-full flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-green-600"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.93 6 11v5l-2 2v1h16v-1l-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">
+            Enable Notifications
+          </h3>
+          <p className="text-white text-sm opacity-90">
+            Would you like to receive updates, alerts, and offers from MenuPick?
+          </p>
+        </div>
+
+        {/* Buttons */}
+        <div className="p-6 space-y-3">
+          <button
+            onClick={handleAllowNotifications}
+            className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-semibold shadow-lg shadow-green-200 hover:shadow-green-300 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Allow Notifications
+          </button>
+
+          <button
+            onClick={handleDenyNotifications}
+            className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Don't Allow
+          </button>
+        </div>
+
+        {/* Footer Note */}
+        <div className="px-6 pb-4 text-center">
+          <p className="text-xs text-gray-500">
+            You can change this later in Settings
+          </p>
         </div>
       </div>
     </div>

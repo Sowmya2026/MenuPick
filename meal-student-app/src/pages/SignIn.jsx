@@ -7,7 +7,6 @@ import {
   Eye,
   EyeOff,
   Sparkles,
-  AlertCircle,
   X,
 } from "lucide-react";
 
@@ -18,24 +17,13 @@ const SignIn = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [localError, setLocalError] = useState("");
+
   const {
     loginWithEmail,
     loginWithGoogle,
-    authError,
-    clearError,
     authLoading,
   } = useAuth();
   const navigate = useNavigate();
-
-  // Clear errors when component mounts
-  useEffect(() => {
-    clearError();
-    setLocalError("");
-  }, [clearError]);
-
-  // Combine auth error and local error
-  const error = authError || localError;
 
   const theme = {
     primary: {
@@ -52,34 +40,21 @@ const SignIn = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    // Clear errors when user starts typing
-    if (error) {
-      clearError();
-      setLocalError("");
-    }
   };
 
   const validateForm = () => {
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setLocalError("Please enter a valid email address");
       return false;
     }
-
-    // Password validation
     if (formData.password.length < 1) {
-      setLocalError("Please enter your password");
       return false;
     }
-
     return true;
   };
 
   const handleEmailSignIn = async (e) => {
     e.preventDefault();
-    clearError();
-    setLocalError("");
     setIsLoading(true);
 
     if (!validateForm()) {
@@ -88,38 +63,20 @@ const SignIn = () => {
     }
 
     try {
-      const result = await loginWithEmail(formData.email, formData.password);
-
-      if (result.success) {
-        // Successful login - redirect handled in AuthContext
-      } else {
-        // Show specific error message from the result
-        setLocalError(result.error || 'Authentication failed');
-      }
+      await loginWithEmail(formData.email, formData.password);
     } catch (error) {
       console.error("Sign in error:", error);
-      setLocalError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    clearError();
-    setLocalError("");
     setIsLoading(true);
-
     try {
-      const result = await loginWithGoogle();
-
-      if (result.success) {
-        // Successful login - redirect handled in AuthContext
-      } else if (result.error) {
-        setLocalError(result.error);
-      }
+      await loginWithGoogle();
     } catch (error) {
       console.error("Google sign-in error:", error);
-      setLocalError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -186,41 +143,6 @@ const SignIn = () => {
           </div>
 
           <form className="p-4 sm:p-6 space-y-4" onSubmit={handleEmailSignIn}>
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-3 animate-shake relative">
-                <button
-                  onClick={() => {
-                    clearError();
-                    setLocalError("");
-                  }}
-                  className="absolute right-2 top-2 text-red-400 hover:text-red-600"
-                >
-                  <X size={16} />
-                </button>
-                <div className="flex items-center space-x-2">
-                  <AlertCircle
-                    size={16}
-                    className="text-red-500 flex-shrink-0"
-                  />
-                  <p className="text-red-600 text-xs font-medium">{error}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Info Message for Google Sign In */}
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-3">
-              <div className="flex items-center space-x-2">
-                <AlertCircle
-                  size={16}
-                  className="text-blue-500 flex-shrink-0"
-                />
-                <p className="text-blue-600 text-xs font-medium">
-                  Google Sign-In is for existing users only. New users please create an account first.
-                </p>
-              </div>
-            </div>
-
             <div className="space-y-3">
               {/* Email */}
               <div className="group relative">

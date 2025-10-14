@@ -12,7 +12,7 @@ import { Toaster } from "react-hot-toast";
 import { useState, useEffect } from "react";
 import { NotificationProvider } from "./context/NotificationContext";
 
-import MainNavbar from "./components/MainNavbar"; // This now handles both navbars
+import MainNavbar from "./components/MainNavbar";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import MealSelection from "./pages/MealSelection";
@@ -25,6 +25,8 @@ import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
 import Notifications from "./pages/Notifications";
 import ForgotPassword from "./pages/ForgotPassword";
+import TestNotifications from './components/TestNotifications';
+import DevTestButton from './components/DevTestButton';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -64,6 +66,23 @@ const ProfileCompletionRoute = ({ children }) => {
   return children;
 };
 
+// Test Route Component (only accessible in development)
+const TestRoute = ({ children }) => {
+  const { currentUser } = useAuth();
+  
+  // In production, redirect to home
+  if (process.env.NODE_ENV === 'production') {
+    return <Navigate to="/" replace />;
+  }
+
+  // In development, allow access but require login
+  if (!currentUser) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  return children;
+};
+
 // Route Handler Component
 const RouteHandler = () => {
   const { currentUser, needsProfileCompletion } = useAuth();
@@ -74,7 +93,8 @@ const RouteHandler = () => {
     currentUser &&
     needsProfileCompletion &&
     location.pathname !== "/complete-profile" &&
-    !location.pathname.startsWith("/auth")
+    !location.pathname.startsWith("/auth") &&
+    location.pathname !== "/test-notifications"
   ) {
     return <Navigate to="/complete-profile" replace />;
   }
@@ -134,6 +154,16 @@ const RouteHandler = () => {
             <ProfileCompletionRoute>
               <CompleteProfile />
             </ProfileCompletionRoute>
+          }
+        />
+
+        {/* Test notifications route - only in development */}
+        <Route
+          path="/test-notifications"
+          element={
+            <TestRoute>
+              <TestNotifications />
+            </TestRoute>
           }
         />
 
@@ -255,6 +285,8 @@ function AppContent() {
           <RouteHandler />
         </main>
         <Toaster position="top-right" />
+        {/* Only show dev button in development */}
+        {process.env.NODE_ENV === 'development' && <DevTestButton />}
       </div>
     );
   }
@@ -278,6 +310,8 @@ function AppContent() {
         <RouteHandler />
       </main>
       <Toaster position="top-right" />
+      {/* Only show dev button in development */}
+      {process.env.NODE_ENV === 'development' && <DevTestButton />}
     </div>
   );
 }

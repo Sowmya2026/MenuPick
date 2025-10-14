@@ -9,9 +9,6 @@ import {
   EyeOff,
   BookOpen,
   Sparkles,
-  Check,
-  AlertCircle,
-  X,
 } from "lucide-react";
 
 const SignUp = () => {
@@ -26,39 +23,13 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [localError, setLocalError] = useState("");
-  const [isGoogleSignUp, setIsGoogleSignUp] = useState(false);
-  const [googleUserData, setGoogleUserData] = useState(null);
+
   const {
     signupWithEmail,
-    loginWithGoogle,
-    authError,
-    clearError,
+    signupWithGoogle,
     authLoading,
-    currentUser,
   } = useAuth();
   const navigate = useNavigate();
-
-  // Clear errors when component mounts
-  useEffect(() => {
-    clearError();
-    setLocalError("");
-  }, [clearError]);
-
-  // Redirect to complete profile if user signed up with Google but doesn't have profile data
-  useEffect(() => {
-    if (currentUser && isGoogleSignUp && !currentUser.displayName) {
-      navigate("/complete-profile", { 
-        state: { 
-          fromSignUp: true,
-          email: currentUser.email 
-        } 
-      });
-    }
-  }, [currentUser, isGoogleSignUp, navigate]);
-
-  // Combine auth error and local error
-  const error = authError || localError;
 
   const theme = {
     primary: {
@@ -75,50 +46,34 @@ const SignUp = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    // Clear errors when user starts typing
-    if (error) {
-      clearError();
-      setLocalError("");
-    }
   };
 
   const validateForm = () => {
-    // Name validation - only letters and spaces
     const nameRegex = /^[a-zA-Z\s]+$/;
     if (!formData.displayName.trim()) {
-      setLocalError("Please enter your full name");
       return false;
     }
     if (!nameRegex.test(formData.displayName)) {
-      setLocalError("Name can only contain letters and spaces");
       return false;
     }
 
-    // Student ID validation - alphanumeric
     const studentIdRegex = /^[a-zA-Z0-9]+$/;
     if (!formData.studentId.trim()) {
-      setLocalError("Please enter your student ID");
       return false;
     }
     if (!studentIdRegex.test(formData.studentId)) {
-      setLocalError("Student ID can only contain letters and numbers");
       return false;
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setLocalError("Please enter a valid email address");
       return false;
     }
 
-    // Password validation
     if (formData.password.length < 6) {
-      setLocalError("Password must be at least 6 characters long");
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
-      setLocalError("Passwords do not match");
       return false;
     }
 
@@ -127,10 +82,7 @@ const SignUp = () => {
 
   const handleEmailSignUp = async (e) => {
     e.preventDefault();
-    clearError();
-    setLocalError("");
     setIsLoading(true);
-    setIsGoogleSignUp(false);
 
     if (!validateForm()) {
       setIsLoading(false);
@@ -138,48 +90,24 @@ const SignUp = () => {
     }
 
     try {
-      const result = await signupWithEmail(formData.email, formData.password, {
+      await signupWithEmail(formData.email, formData.password, {
         displayName: formData.displayName.trim(),
         studentId: formData.studentId.trim().toUpperCase(),
         messPreference: formData.messPreference,
       });
-
-      if (result.success) {
-        // Success message is handled via navigation state in AuthContext
-        // User will be redirected to /signin automatically
-      } else {
-        setLocalError(result.error || 'Registration failed');
-      }
     } catch (error) {
       console.error("Sign up error:", error);
-      setLocalError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
-    clearError();
-    setLocalError("");
     setIsLoading(true);
-    setIsGoogleSignUp(true);
-
     try {
-      const result = await loginWithGoogle();
-
-      if (result.success) {
-        // Google sign-up will redirect to complete-profile in AuthContext
-        // The useEffect above will handle the redirection
-      } else if (result.error) {
-        if (result.error.includes('user-not-found') || result.error.includes('no-existing-account')) {
-          setLocalError("Google sign-up failed. Please try again.");
-        } else {
-          setLocalError(result.error);
-        }
-      }
+      await signupWithGoogle();
     } catch (error) {
       console.error("Google sign-up error:", error);
-      setLocalError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -252,28 +180,6 @@ const SignUp = () => {
           </div>
 
           <form className="p-4 sm:p-6 space-y-4" onSubmit={handleEmailSignUp}>
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-3 animate-shake relative">
-                <button
-                  onClick={() => {
-                    clearError();
-                    setLocalError("");
-                  }}
-                  className="absolute right-2 top-2 text-red-400 hover:text-red-600"
-                >
-                  <X size={16} />
-                </button>
-                <div className="flex items-center space-x-2">
-                  <AlertCircle
-                    size={16}
-                    className="text-red-500 flex-shrink-0"
-                  />
-                  <p className="text-red-600 text-xs font-medium">{error}</p>
-                </div>
-              </div>
-            )}
-
             <div className="space-y-3">
               {/* Name and Student ID */}
               <div className="space-y-2">

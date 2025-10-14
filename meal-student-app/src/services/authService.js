@@ -7,7 +7,7 @@ import {
   onAuthStateChanged
 } from 'firebase/auth'
 import { auth } from './firebaseConfig'
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from './firebaseConfig'
 
 // Configure Google Auth Provider properly
@@ -51,6 +51,23 @@ const getErrorMessage = (error) => {
   }
 }
 
+// Check if email exists in Firestore (NEW - for pre-check)
+const checkEmailExistsInFirestore = async (email) => {
+  try {
+    console.log('🔍 Checking if email exists:', email)
+    const usersRef = collection(db, 'users')
+    const q = query(usersRef, where('email', '==', email.toLowerCase().trim()))
+    const querySnapshot = await getDocs(q)
+    
+    const exists = !querySnapshot.empty
+    console.log('📧 Email exists in Firestore:', exists)
+    return exists
+  } catch (error) {
+    console.error('❌ Error checking email existence:', error)
+    return false
+  }
+}
+
 // Check if user exists in Firestore with retry logic
 const checkUserExistsInFirestore = async (uid, retries = 3) => {
   try {
@@ -86,7 +103,8 @@ const createGoogleUserInFirestore = async (user) => {
       allergies: [],
       accountType: 'google',
       isRegistered: false,
-      needsProfileCompletion: true
+      needsProfileCompletion: true,
+      profileCompleted: false
     }
     
     await setDoc(doc(db, 'users', user.uid), userData)
@@ -98,45 +116,39 @@ const createGoogleUserInFirestore = async (user) => {
   }
 }
 
+// NEW: Pre-check for Google authentication
+const preCheckGoogleAuth = async (userEmail) => {
+  try {
+    console.log('🔍 Pre-checking Google user:', userEmail)
+    const emailExists = await checkEmailExistsInFirestore(userEmail)
+    return emailExists
+  } catch (error) {
+    console.error('❌ Pre-check error:', error)
+    return false
+  }
+}
+
 export const authService = {
+  // NEW: Separate method for Google Sign-In (existing users)
   async loginWithGoogle() {
     try {
-      console.log('🔐 Starting Google sign-in...')
+      console.log('🔐 Starting Google sign-in for existing users...')
       
       const result = await signInWithPopup(auth, googleProvider)
       const user = result.user
       
       console.log('✅ Google authentication successful, checking Firestore...')
       
-      // Wait a moment for Firestore to be ready
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
       // Check if user exists in Firestore
       const userExists = await checkUserExistsInFirestore(user.uid)
       
       if (!userExists) {
-        console.log('👤 User not found in Firestore, creating new account...')
-        
-        // Create user in Firestore
-        const created = await createGoogleUserInFirestore(user)
-        
-        if (!created) {
-          console.log('❌ Failed to create user in Firestore, signing out...')
-          await signOut(auth)
-          return { 
-            success: false, 
-            error: 'Failed to create your account. Please try again.',
-            code: 'firestore-create-failed'
-          }
-        }
-        
-        console.log('🎉 New Google user account created successfully!')
+        console.log('❌ User not found in Firestore, signing out...')
+        await signOut(auth)
         return { 
-          success: true, 
-          user,
-          needsProfileCompletion: true,
-          isNewUser: true,
-          message: 'Account created successfully! Please complete your profile.'
+          success: false, 
+          error: 'No account found with this Google email. Please sign up first.',
+          code: 'user-not-found'
         }
       }
       
@@ -150,8 +162,7 @@ export const authService = {
       return { 
         success: true, 
         user,
-        isNewUser: false,
-        message: 'Signed in successfully!'
+        isNewUser: false
       }
       
     } catch (error) {
@@ -164,23 +175,80 @@ export const authService = {
     }
   },
 
-  async loginWithEmail(email, password) {
+  // NEW: Separate method for Google Sign-Up (new users)
+  async signupWithGoogle() {
     try {
-      console.log('🔐 Starting email sign-in...')
-      const result = await signInWithEmailAndPassword(auth, email, password)
+      console.log('🔐 Starting Google sign-up for new users...')
+      
+      // First, check if we can get user info without full auth
+      const result = await signInWithPopup(auth, googleProvider)
       const user = result.user
       
-      // Check if user exists in Firestore
+      console.log('✅ Google authentication successful, checking if user exists...')
+      
+      // Check if user already exists in Firestore
       const userExists = await checkUserExistsInFirestore(user.uid)
       
-      if (!userExists) {
+      if (userExists) {
+        console.log('❌ User already exists, signing out...')
         await signOut(auth)
         return { 
           success: false, 
-          error: 'You don\'t have an account yet. Please sign up first.',
-          code: 'user-not-registered'
+          error: 'This email is already registered. Please sign in instead.',
+          code: 'email-already-exists'
         }
       }
+      
+      // Create new user in Firestore
+      console.log('👤 Creating new Google user account...')
+      const created = await createGoogleUserInFirestore(user)
+      
+      if (!created) {
+        console.log('❌ Failed to create user in Firestore, signing out...')
+        await signOut(auth)
+        return { 
+          success: false, 
+          error: 'Failed to create your account. Please try again.',
+          code: 'firestore-create-failed'
+        }
+      }
+      
+      console.log('🎉 New Google user account created successfully!')
+      return { 
+        success: true, 
+        user,
+        needsProfileCompletion: true,
+        isNewUser: true
+      }
+      
+    } catch (error) {
+      console.error('❌ Google sign-up error:', error)
+      // Sign out if there was an error during sign-up
+      await signOut(auth)
+      return { 
+        success: false, 
+        error: getErrorMessage(error),
+        code: error.code
+      }
+    }
+  },
+
+  async loginWithEmail(email, password) {
+    try {
+      console.log('🔐 Starting email sign-in...')
+      
+      // NEW: Check if email exists before attempting login
+      const emailExists = await checkEmailExistsInFirestore(email)
+      if (!emailExists) {
+        return { 
+          success: false, 
+          error: 'No account found. Please sign up first.',
+          code: 'user-not-found'
+        }
+      }
+
+      const result = await signInWithEmailAndPassword(auth, email, password)
+      const user = result.user
       
       // Update last login
       await setDoc(doc(db, 'users', user.uid), {
@@ -201,6 +269,17 @@ export const authService = {
   async signupWithEmail(email, password, userData) {
     try {
       console.log('📝 Starting email signup...')
+      
+      // NEW: Check if email already exists
+      const emailExists = await checkEmailExistsInFirestore(email)
+      if (emailExists) {
+        return { 
+          success: false, 
+          error: 'This email is already registered. Please sign in instead.',
+          code: 'email-already-exists'
+        }
+      }
+
       const result = await createUserWithEmailAndPassword(auth, email, password)
       const user = result.user
       
@@ -220,7 +299,8 @@ export const authService = {
         allergies: [],
         accountType: 'email',
         isRegistered: true,
-        needsProfileCompletion: false
+        needsProfileCompletion: false,
+        profileCompleted: true
       })
       
       console.log('✅ Firestore user profile created')
@@ -243,6 +323,7 @@ export const authService = {
         messPreference: userData.messPreference,
         isRegistered: true,
         needsProfileCompletion: false,
+        profileCompleted: true,
         profileCompletedAt: serverTimestamp()
       }, { merge: true })
       
