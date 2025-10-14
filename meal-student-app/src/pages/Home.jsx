@@ -33,35 +33,14 @@ const Home = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [expandedCards, setExpandedCards] = useState({});
-  const { 
-    showPermissionModal, 
-    setShowPermissionModal,
-    permissionStatus,
-    checkPermissionStatus 
-  } = useNotification();
+  const { showInitialPermissionModal } = useNotification();
 
   useEffect(() => {
     // This will trigger the permission modal when user lands on home page
     if (currentUser) {
-      const showPermissionPrompt = () => {
-        // Check if we've already shown the prompt for this user
-        const hasShown = localStorage.getItem(`notification_prompt_shown_${currentUser.uid}`);
-        if (hasShown) return;
-
-        const currentStatus = checkPermissionStatus();
-        
-        // Only show if permission hasn't been decided yet
-        if (currentStatus === "default") {
-          setTimeout(() => {
-            setShowPermissionModal(true);
-            localStorage.setItem(`notification_prompt_shown_${currentUser.uid}`, "true");
-          }, 2000); // Show after 2 seconds on home page
-        }
-      };
-
-      showPermissionPrompt();
+      showInitialPermissionModal();
     }
-  }, [currentUser, setShowPermissionModal, checkPermissionStatus]);
+  }, [currentUser, showInitialPermissionModal]);
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -262,12 +241,13 @@ const Home = () => {
               </div>
 
               {/* Dropdown */}
+              {/* In the Home component, update the dropdown container */}
               {isOpen && (
                 <div
                   className={`absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px] sm:min-w-[180px] ${
                     isMobile ? "w-full" : ""
                   }`}
-                  style={{ zIndex: 9999 }}
+                  style={{ zIndex: 9999 }} // Ensure dropdown appears above everything
                 >
                   {messTypes.map((mess) => (
                     <div

@@ -20,32 +20,53 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [authLoading, setAuthLoading] = useState(false)
-  const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false)
-  const [firestoreReady, setFirestoreReady] = useState(false)
   const db = getFirestore()
   const navigate = useNavigate()
 
-  // Check Firestore connectivity
-  const checkFirestoreConnection = async () => {
+  // Session persistence key
+  const SESSION_KEY = 'menupick_user_session'
+
+  // Save session to localStorage
+  const saveSessionToStorage = (userData) => {
     try {
-      const testDoc = await getDoc(doc(db, 'test', 'test'))
-      setFirestoreReady(true)
-      return true
+      if (userData) {
+        const sessionData = {
+          user: userData,
+          timestamp: Date.now()
+        }
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
+      } else {
+        localStorage.removeItem(SESSION_KEY)
+      }
     } catch (error) {
-      console.warn('⚠️ Firestore connection issue:', error.message)
-      setFirestoreReady(false)
-      return false
+      console.error('❌ Error saving session to storage:', error)
     }
+  }
+
+  // Load session from localStorage
+  const loadSessionFromStorage = () => {
+    try {
+      const sessionData = localStorage.getItem(SESSION_KEY)
+      if (sessionData) {
+        const parsed = JSON.parse(sessionData)
+        // Check if session is not too old (7 days)
+        const isExpired = Date.now() - parsed.timestamp > 7 * 24 * 60 * 60 * 1000
+        if (!isExpired) {
+          return parsed
+        } else {
+          localStorage.removeItem(SESSION_KEY)
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading session from storage:', error)
+      localStorage.removeItem(SESSION_KEY)
+    }
+    return null
   }
 
   // Check if student ID already exists
   const checkStudentIdExists = async (studentId) => {
     try {
-      if (!firestoreReady) {
-        console.warn('Firestore not ready, skipping student ID check')
-        return false
-      }
-      
       console.log('🎓 Checking student ID existence:', studentId)
       const usersRef = collection(db, 'users')
       const q = query(usersRef, where('studentId', '==', studentId.trim().toUpperCase()))
@@ -63,28 +84,15 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Get user profile from Firestore
+  // Get user profile from Firestore - SIMPLIFIED
   const getUserProfile = async (uid) => {
     try {
-      if (!firestoreReady) {
-        console.warn('Firestore not ready, skipping profile fetch')
-        return null
-      }
-      
       console.log('📖 Getting user profile from Firestore...')
       const userDoc = await getDoc(doc(db, 'users', uid))
       
       if (userDoc.exists()) {
         const data = userDoc.data()
         console.log('✅ User profile found:', data)
-        
-        // Check if profile needs completion
-        if (data.needsProfileCompletion || !data.profileCompleted) {
-          console.log('🔄 User needs profile completion')
-          setNeedsProfileCompletion(true)
-        } else {
-          setNeedsProfileCompletion(false)
-        }
         return data
       }
       console.log('❌ User profile not found in Firestore')
@@ -95,33 +103,90 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // SIMPLIFIED user state management
+  const setUserState = async (user, userProfile = null) => {
+    try {
+      if (user) {
+        let profileData = userProfile
+        if (!profileData) {
+          profileData = await getUserProfile(user.uid)
+        }
+
+        // Create complete user data
+        const userData = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || profileData?.displayName || '',
+          photoURL: user.photoURL || profileData?.photoURL || '',
+          metadata: user.metadata || {},
+          // Merge with profile data
+          ...profileData,
+          // Ensure these fields are set
+          isRegistered: profileData?.isRegistered || false,
+          profileCompleted: profileData?.profileCompleted || false,
+          studentId: profileData?.studentId || '',
+          messPreference: profileData?.messPreference || 'veg',
+        }
+
+        console.log('👤 Setting user state:', {
+          uid: userData.uid,
+          email: userData.email,
+          isRegistered: userData.isRegistered,
+          profileCompleted: userData.profileCompleted,
+          studentId: userData.studentId,
+          displayName: userData.displayName
+        })
+
+        setCurrentUser(userData)
+        
+        // Save to session storage
+        saveSessionToStorage(userData)
+
+        return userData
+      } else {
+        // User is null (logged out)
+        setCurrentUser(null)
+        saveSessionToStorage(null)
+        return null
+      }
+    } catch (error) {
+      console.error('❌ Error setting user state:', error)
+      return null
+    }
+  }
+
   const updateUserProfile = async (updates) => {
     if (!currentUser) return { success: false, error: 'No user logged in' }
     
     try {
-      const result = await authService.completeGoogleProfile(currentUser.uid, updates)
-      if (result.success) {
-        setCurrentUser(prev => ({ 
-          ...prev, 
-          ...updates, 
-          isRegistered: true, 
-          needsProfileCompletion: false,
-          profileCompleted: true 
-        }))
-        setNeedsProfileCompletion(false)
-        
-        // Update Firestore with completed profile
-        await setDoc(doc(db, 'users', currentUser.uid), {
-          ...updates,
-          isRegistered: true,
-          needsProfileCompletion: false,
-          profileCompleted: true,
-          profileCompletedAt: serverTimestamp()
-        }, { merge: true })
-
-        showSuccess('Profile Completed', 'Your profile has been completed successfully!')
+      // Create complete update object
+      const profileUpdates = {
+        displayName: updates.displayName,
+        studentId: updates.studentId,
+        messPreference: updates.messPreference,
+        isRegistered: true,
+        profileCompleted: true,
+        profileCompletedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       }
-      return result
+
+      console.log('💾 Updating Firestore with:', profileUpdates)
+
+      // Update Firestore first
+      await setDoc(doc(db, 'users', currentUser.uid), profileUpdates, { merge: true })
+
+      // Then update local state
+      const updatedUser = {
+        ...currentUser,
+        ...updates,
+        isRegistered: true,
+        profileCompleted: true
+      }
+      
+      await setUserState(updatedUser, updatedUser)
+      
+      showSuccess('Profile Completed', 'Your profile has been completed successfully!')
+      return { success: true }
     } catch (error) {
       console.error('❌ Error updating user profile:', error)
       showError('Profile Update Failed', 'Failed to update your profile. Please try again.')
@@ -138,24 +203,17 @@ export const AuthProvider = ({ children }) => {
       if (result.success && result.user) {
         console.log('✅ Google login successful, loading user profile...')
         
-        const userProfile = await getUserProfile(result.user.uid)
+        const userState = await setUserState(result.user)
         
-        if (userProfile) {
-          setCurrentUser({ ...result.user, ...userProfile })
-          
+        if (userState) {
           // Check if profile needs completion
-          if (userProfile.needsProfileCompletion || !userProfile.profileCompleted) {
-            setNeedsProfileCompletion(true)
+          if (!userState.profileCompleted) {
+            showInfo('Complete Your Profile', 'Please complete your profile to continue.')
             navigate('/complete-profile')
           } else {
-            setNeedsProfileCompletion(false)
             showSuccess('Welcome Back!', 'You have successfully signed in.')
             navigate('/')
           }
-        } else {
-          setCurrentUser({ ...result.user, isRegistered: true })
-          showSuccess('Welcome Back!', 'You have successfully signed in.')
-          navigate('/')
         }
       } else {
         if (result.error === 'user-not-found') {
@@ -183,17 +241,12 @@ export const AuthProvider = ({ children }) => {
       if (result.success && result.user) {
         console.log('✅ Google signup successful, redirecting to complete profile...')
         
-        const userProfile = await getUserProfile(result.user.uid)
-        if (userProfile) {
-          setCurrentUser({ ...result.user, ...userProfile })
-        } else {
-          setCurrentUser({ ...result.user, isRegistered: false })
+        const userState = await setUserState(result.user)
+        
+        if (userState) {
+          showSuccess('Account Created', 'Your account has been created successfully! Please complete your profile.')
+          navigate('/complete-profile')
         }
-        
-        setNeedsProfileCompletion(true)
-        showSuccess('Account Created', 'Your account has been created successfully! Please complete your profile.')
-        navigate('/complete-profile')
-        
       } else {
         if (result.error === 'email-already-exists') {
           showError('User Already Registered', 'This email is already registered. Please use the Sign-In method for this account.')
@@ -218,23 +271,17 @@ export const AuthProvider = ({ children }) => {
       const result = await authService.loginWithEmail(email, password)
       
       if (result.success && result.user) {
-        const userProfile = await getUserProfile(result.user.uid)
-        if (userProfile) {
-          setCurrentUser({ ...result.user, ...userProfile })
-          
+        const userState = await setUserState(result.user)
+        
+        if (userState) {
           // Check if profile needs completion
-          if (userProfile.needsProfileCompletion || !userProfile.profileCompleted) {
-            setNeedsProfileCompletion(true)
+          if (!userState.profileCompleted) {
+            showInfo('Complete Your Profile', 'Please complete your profile to continue.')
             navigate('/complete-profile')
           } else {
-            setNeedsProfileCompletion(false)
             showSuccess('Welcome Back!', 'You have successfully signed in.')
             navigate('/')
           }
-        } else {
-          setCurrentUser({ ...result.user, isRegistered: true })
-          showSuccess('Welcome Back!', 'You have successfully signed in.')
-          navigate('/')
         }
       } else {
         if (result.error === 'user-not-found') {
@@ -267,13 +314,19 @@ export const AuthProvider = ({ children }) => {
       const result = await authService.signupWithEmail(email, password, userData)
       
       if (result.success && result.user) {
-        const userProfile = await getUserProfile(result.user.uid)
-        if (userProfile) {
-          setCurrentUser({ ...result.user, ...userProfile })
+        // Create complete user profile immediately for email signup
+        const completeUserData = {
+          ...userData,
+          isRegistered: true,
+          profileCompleted: true
         }
         
-        showSuccess('Account Created', 'Your account has been created successfully!')
-        navigate('/')
+        const userState = await setUserState(result.user, completeUserData)
+        
+        if (userState) {
+          showSuccess('Account Created', 'Your account has been created successfully!')
+          navigate('/')
+        }
       } else {
         if (result.error === 'email-already-exists') {
           showError('Email Already Registered', 'This email is already registered. Please use the Sign-In option.')
@@ -292,10 +345,9 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = async () => {
-    setNeedsProfileCompletion(false)
     const result = await authService.logout()
     if (result.success) {
-      setCurrentUser(null)
+      await setUserState(null)
       showInfo('Signed Out', 'You have been successfully signed out.')
       navigate('/signin')
     } else {
@@ -304,55 +356,63 @@ export const AuthProvider = ({ children }) => {
     return result
   }
 
-  useEffect(() => {
-    checkFirestoreConnection()
-  }, [])
+  // SIMPLIFIED Initialize auth state
+  const initializeAuthState = async () => {
+    try {
+      setLoading(true)
+      
+      // First, try to load from session storage for immediate UI
+      const savedSession = loadSessionFromStorage()
+      if (savedSession) {
+        console.log('🔄 Found saved session, restoring user state...')
+        setCurrentUser(savedSession.user)
+      }
 
-  useEffect(() => {
-    const unsubscribe = authService.onAuthStateChanged(async (user) => {
-      try {
-        if (user) {
-          console.log('🔄 Auth state changed: User authenticated')
-          const userProfile = await getUserProfile(user.uid)
-          if (userProfile) {
-            setCurrentUser({ ...user, ...userProfile })
+      // Then set up Firebase auth listener
+      const unsubscribe = authService.onAuthStateChanged(async (user) => {
+        try {
+          if (user) {
+            console.log('🔄 Firebase auth state changed: User authenticated')
             
-            // Check if user needs profile completion
-            if (userProfile.needsProfileCompletion || !userProfile.profileCompleted) {
-              setNeedsProfileCompletion(true)
-            } else {
-              setNeedsProfileCompletion(false)
+            // Get fresh data from Firestore
+            const userState = await setUserState(user)
+            
+            if (userState) {
+              console.log('✅ User state synchronized with Firebase')
             }
           } else {
-            console.warn('⚠️ User authenticated but not found in Firestore')
-            if (user.providerData?.some(provider => provider.providerId === 'google.com')) {
-              setCurrentUser(user)
-              setNeedsProfileCompletion(true)
-            } else {
-              setCurrentUser(user)
-            }
+            console.log('🔒 Firebase auth state changed: No user')
+            await setUserState(null)
           }
-        } else {
-          console.log('🔒 Auth state changed: No user')
-          setCurrentUser(null)
-          setNeedsProfileCompletion(false)
+        } catch (error) {
+          console.error('❌ Auth state change error:', error)
+          await setUserState(null)
+        } finally {
+          setLoading(false)
         }
-      } catch (error) {
-        console.error('❌ Auth state change error:', error)
-      } finally {
-        setLoading(false)
-      }
-    })
+      })
 
-    return unsubscribe
-  }, [navigate])
+      return unsubscribe
+    } catch (error) {
+      console.error('❌ Error initializing auth state:', error)
+      setLoading(false)
+      return () => {}
+    }
+  }
+
+  useEffect(() => {
+    const unsubscribe = initializeAuthState()
+    
+    return () => {
+      unsubscribe.then(unsub => unsub && unsub()).catch(console.error)
+    }
+  }, [])
 
   const value = {
     currentUser,
     loading,
     authLoading,
-    needsProfileCompletion,
-    firestoreReady,
+    firestoreReady: true, // Simplified - assume Firestore is ready
     loginWithGoogle,
     signupWithGoogle,
     loginWithEmail,

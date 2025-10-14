@@ -28,7 +28,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import TestNotifications from './components/TestNotifications';
 import DevTestButton from './components/DevTestButton';
 
-// Protected Route Component
+// Protected Route Component - SIMPLIFIED
 const ProtectedRoute = ({ children }) => {
   const { currentUser } = useAuth();
   const location = useLocation();
@@ -40,7 +40,7 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Public Route Component (for auth pages when user is already logged in)
+// Public Route Component - SIMPLIFIED
 const PublicRoute = ({ children }) => {
   const { currentUser } = useAuth();
 
@@ -51,31 +51,14 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-// Profile Completion Route
-const ProfileCompletionRoute = ({ children }) => {
-  const { currentUser, needsProfileCompletion } = useAuth();
-
-  if (!currentUser) {
-    return <Navigate to="/signin" replace />;
-  }
-
-  if (!needsProfileCompletion) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-};
-
 // Test Route Component (only accessible in development)
 const TestRoute = ({ children }) => {
   const { currentUser } = useAuth();
   
-  // In production, redirect to home
   if (process.env.NODE_ENV === 'production') {
     return <Navigate to="/" replace />;
   }
 
-  // In development, allow access but require login
   if (!currentUser) {
     return <Navigate to="/signin" replace />;
   }
@@ -83,35 +66,9 @@ const TestRoute = ({ children }) => {
   return children;
 };
 
-// Route Handler Component
+// SIMPLIFIED Route Handler Component
 const RouteHandler = () => {
-  const { currentUser, needsProfileCompletion } = useAuth();
-  const location = useLocation();
-
-  // Redirect to complete profile if needed
-  if (
-    currentUser &&
-    needsProfileCompletion &&
-    location.pathname !== "/complete-profile" &&
-    !location.pathname.startsWith("/auth") &&
-    location.pathname !== "/test-notifications"
-  ) {
-    return <Navigate to="/complete-profile" replace />;
-  }
-
-  // Redirect away from auth pages if logged in
-  if (currentUser && (location.pathname === "/signin" || location.pathname === "/signup" || location.pathname === "/forgot-password")) {
-    return <Navigate to="/" replace />;
-  }
-
-  // Redirect away from complete profile if not needed
-  if (
-    currentUser &&
-    !needsProfileCompletion &&
-    location.pathname === "/complete-profile"
-  ) {
-    return <Navigate to="/" replace />;
-  }
+  const { currentUser } = useAuth();
 
   return (
     <>
@@ -147,13 +104,17 @@ const RouteHandler = () => {
           }
         />
 
-        {/* Profile completion route */}
+        {/* Profile completion route - accessible only if user exists but profile is not complete */}
         <Route
           path="/complete-profile"
           element={
-            <ProfileCompletionRoute>
+            currentUser?.profileCompleted ? (
+              <Navigate to="/" replace />
+            ) : currentUser ? (
               <CompleteProfile />
-            </ProfileCompletionRoute>
+            ) : (
+              <Navigate to="/signin" replace />
+            )
           }
         />
 
@@ -237,9 +198,9 @@ const RouteHandler = () => {
   );
 };
 
-// Main App Component
+// SIMPLIFIED Main App Component
 function AppContent() {
-  const { currentUser, loading, needsProfileCompletion } = useAuth();
+  const { currentUser, loading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -277,20 +238,6 @@ function AppContent() {
     );
   }
 
-  // Don't show splash/onboarding for users who need profile completion
-  if (currentUser && needsProfileCompletion) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <main>
-          <RouteHandler />
-        </main>
-        <Toaster position="top-right" />
-        {/* Only show dev button in development */}
-        {process.env.NODE_ENV === 'development' && <DevTestButton />}
-      </div>
-    );
-  }
-
   // Show splash screen for first-time users
   if (showSplash && !hasCompletedOnboarding && !currentUser) {
     return <Splash onComplete={() => setShowSplash(false)} />;
@@ -301,12 +248,12 @@ function AppContent() {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
-  // MAIN APP LAYOUT - MainNavbar handles both logged in and logged out states
+  // MAIN APP LAYOUT
   return (
     <div className="min-h-screen bg-gray-50">
       {/* MainNavbar will conditionally render the correct navbar */}
       <MainNavbar />
-      <main className={currentUser && !needsProfileCompletion ? "pt-16" : ""}>
+      <main className={currentUser ? "pt-16" : ""}>
         <RouteHandler />
       </main>
       <Toaster position="top-right" />

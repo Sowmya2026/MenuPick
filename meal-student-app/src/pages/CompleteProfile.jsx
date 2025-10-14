@@ -12,7 +12,7 @@ const CompleteProfile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { currentUser, updateUserProfile, clearError } = useAuth();
+  const { currentUser, updateUserProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,7 +34,6 @@ const CompleteProfile = () => {
       [e.target.name]: e.target.value,
     });
     if (error) {
-      clearError();
       setError("");
     }
   };
@@ -84,13 +83,9 @@ const CompleteProfile = () => {
       });
       
       if (result.success) {
-        // Show success message or redirect
-        navigate("/", { 
-          state: { 
-            message: "Profile completed successfully!",
-            messageType: "success"
-          }
-        });
+        // Navigation will be handled by the auth state change
+        // The user will be automatically redirected to home
+        // because needsProfileCompletion will be set to false
       } else {
         setError(result.error || "Failed to complete profile");
       }

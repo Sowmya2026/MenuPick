@@ -60,6 +60,8 @@ export const NotificationProvider = ({ children }) => {
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [hasShownInitialPrompt, setHasShownInitialPrompt] = useState(false);
 
+  
+
   // Default color themes
   const defaultColorThemes = {
     veg: {
@@ -514,70 +516,89 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  const value = {
-    notifications,
-    updateNotificationPreference,
-    activeNotifications,
-    clearNotification: (id) =>
-      setActiveNotifications((prev) => prev.filter((notif) => notif.id !== id)),
-    clearAllNotifications: () => setActiveNotifications([]),
-    showNotification,
-    currentNotification,
-    dismissNotification: () => {
-      setShowNotification(false);
-      setCurrentNotification(null);
-    },
-    getCurrentTimings: useCallback(
-      () => getTimings(selectedMess),
-      [getTimings, selectedMess]
-    ),
-    getNotificationTimes: useCallback(() => {
-      const timings = getTimings(selectedMess);
-      const notificationTimes = {};
+// In NotificationContext.js - add this to the value object
+const value = {
+  notifications,
+  updateNotificationPreference,
+  activeNotifications,
+  clearNotification: (id) =>
+    setActiveNotifications((prev) => prev.filter((notif) => notif.id !== id)),
+  clearAllNotifications: () => setActiveNotifications([]),
+  showNotification,
+  currentNotification,
+  dismissNotification: () => {
+    setShowNotification(false);
+    setCurrentNotification(null);
+  },
+  getCurrentTimings: useCallback(
+    () => getTimings(selectedMess),
+    [getTimings, selectedMess]
+  ),
+  getNotificationTimes: useCallback(() => {
+    const timings = getTimings(selectedMess);
+    const notificationTimes = {};
 
-      Object.entries(timings).forEach(([meal, timeRange]) => {
-        const timeParts = timeRange.split(" - ");
-        const startTime = timeParts[0];
-        const [time, modifier] = startTime.split(" ");
-        let [hours, minutes] = time.split(":").map(Number);
+    Object.entries(timings).forEach(([meal, timeRange]) => {
+      const timeParts = timeRange.split(" - ");
+      const startTime = timeParts[0];
+      const [time, modifier] = startTime.split(" ");
+      let [hours, minutes] = time.split(":").map(Number);
 
-        if (modifier === "PM" && hours !== 12) hours += 12;
-        if (modifier === "AM" && hours === 12) hours = 0;
+      if (modifier === "PM" && hours !== 12) hours += 12;
+      if (modifier === "AM" && hours === 12) hours = 0;
 
-        const date = new Date();
-        date.setHours(hours, minutes, 0, 0);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
 
-        const startNotificationTime = new Date(date);
-        startNotificationTime.setMinutes(
-          startNotificationTime.getMinutes() - 15
-        );
+      const startNotificationTime = new Date(date);
+      startNotificationTime.setMinutes(
+        startNotificationTime.getMinutes() - 15
+      );
 
-        const endNotificationTime = new Date(date);
-        endNotificationTime.setMinutes(endNotificationTime.getMinutes() + 30);
+      const endNotificationTime = new Date(date);
+      endNotificationTime.setMinutes(endNotificationTime.getMinutes() + 30);
 
-        notificationTimes[meal] = {
-          start: startNotificationTime,
-          end: endNotificationTime,
-          timing: timeRange,
-        };
-      });
+      notificationTimes[meal] = {
+        start: startNotificationTime,
+        end: endNotificationTime,
+        timing: timeRange,
+      };
+    });
 
-      return notificationTimes;
-    }, [getTimings, selectedMess]),
-    getMessColorTheme,
-    requestNotificationPermission,
-    togglePushNotifications,
-    hasPermission,
-    permissionStatus,
-    checkPermissionStatus,
-    fcmToken,
-    saveFCMTokenToFirestore,
-    removeFCMTokenFromFirestore,
-    showPermissionModal,
-    setShowPermissionModal,
-    handleAllowNotifications,
-    handleDenyNotifications,
-  };
+    return notificationTimes;
+  }, [getTimings, selectedMess]),
+  getMessColorTheme,
+  requestNotificationPermission,
+  togglePushNotifications,
+  hasPermission,
+  permissionStatus,
+  checkPermissionStatus,
+  fcmToken,
+  saveFCMTokenToFirestore,
+  removeFCMTokenFromFirestore,
+  showPermissionModal,
+  setShowPermissionModal,
+  handleAllowNotifications,
+  handleDenyNotifications,
+  // ADD THIS FUNCTION:
+  showInitialPermissionModal: useCallback(() => {
+    if (!currentUser) return;
+    
+    // Check if we've already shown the prompt for this user
+    const hasShown = localStorage.getItem(`notification_prompt_shown_${currentUser.uid}`);
+    if (hasShown) return;
+
+    const currentStatus = checkPermissionStatus();
+    
+    // Only show if permission hasn't been decided yet
+    if (currentStatus === "default" && !hasShownInitialPrompt) {
+      setTimeout(() => {
+        setShowPermissionModal(true);
+        setHasShownInitialPrompt(true);
+      }, 2000); // Show after 2 seconds on home page
+    }
+  }, [currentUser, checkPermissionStatus, hasShownInitialPrompt]),
+};
 
   return (
     <NotificationContext.Provider value={value}>

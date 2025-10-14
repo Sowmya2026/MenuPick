@@ -604,8 +604,7 @@ export default function Profile() {
                       </div>
                     )}
                   </div>
-                  // In Profile.js - replace the push notification toggle
-                  section
+                
                   {/* Push Notifications Toggle */}
                   <div className="border-b border-gray-100 pb-3">
                     <label className="flex items-center justify-between">
@@ -653,7 +652,7 @@ export default function Profile() {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Other Notification Toggles */}
                   {Object.entries(notifications)
                     .filter(
