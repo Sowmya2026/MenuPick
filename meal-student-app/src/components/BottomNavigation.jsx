@@ -2,13 +2,13 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Utensils, User, MessageSquare, Bell } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useMenu } from "../context/MenuContext";
-import { useNotification } from "../context/NotificationContext"; // ADD THIS IMPORT
+import { useNotification } from "../context/NotificationContext";
 
 const BottomNavigation = () => {
   const location = useLocation();
   const { currentUser } = useAuth();
   const { selectedMess } = useMenu();
-  const { activeNotifications } = useNotification(); // ADD NOTIFICATION HOOK
+  const { activeNotifications } = useNotification();
 
   const getColorTheme = () => {
     const colors = {
@@ -24,21 +24,33 @@ const BottomNavigation = () => {
   const navItems = [
     { path: "/", icon: Home, label: "Home" },
     { path: "/selection", icon: Utensils, label: "Meals" },
-    { path: "/feedback", icon: MessageSquare, label: "Feedback" }, // ADD FEEDBACK
+    { path: "/feedback", icon: MessageSquare, label: "Feedback" },
     {
       path: "/notifications",
       icon: Bell,
       label: "Alerts",
       isNotification: true,
-    }, // ADD NOTIFICATIONS
+    },
     { path: "/profile", icon: User, label: "Profile" },
   ];
 
   if (!currentUser) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md  md:hidden z-50 safe-area-bottom py-1 shadow-sm">
-      <div className="flex justify-around items-center px-1">
+    <div
+      className="
+        fixed bottom-0 left-0 right-0 
+        bg-white/95 backdrop-blur-md
+        md:hidden z-50
+        border-t border-gray-100
+        shadow-sm
+        safe-area-inset-b
+      "
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom)", // ensures no overlap with iOS gesture area
+      }}
+    >
+      <div className="flex justify-around items-center px-1 py-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
@@ -62,23 +74,22 @@ const BottomNavigation = () => {
                 </span>
               )}
 
-              {/* Super Compact Icon */}
+              {/* Icon */}
               <div
                 className={`p-1.5 rounded-lg transition-all duration-200 relative ${
                   isActive
-                    ? `${theme.bg} text-white shadow-xs`
-                    : 'text-black group-hover:text-black'
+                    ? ${theme.bg} text-white shadow-xs
+                    : "text-black group-hover:text-black"
                 }`}
               >
                 <Icon size={21} />
 
-                {/* Pulse animation for active notifications */}
                 {hasNotifications && !isActive && (
                   <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></div>
                 )}
               </div>
 
-              {/* Micro Label */}
+              {/* Label */}
               <span
                 className={`text-[13px] font-semibold mt-0.5 transition-colors ${
                   isActive ? theme.active : "text-black"
@@ -87,10 +98,10 @@ const BottomNavigation = () => {
                 {item.label}
               </span>
 
-              {/* Tiny Active Indicator */}
+              {/* Active Indicator */}
               {isActive && (
                 <div
-                  className={`absolute -bottom-0.5 w-0.5 h-0.5 rounded-full ${theme.bg} animate-pulse`}
+                  className={absolute -bottom-0.5 w-0.5 h-0.5 rounded-full ${theme.bg} animate-pulse}
                 />
               )}
             </Link>
