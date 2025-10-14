@@ -78,7 +78,7 @@ const BottomNavigation = () => {
               <div
                 className={`p-1.5 rounded-lg transition-all duration-200 relative ${
                   isActive
-                    ? ${theme.bg} text-white shadow-xs
+                    ? `${theme.bg} text-white shadow-xs` // FIXED: Removed extra ${}
                     : "text-black group-hover:text-black"
                 }`}
               >
@@ -101,7 +101,7 @@ const BottomNavigation = () => {
               {/* Active Indicator */}
               {isActive && (
                 <div
-                  className={absolute -bottom-0.5 w-0.5 h-0.5 rounded-full ${theme.bg} animate-pulse}
+                  className={`absolute -bottom-0.5 w-0.5 h-0.5 rounded-full ${theme.bg} animate-pulse`} // FIXED: Added backticks
                 />
               )}
             </Link>
