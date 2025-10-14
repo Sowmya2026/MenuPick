@@ -198,7 +198,7 @@ const RouteHandler = () => {
   );
 };
 
-// SIMPLIFIED Main App Component
+// UPDATED Main App Component with mobile gap fix
 function AppContent() {
   const { currentUser, loading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
@@ -229,7 +229,7 @@ function AppContent() {
 
   if (loading || isInitializing) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -248,12 +248,12 @@ function AppContent() {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
-  // MAIN APP LAYOUT
+  // UPDATED MAIN APP LAYOUT - Fixed mobile gap issue
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* MainNavbar will conditionally render the correct navbar */}
       <MainNavbar />
-      <main className={currentUser ? "pt-16" : ""}>
+      <main className="flex-1 overflow-auto">
         <RouteHandler />
       </main>
       <Toaster position="top-right" />
