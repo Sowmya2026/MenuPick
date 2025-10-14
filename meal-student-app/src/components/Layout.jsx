@@ -7,7 +7,7 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Main Content Area */}
-      <main className="flex-1 pb-16 md:pb-6"> {/* Bottom padding for mobile nav */}
+      <main className="flex-1 pb-20"> {/* Increased bottom padding for mobile nav */}
         <div className="container mx-auto px-4 py-4 md:px-6 md:py-6">
           {children}
         </div>
