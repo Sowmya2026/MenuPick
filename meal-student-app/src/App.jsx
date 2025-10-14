@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { NotificationProvider } from "./context/NotificationContext";
 
 import MainNavbar from "./components/MainNavbar";
+import BottomNavigation from "./components/BottomNavigation";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import MealSelection from "./pages/MealSelection";
@@ -198,7 +199,7 @@ const RouteHandler = () => {
   );
 };
 
-// SIMPLIFIED Main App Component
+// UPDATED Main App Component with full-screen mobile support
 function AppContent() {
   const { currentUser, loading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
@@ -229,7 +230,7 @@ function AppContent() {
 
   if (loading || isInitializing) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -248,15 +249,22 @@ function AppContent() {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
-  // MAIN APP LAYOUT
+  // UPDATED MAIN APP LAYOUT - Full screen mobile with bottom navigation
   return (
-    <div className="min-h-screen bg-white">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* MainNavbar will conditionally render the correct navbar */}
       <MainNavbar />
-      <main className={currentUser ? "pt-16" : ""}>
+      
+      {/* Main content area - takes all available space and scrolls independently */}
+      <main className={`flex-1 overflow-auto ${currentUser ? "pb-16" : ""}`}>
         <RouteHandler />
       </main>
+      
+      {/* Bottom Navigation - Only for logged in users on mobile */}
+      {currentUser && <BottomNavigation />}
+      
       <Toaster position="top-right" />
+      
       {/* Only show dev button in development */}
       {process.env.NODE_ENV === 'development' && <DevTestButton />}
     </div>

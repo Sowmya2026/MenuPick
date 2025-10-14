@@ -250,3 +250,26 @@
     display: none;
   }
 }
+
+/* Ensure full viewport coverage */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Safe area support for modern mobile browsers */
+.safe-area-inset-b {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Smooth scrolling */
+.overflow-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent body scroll when modal is open */
+body.no-scroll {
+  overflow: hidden;
+}

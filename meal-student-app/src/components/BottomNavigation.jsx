@@ -47,7 +47,7 @@ const BottomNavigation = () => {
         safe-area-inset-b
       "
       style={{
-        paddingBottom: "env(safe-area-inset-bottom)", // ensures no overlap with iOS gesture area
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
       <div className="flex justify-around items-center px-1 py-1">
@@ -78,8 +78,8 @@ const BottomNavigation = () => {
               <div
                 className={`p-1.5 rounded-lg transition-all duration-200 relative ${
                   isActive
-                    ? `${theme.bg} text-white shadow-xs` // FIXED: Removed extra ${}
-                    : "text-black group-hover:text-black"
+                    ? `${theme.bg} text-white shadow-xs`
+                    : "text-gray-600 group-hover:text-black"
                 }`}
               >
                 <Icon size={21} />
@@ -91,8 +91,8 @@ const BottomNavigation = () => {
 
               {/* Label */}
               <span
-                className={`text-[13px] font-semibold mt-0.5 transition-colors ${
-                  isActive ? theme.active : "text-black"
+                className={`text-[11px] font-medium mt-0.5 transition-colors ${
+                  isActive ? theme.active : "text-gray-600"
                 }`}
               >
                 {item.label}
@@ -101,7 +101,7 @@ const BottomNavigation = () => {
               {/* Active Indicator */}
               {isActive && (
                 <div
-                  className={`absolute -bottom-0.5 w-0.5 h-0.5 rounded-full ${theme.bg} animate-pulse`} // FIXED: Added backticks
+                  className={`absolute -bottom-0.5 w-0.5 h-0.5 rounded-full ${theme.bg} animate-pulse`}
                 />
               )}
             </Link>
