@@ -249,18 +249,19 @@ function AppContent() {
   }
 
   // MAIN APP LAYOUT
-  return (
-    <div className="min-h-screen bg-white">
-      {/* MainNavbar will conditionally render the correct navbar */}
-      <MainNavbar />
-      <main className={currentUser ? "pt-16" : ""}>
-        <RouteHandler />
-      </main>
-      <Toaster position="top-right" />
-      {/* Only show dev button in development */}
-      {process.env.NODE_ENV === 'development' && <DevTestButton />}
-    </div>
-  );
+ // In your AppContent return statement, ensure it uses full height:
+return (
+  <div className="h-screen bg-white flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
+    {/* Your existing content */}
+    <MainNavbar />
+    <main className={`flex-1 overflow-auto ${currentUser ? "pb-16" : ""}`}>
+      <RouteHandler />
+    </main>
+    {currentUser && <BottomNavigation />}
+    <Toaster position="top-right" />
+    {process.env.NODE_ENV === 'development' && <DevTestButton />}
+  </div>
+);
 }
 
 function App() {
