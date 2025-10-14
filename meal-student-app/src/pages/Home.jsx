@@ -187,7 +187,7 @@ const Home = () => {
 
   return (
     <Layout>
-      <div className="h-screen bg-white">
+      <div className="min-h-screen bg-white">
         {/* Header Section */}
         <div className="px-2 py-2 sm:px-6 sm:py-8 md:px-8 md:py-8">
           <div className="text-center">
