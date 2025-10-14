@@ -12,9 +12,6 @@ const Layout = ({ children }) => {
           {children}
         </div>
       </main>
-      
-      {/* Bottom Navigation (Mobile only) */}
-      {currentUser && <BottomNavigation />}
     </div>
   );
 };
