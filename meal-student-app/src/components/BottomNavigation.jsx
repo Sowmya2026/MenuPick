@@ -2,13 +2,13 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Utensils, User, MessageSquare, Bell } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useMenu } from "../context/MenuContext";
-import { useNotification } from "../context/NotificationContext";
+import { useNotification } from "../context/NotificationContext"; // ADD THIS IMPORT
 
 const BottomNavigation = () => {
   const location = useLocation();
   const { currentUser } = useAuth();
   const { selectedMess } = useMenu();
-  const { activeNotifications } = useNotification();
+  const { activeNotifications } = useNotification(); // ADD NOTIFICATION HOOK
 
   const getColorTheme = () => {
     const colors = {
@@ -24,20 +24,20 @@ const BottomNavigation = () => {
   const navItems = [
     { path: "/", icon: Home, label: "Home" },
     { path: "/selection", icon: Utensils, label: "Meals" },
-    { path: "/feedback", icon: MessageSquare, label: "Feedback" },
+    { path: "/feedback", icon: MessageSquare, label: "Feedback" }, // ADD FEEDBACK
     {
       path: "/notifications",
       icon: Bell,
       label: "Alerts",
       isNotification: true,
-    },
+    }, // ADD NOTIFICATIONS
     { path: "/profile", icon: User, label: "Profile" },
   ];
 
   if (!currentUser) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t border-gray-200 md:hidden z-50 pb-env-safe pt-2">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md  md:hidden z-50 safe-area-bottom py-1 shadow-sm">
       <div className="flex justify-around items-center px-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -70,7 +70,7 @@ const BottomNavigation = () => {
                     : 'text-black group-hover:text-black'
                 }`}
               >
-                <Icon size={20} />
+                <Icon size={21} />
 
                 {/* Pulse animation for active notifications */}
                 {hasNotifications && !isActive && (
@@ -90,7 +90,7 @@ const BottomNavigation = () => {
               {/* Tiny Active Indicator */}
               {isActive && (
                 <div
-                  className={`absolute -bottom-1 w-0.5 h-0.5 rounded-full ${theme.bg} animate-pulse`}
+                  className={`absolute -bottom-0.5 w-0.5 h-0.5 rounded-full ${theme.bg} animate-pulse`}
                 />
               )}
             </Link>
