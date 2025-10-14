@@ -5,15 +5,17 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Toaster } from "react-hot-toast";
+
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { MealProvider } from "./context/MealContext";
 import { MenuProvider } from "./context/MenuContext";
-import { Toaster } from "react-hot-toast";
-import { useState, useEffect } from "react";
 import { NotificationProvider } from "./context/NotificationContext";
 
 import MainNavbar from "./components/MainNavbar";
 import Layout from "./components/Layout";
+
 import Home from "./pages/Home";
 import MealSelection from "./pages/MealSelection";
 import Feedback from "./pages/Feedback";
@@ -25,10 +27,11 @@ import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
 import Notifications from "./pages/Notifications";
 import ForgotPassword from "./pages/ForgotPassword";
-import TestNotifications from './components/TestNotifications';
-import DevTestButton from './components/DevTestButton';
+import TestNotifications from "./components/TestNotifications";
+import DevTestButton from "./components/DevTestButton";
 
-// Protected Route Component - SIMPLIFIED
+/* -------------------- Route Guards -------------------- */
+
 const ProtectedRoute = ({ children }) => {
   const { currentUser } = useAuth();
   const location = useLocation();
@@ -36,169 +39,161 @@ const ProtectedRoute = ({ children }) => {
   if (!currentUser) {
     return <Navigate to="/signin" replace state={{ from: location }} />;
   }
-
   return children;
 };
 
-// Public Route Component - SIMPLIFIED
 const PublicRoute = ({ children }) => {
   const { currentUser } = useAuth();
-
   if (currentUser) {
     return <Navigate to="/" replace />;
   }
-
   return children;
 };
 
-// Test Route Component (only accessible in development)
 const TestRoute = ({ children }) => {
   const { currentUser } = useAuth();
-  
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     return <Navigate to="/" replace />;
   }
-
   if (!currentUser) {
     return <Navigate to="/signin" replace />;
   }
-
   return children;
 };
 
-// SIMPLIFIED Route Handler Component
+/* -------------------- Route Handler -------------------- */
+
 const RouteHandler = () => {
   const { currentUser } = useAuth();
 
   return (
-    <>
-      <Routes>
-        {/* Public routes - accessible to everyone */}
-        <Route path="/home" element={<Home />} />
-        
-        {/* Auth routes - only for non-logged in users */}
-        <Route
-          path="/signup"
-          element={
-            <PublicRoute>
-              <SignUp />
-            </PublicRoute>
-          }
-        />
-        
-        <Route
-          path="/signin"
-          element={
-            <PublicRoute>
-              <SignIn />
-            </PublicRoute>
-          }
-        />
+    <Routes>
+      {/* Public routes */}
+      <Route path="/home" element={<Home />} />
 
-        <Route
-          path="/forgot-password"
-          element={
-            <PublicRoute>
-              <ForgotPassword />
-            </PublicRoute>
-          }
-        />
+      {/* Auth routes */}
+      <Route
+        path="/signup"
+        element={
+          <PublicRoute>
+            <SignUp />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/signin"
+        element={
+          <PublicRoute>
+            <SignIn />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPassword />
+          </PublicRoute>
+        }
+      />
 
-        {/* Profile completion route - accessible only if user exists but profile is not complete */}
-        <Route
-          path="/complete-profile"
-          element={
-            currentUser?.profileCompleted ? (
-              <Navigate to="/" replace />
-            ) : currentUser ? (
-              <CompleteProfile />
-            ) : (
-              <Navigate to="/signin" replace />
-            )
-          }
-        />
+      {/* Profile completion */}
+      <Route
+        path="/complete-profile"
+        element={
+          currentUser?.profileCompleted ? (
+            <Navigate to="/" replace />
+          ) : currentUser ? (
+            <CompleteProfile />
+          ) : (
+            <Navigate to="/signin" replace />
+          )
+        }
+      />
 
-        {/* Test notifications route - only in development */}
-        <Route
-          path="/test-notifications"
-          element={
-            <TestRoute>
-              <TestNotifications />
-            </TestRoute>
-          }
-        />
+      {/* Test routes (dev only) */}
+      <Route
+        path="/test-notifications"
+        element={
+          <TestRoute>
+            <TestNotifications />
+          </TestRoute>
+        }
+      />
 
-        {/* Protected routes - only for logged in users */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
+      {/* Protected routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Layout>
               <Home />
-            </ProtectedRoute>
-          }
-        />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/selection"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <MealSelection />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/selection"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <MealSelection />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/feedback"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Feedback />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/feedback"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Feedback />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Profile />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Profile />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Notifications />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Notifications />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
-        {/* Redirect any unknown routes */}
-        <Route
-          path="*"
-          element={
-            currentUser ? (
-              <Navigate to="/" replace />
-            ) : (
-              <Navigate to="/home" replace />
-            )
-          }
-        />
-      </Routes>
-    </>
+      {/* Catch-all */}
+      <Route
+        path="*"
+        element={
+          currentUser ? (
+            <Navigate to="/" replace />
+          ) : (
+            <Navigate to="/home" replace />
+          )
+        }
+      />
+    </Routes>
   );
 };
 
-// SIMPLIFIED Main App Component
+/* -------------------- Main App Content -------------------- */
+
 function AppContent() {
   const { currentUser, loading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
@@ -227,6 +222,7 @@ function AppContent() {
     setHasCompletedOnboarding(true);
   };
 
+  // Loading spinner
   if (loading || isInitializing) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -238,30 +234,34 @@ function AppContent() {
     );
   }
 
-  // Show splash screen for first-time users
+  // Splash & onboarding flow
   if (showSplash && !hasCompletedOnboarding && !currentUser) {
     return <Splash onComplete={() => setShowSplash(false)} />;
   }
 
-  // Show onboarding for first-time users
   if (!hasCompletedOnboarding && !currentUser && !showSplash) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
-  // MAIN APP LAYOUT
+  // Main app layout
   return (
-    <div className="min-h-screen bg-white">
-      {/* MainNavbar will conditionally render the correct navbar */}
-      <MainNavbar />
-      <main className={currentUser ? "pt-16" : ""}>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Navbar visible only for authenticated users */}
+      {currentUser && <MainNavbar />}
+
+      <main className={currentUser ? "flex-1 pt-16 pb-0" : "flex-1"}>
         <RouteHandler />
       </main>
+
       <Toaster position="top-right" />
-      {/* Only show dev button in development */}
-      {process.env.NODE_ENV === 'development' && <DevTestButton />}
+
+      {/* Dev button (only in development) */}
+      {process.env.NODE_ENV === "development" && <DevTestButton />}
     </div>
   );
 }
+
+/* -------------------- App Wrapper -------------------- */
 
 function App() {
   return (
