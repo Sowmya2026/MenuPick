@@ -250,7 +250,7 @@ function AppContent() {
 
   // MAIN APP LAYOUT
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* MainNavbar will conditionally render the correct navbar */}
       <MainNavbar />
       <main className={currentUser ? "pt-16" : ""}>
