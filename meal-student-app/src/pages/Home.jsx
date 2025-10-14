@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import { useNotification } from "../context/NotificationContext";
+
 
 const Home = () => {
   const { currentUser } = useAuth();
@@ -33,14 +33,6 @@ const Home = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [expandedCards, setExpandedCards] = useState({});
-  const { showInitialPermissionModal } = useNotification();
-
-  useEffect(() => {
-    // This will trigger the permission modal when user lands on home page
-    if (currentUser) {
-      showInitialPermissionModal();
-    }
-  }, [currentUser, showInitialPermissionModal]);
 
   // Check if mobile on mount and resize
   useEffect(() => {
