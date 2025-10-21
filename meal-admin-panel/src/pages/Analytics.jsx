@@ -17,6 +17,8 @@ import {
   LayoutGrid,
   Table,
   BarChart3,
+  PieChart,
+  LineChart,
 } from "lucide-react";
 import { db } from "../firebase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -61,6 +63,168 @@ const MAX_ITEMS = {
   },
 };
 
+// Chart Components
+const BarChart = ({ data, colors, title }) => {
+  const maxValue = Math.max(...data.map(item => item.value));
+  
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="space-y-3">
+        {data.map((item, index) => (
+          <div key={item.name} className="flex items-center">
+            <div className="w-32 text-sm text-gray-600 truncate">{item.name}</div>
+            <div className="flex-1 ml-2">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>{item.value} selections</span>
+                <span>{item.percentage}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="h-3 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${(item.value / maxValue) * 100}%`,
+                    backgroundColor: colors.primary
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const PieChartComponent = ({ data, colors, title }) => {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  let cumulativePercentage = 0;
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="flex flex-col md:flex-row items-center">
+        <div className="relative w-48 h-48 mb-4 md:mb-0 md:mr-6">
+          <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+            {data.map((item, index) => {
+              const percentage = (item.value / total) * 100;
+              const strokeDasharray = `${percentage} ${100 - percentage}`;
+              const strokeDashoffset = -cumulativePercentage;
+              cumulativePercentage += percentage;
+
+              return (
+                <circle
+                  key={item.name}
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  stroke={item.color || colors.primary}
+                  strokeWidth="20"
+                  strokeDasharray={strokeDasharray}
+                  strokeDashoffset={strokeDashoffset}
+                  className="transition-all duration-500"
+                />
+              );
+            })}
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-lg font-bold text-gray-700">{total}</span>
+          </div>
+        </div>
+        <div className="flex-1 space-y-2">
+          {data.map((item, index) => (
+            <div key={item.name} className="flex items-center">
+              <div
+                className="w-4 h-4 rounded-full mr-2"
+                style={{ backgroundColor: item.color || colors.primary }}
+              ></div>
+              <div className="flex-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700">{item.name}</span>
+                  <span className="font-medium text-gray-900">
+                    {Math.round((item.value / total) * 100)}%
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500">{item.value} selections</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LineChartComponent = ({ data, colors, title }) => {
+  const maxValue = Math.max(...data.map(item => item.value));
+  const minValue = Math.min(...data.map(item => item.value));
+
+  // Generate SVG path for the line
+  const points = data.map((item, index) => {
+    const x = (index / (data.length - 1)) * 100;
+    const y = 100 - ((item.value - minValue) / (maxValue - minValue)) * 100;
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="h-64">
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          {/* Grid lines */}
+          {[0, 25, 50, 75, 100].map((y) => (
+            <line
+              key={y}
+              x1="0"
+              y1={y}
+              x2="100"
+              y2={y}
+              stroke="#f3f4f6"
+              strokeWidth="0.5"
+            />
+          ))}
+          
+          {/* Data line */}
+          <polyline
+            fill="none"
+            stroke={colors.primary}
+            strokeWidth="2"
+            points={points}
+          />
+          
+          {/* Data points */}
+          {data.map((item, index) => {
+            const x = (index / (data.length - 1)) * 100;
+            const y = 100 - ((item.value - minValue) / (maxValue - minValue)) * 100;
+            
+            return (
+              <circle
+                key={index}
+                cx={x}
+                cy={y}
+                r="2"
+                fill={colors.primary}
+                stroke="#fff"
+                strokeWidth="1"
+              />
+            );
+          })}
+        </svg>
+        
+        {/* X-axis labels */}
+        <div className="flex justify-between text-xs text-gray-500 mt-2">
+          {data.map((item, index) => (
+            <div key={index} className="text-center">
+              {item.name}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Analytics() {
   const { meals, categories, messTypes, getSubcategories } = useMeal();
   const [studentSelections, setStudentSelections] = useState([]);
@@ -73,7 +237,6 @@ export default function Analytics() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [viewMode, setViewMode] = useState(() => {
-    // Load view mode from localStorage or default to "grid"
     const savedViewMode = localStorage.getItem("analyticsViewMode");
     return savedViewMode || "grid";
   });
@@ -86,7 +249,7 @@ export default function Analytics() {
       bg: "bg-green-50",
       text: "text-green-800",
       border: "border-green-200",
-      primary: "green",
+      primary: "#10B981",
       gradient: "from-green-400 to-emerald-500",
       progress: "text-green-600",
       light: "bg-green-100",
@@ -98,7 +261,7 @@ export default function Analytics() {
       bg: "bg-red-50",
       text: "text-red-800",
       border: "border-red-200",
-      primary: "red",
+      primary: "#EF4444",
       gradient: "from-red-400 to-orange-500",
       progress: "text-red-600",
       light: "bg-red-100",
@@ -110,7 +273,7 @@ export default function Analytics() {
       bg: "bg-purple-50",
       text: "text-purple-800",
       border: "border-purple-200",
-      primary: "purple",
+      primary: "#8B5CF6",
       gradient: "from-purple-400 to-violet-500",
       progress: "text-purple-600",
       light: "bg-purple-100",
@@ -308,6 +471,91 @@ export default function Analytics() {
       const countB = getSelectionCount(b.id);
       return countB - countA;
     });
+  };
+
+  // Get chart data for current selection
+  const getChartData = () => {
+    const mealsToShow = viewMode === "grid" ? getFilteredMeals() : getAllMealsForListView();
+    
+    return mealsToShow
+      .slice(0, 10) // Limit to top 10 for better visualization
+      .map(meal => ({
+        name: meal.name.length > 20 ? meal.name.substring(0, 20) + '...' : meal.name,
+        value: getSelectionCount(meal.id),
+        percentage: getSelectionPercentage(meal.id),
+        category: meal.category,
+        subcategory: meal.subcategory
+      }))
+      .filter(item => item.value > 0) // Only show items with selections
+      .sort((a, b) => b.value - a.value);
+  };
+
+  // Get category distribution data
+  const getCategoryDistribution = () => {
+    const distribution = {};
+    
+    meals.forEach(meal => {
+      if (meal.messType === selectedMessType) {
+        if (!distribution[meal.category]) {
+          distribution[meal.category] = 0;
+        }
+        distribution[meal.category] += getSelectionCount(meal.id);
+      }
+    });
+
+    return Object.entries(distribution)
+      .map(([category, value]) => ({
+        name: category.charAt(0).toUpperCase() + category.slice(1),
+        value,
+        color: getCategoryColor(category)
+      }))
+      .sort((a, b) => b.value - a.value);
+  };
+
+  // Get subcategory distribution data
+  const getSubcategoryDistribution = () => {
+    const distribution = {};
+    
+    meals.forEach(meal => {
+      if (meal.messType === selectedMessType && 
+          (selectedCategory === "all" || meal.category === selectedCategory)) {
+        const key = `${meal.subcategory}`;
+        if (!distribution[key]) {
+          distribution[key] = 0;
+        }
+        distribution[key] += getSelectionCount(meal.id);
+      }
+    });
+
+    return Object.entries(distribution)
+      .map(([subcategory, value]) => ({
+        name: subcategory.length > 15 ? subcategory.substring(0, 15) + '...' : subcategory,
+        value,
+        color: getSubcategoryColor(subcategory)
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8); // Limit to top 8
+  };
+
+  // Helper functions for chart colors
+  const getCategoryColor = (category) => {
+    const colorMap = {
+      breakfast: "#F59E0B",
+      lunch: "#EF4444",
+      snacks: "#8B5CF6",
+      dinner: "#10B981"
+    };
+    return colorMap[category] || messTypeColors[selectedMessType].primary;
+  };
+
+  const getSubcategoryColor = (subcategory) => {
+    // Generate consistent colors based on subcategory name
+    const colors = [
+      "#EF4444", "#F59E0B", "#10B981", "#3B82F6", 
+      "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"
+    ];
+    const index = subcategory.charCodeAt(0) % colors.length;
+    return colors[index];
   };
 
   // Get top meals within limits for a specific mess type
@@ -638,6 +886,11 @@ export default function Analytics() {
   const currentColors = messTypeColors[selectedMessType];
   const isMobile = windowWidth < 768;
 
+  // Chart data
+  const chartData = getChartData();
+  const categoryDistribution = getCategoryDistribution();
+  const subcategoryDistribution = getSubcategoryDistribution();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
@@ -693,143 +946,141 @@ export default function Analytics() {
           </button>
         </div>
 
-        {/* Mess Type Cards */}
-        <div className="grid grid-cols-3 gap-2 md:grid-cols-3 md:gap-4">
-          {messTypes.map((messType) => {
-            const messData = messTypeDistribution[messType] || {
-              total: 0,
-              submitted: 0,
-              pending: 0,
-              participationRate: 0,
-            };
-            const colors = messTypeColors[messType];
-            const isSelected = selectedMessType === messType;
+       {/* Mess Type Cards */}
+<div className="grid grid-cols-3 gap-2 md:grid-cols-3 md:gap-4">
+  {messTypes.map((messType) => {
+    const messData = messTypeDistribution[messType] || {
+      total: 0,
+      submitted: 0,
+      pending: 0,
+      participationRate: 0,
+    };
+    const colors = messTypeColors[messType];
+    const isSelected = selectedMessType === messType;
 
-            return (
-              <div
-                key={messType}
-                className={`bg-white rounded-lg md:rounded-xl shadow-sm border p-2 md:p-6 cursor-pointer transition-all hover:shadow-md
-         ${
-           isSelected && colors.primary === "green"
-             ? "border-green-500 ring-1 md:ring-2 ring-green-200"
-             : ""
-         }
-         ${
-           isSelected && colors.primary === "red"
-             ? "border-red-500 ring-1 md:ring-2 ring-red-200"
-             : ""
-         }
-         ${
-           isSelected && colors.primary === "purple"
-             ? "border-purple-500 ring-1 md:ring-2 ring-purple-200"
-             : ""
-         }
-          ${!isSelected ? "border-gray-200" : ""}
-         `}
-                onClick={() => setSelectedMessType(messType)}
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between mb-2 md:mb-3">
-                  <h2 className="text-xs md:text-lg font-semibold text-gray-900 capitalize truncate pr-1">
-                    {messType} Mess
-                  </h2>
-                  <div
-                    className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text} ${colors.border} border min-w-[20px] text-center`}
-                  >
-                    {messData.total}
-                  </div>
-                </div>
+    // Determine border and glow classes based on selection and mess type
+    const getBorderClasses = () => {
+      if (!isSelected) return "border-gray-200";
+      
+      switch (messType) {
+        case "veg":
+          return "border-green-500 ring-2 ring-green-200 shadow-md";
+        case "non-veg":
+          return "border-red-500 ring-2 ring-red-200 shadow-md";
+        case "special":
+          return "border-purple-500 ring-2 ring-purple-200 shadow-md";
+        default:
+          return "border-gray-200";
+      }
+    };
 
-                {/* Content */}
-                <div className="space-y-2 md:space-y-3">
-                  {/* Participation Rate */}
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] md:text-sm text-gray-700 truncate pr-1">
-                        Participation
-                      </span>
-                      <span className="text-[10px] md:text-sm font-bold text-gray-900">
-                        {messData.participationRate}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1 md:h-1.5">
-                      <div
-                        className={`h-1 md:h-1.5 rounded-full transition-all duration-500 ${colors.progress.replace(
-                          "text-",
-                          "bg-"
-                        )}`}
-                        style={{ width: `${messData.participationRate}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-1 md:gap-2">
-                    <div
-                      className={`rounded-md md:rounded-lg p-1 md:p-2 ${colors.bg} ${colors.border}`}
-                    >
-                      <div className="flex items-center">
-                        <span
-                          className={`text-[10px] md:text-xs font-medium ${colors.text}`}
-                        >
-                          <span className="md:hidden">Sub..</span>
-                          <span className="hidden md:inline">Submitted</span>
-                        </span>
-                      </div>
-                      <p
-                        className={`text-xs md:text-xl font-bold ${colors.text} leading-tight`}
-                      >
-                        {messData.submitted}
-                      </p>
-                    </div>
-
-                    <div
-                      className={`rounded-md md:rounded-lg p-1 md:p-2 ${colors.light} ${colors.border}`}
-                    >
-                      <div className="flex items-center">
-                        <span
-                          className={`text-[10px] md:text-xs font-medium ${colors.text}`}
-                        >
-                          <span className="md:hidden">Pend..</span>
-                          <span className="hidden md:inline">Pending</span>
-                        </span>
-                      </div>
-                      <p
-                        className={`text-xs md:text-xl font-bold ${colors.text} leading-tight`}
-                      >
-                        {messData.pending}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Download Button for this Mess Type */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      exportMessTypeToExcel(messType);
-                    }}
-                    disabled={exportLoading[messType]}
-                    className={`w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      messType === "veg"
-                        ? "bg-green-600 hover:bg-green-700"
-                        : messType === "non-veg"
-                        ? "bg-red-600 hover:bg-red-700"
-                        : "bg-purple-600 hover:bg-purple-700"
-                    } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {exportLoading[messType] ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
-                    ) : (
-                      <Download className="h-3 w-3" />
-                    )}
-                    <span>Download</span>
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+    return (
+      <div
+        key={messType}
+        className={`bg-white rounded-lg md:rounded-xl shadow-sm border p-2 md:p-6 cursor-pointer transition-all hover:shadow-md ${getBorderClasses()}`}
+        onClick={() => setSelectedMessType(messType)}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2 md:mb-3">
+          <h2 className="text-xs md:text-lg font-semibold text-gray-900 capitalize truncate pr-1">
+            {messType} Mess
+          </h2>
+          <div
+            className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text} ${colors.border} border min-w-[20px] text-center`}
+          >
+            {messData.total}
+          </div>
         </div>
 
+        {/* Content */}
+        <div className="space-y-2 md:space-y-3">
+          {/* Participation Rate */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[10px] md:text-sm text-gray-700 truncate pr-1">
+                Participation
+              </span>
+              <span className="text-[10px] md:text-sm font-bold text-gray-900">
+                {messData.participationRate}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1 md:h-1.5">
+              <div
+                className={`h-1 md:h-1.5 rounded-full transition-all duration-500 ${colors.progress.replace(
+                  "text-",
+                  "bg-"
+                )}`}
+                style={{ width: `${messData.participationRate}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-1 md:gap-2">
+            <div
+              className={`rounded-md md:rounded-lg p-1 md:p-2 ${colors.bg} ${colors.border}`}
+            >
+              <div className="flex items-center">
+                <span
+                  className={`text-[10px] md:text-xs font-medium ${colors.text}`}
+                >
+                  <span className="md:hidden">Sub..</span>
+                  <span className="hidden md:inline">Submitted</span>
+                </span>
+              </div>
+              <p
+                className={`text-xs md:text-xl font-bold ${colors.text} leading-tight`}
+              >
+                {messData.submitted}
+              </p>
+            </div>
+
+            <div
+              className={`rounded-md md:rounded-lg p-1 md:p-2 ${colors.light} ${colors.border}`}
+            >
+              <div className="flex items-center">
+                <span
+                  className={`text-[10px] md:text-xs font-medium ${colors.text}`}
+                >
+                  <span className="md:hidden">Pend..</span>
+                  <span className="hidden md:inline">Pending</span>
+                </span>
+              </div>
+              <p
+                className={`text-xs md:text-xl font-bold ${colors.text} leading-tight`}
+              >
+                {messData.pending}
+              </p>
+            </div>
+          </div>
+
+          {/* Download Button for this Mess Type */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              exportMessTypeToExcel(messType);
+            }}
+            disabled={exportLoading[messType]}
+            className={`w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              messType === "veg"
+                ? "bg-green-600 hover:bg-green-700"
+                : messType === "non-veg"
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-purple-600 hover:bg-purple-700"
+            } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {exportLoading[messType] ? (
+              <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+            ) : (
+              <Download className="h-3 w-3" />
+            )}
+            <span>Download</span>
+          </button>
+        </div>
+      </div>
+    );
+  })}
+</div>
         <div className="space-y-4 md:space-y-6">
           <div
             className={`
@@ -945,7 +1196,13 @@ export default function Analytics() {
                     />
                     {viewMode === "grid"
                       ? "Available Meals"
-                      : "All Meals Overview"}
+                      : viewMode === "list"
+                      ? "All Meals Overview"
+                      : viewMode === "bar"
+                      ? "Meal Popularity Analysis"
+                      : viewMode === "pie"
+                      ? "Category Distribution"
+                      : "Trend Analysis"}
                   </h2>
                 </div>
 
@@ -973,6 +1230,39 @@ export default function Analytics() {
                       title="List View"
                     >
                       <Table className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("bar")}
+                      className={`p-2 rounded-md transition-all ${
+                        viewMode === "bar"
+                          ? "bg-white shadow-sm text-gray-900"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                      title="Bar Chart View"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("pie")}
+                      className={`p-2 rounded-md transition-all ${
+                        viewMode === "pie"
+                          ? "bg-white shadow-sm text-gray-900"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                      title="Pie Chart View"
+                    >
+                      <PieChart className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("line")}
+                      className={`p-2 rounded-md transition-all ${
+                        viewMode === "line"
+                          ? "bg-white shadow-sm text-gray-900"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                      title="Line Chart View"
+                    >
+                      <LineChart className="h-4 w-4" />
                     </button>
                   </div>
 
@@ -1156,7 +1446,7 @@ export default function Analytics() {
                     </p>
                   </div>
                 )
-              ) : (
+              ) : viewMode === "list" ? (
                 // List View
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -1235,7 +1525,52 @@ export default function Analytics() {
                     </div>
                   )}
                 </div>
-              )}
+              ) : viewMode === "bar" ? (
+                // Bar Chart View
+                <div className="space-y-6">
+                  <BarChart
+                    data={chartData}
+                    colors={currentColors}
+                    title="Top Meal Selections"
+                  />
+                  
+                  {subcategoryDistribution.length > 0 && (
+                    <BarChart
+                      data={subcategoryDistribution}
+                      colors={currentColors}
+                      title="Subcategory Distribution"
+                    />
+                  )}
+                </div>
+              ) : viewMode === "pie" ? (
+                // Pie Chart View
+                <div className="space-y-6">
+                  {categoryDistribution.length > 0 && (
+                    <PieChartComponent
+                      data={categoryDistribution}
+                      colors={currentColors}
+                      title="Category Distribution"
+                    />
+                  )}
+                  
+                  {subcategoryDistribution.length > 0 && (
+                    <PieChartComponent
+                      data={subcategoryDistribution}
+                      colors={currentColors}
+                      title="Subcategory Distribution"
+                    />
+                  )}
+                </div>
+              ) : viewMode === "line" ? (
+                // Line Chart View
+                <div className="space-y-6">
+                  <LineChartComponent
+                    data={chartData}
+                    colors={currentColors}
+                    title="Meal Popularity Trend"
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
