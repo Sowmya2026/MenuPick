@@ -1,0 +1,21 @@
+{
+    "name": "MenuPick Admin Portal",
+    "short_name": "MenuPick Admin",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#10B981",
+    "description": "MenuPick Admin Portal for managing campus dining menus and feedback",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "/favicon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

@@ -1,8 +1,8 @@
 import { createContext, useState, useEffect, useContext } from 'react'
 import { authService } from '../services/authService'
-import { 
-  getFirestore, 
-  doc, 
+import {
+  getFirestore,
+  doc,
   getDoc,
   query,
   where,
@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }) => {
       const usersRef = collection(db, 'users')
       const q = query(usersRef, where('studentId', '==', studentId.trim().toUpperCase()))
       const querySnapshot = await getDocs(q)
-      
+
       const exists = !querySnapshot.empty
       console.log('🎓 Student ID exists:', exists)
       return exists
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('📖 Getting user profile from Firestore...')
       const userDoc = await getDoc(doc(db, 'users', uid))
-      
+
       if (userDoc.exists()) {
         const data = userDoc.data()
         console.log('✅ User profile found:', data)
@@ -138,9 +138,16 @@ export const AuthProvider = ({ children }) => {
         })
 
         setCurrentUser(userData)
-        
+
         // Save to session storage
         saveSessionToStorage(userData)
+
+        // Track Activity: Update lastActive timestamp in background
+        if (userData.uid) {
+          setDoc(doc(db, 'users', userData.uid), {
+            lastActive: serverTimestamp()
+          }, { merge: true }).catch(err => console.error("Error updating lastActive:", err));
+        }
 
         return userData
       } else {
@@ -157,54 +164,65 @@ export const AuthProvider = ({ children }) => {
 
   const updateUserProfile = async (updates) => {
     if (!currentUser) return { success: false, error: 'No user logged in' }
-    
+
     try {
-      // Create complete update object
+      // Create complete update object with all possible fields
       const profileUpdates = {
-        displayName: updates.displayName,
-        studentId: updates.studentId,
-        messPreference: updates.messPreference,
-        isRegistered: true,
-        profileCompleted: true,
-        profileCompletedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
+      };
+
+      // Add fields if they exist in updates
+      if (updates.displayName !== undefined) profileUpdates.displayName = updates.displayName;
+      if (updates.name !== undefined) {
+        profileUpdates.name = updates.name;
+        profileUpdates.displayName = updates.name; // Sync displayName with name
+      }
+      if (updates.studentId !== undefined) profileUpdates.studentId = updates.studentId;
+      if (updates.messPreference !== undefined) profileUpdates.messPreference = updates.messPreference;
+      if (updates.phone !== undefined) profileUpdates.phone = updates.phone;
+      if (updates.hostel !== undefined) profileUpdates.hostel = updates.hostel;
+      if (updates.room !== undefined) profileUpdates.room = updates.room;
+
+      // If this is initial profile completion
+      if (updates.studentId && updates.messPreference) {
+        profileUpdates.isRegistered = true;
+        profileUpdates.profileCompleted = true;
+        profileUpdates.profileCompletedAt = serverTimestamp();
       }
 
-      console.log('💾 Updating Firestore with:', profileUpdates)
+      console.log('💾 Updating Firestore with:', profileUpdates);
 
       // Update Firestore first
-      await setDoc(doc(db, 'users', currentUser.uid), profileUpdates, { merge: true })
+      await setDoc(doc(db, 'users', currentUser.uid), profileUpdates, { merge: true });
 
       // Then update local state
       const updatedUser = {
         ...currentUser,
         ...updates,
-        isRegistered: true,
-        profileCompleted: true
-      }
-      
-      await setUserState(updatedUser, updatedUser)
-      
-      showSuccess('Profile Completed', 'Your profile has been completed successfully!')
-      return { success: true }
+      };
+
+      await setUserState(updatedUser, updatedUser);
+
+      showSuccess('Profile Updated', 'Your profile has been updated successfully!');
+      return { success: true };
     } catch (error) {
-      console.error('❌ Error updating user profile:', error)
-      showError('Profile Update Failed', 'Failed to update your profile. Please try again.')
-      return { success: false, error: error.message }
+      console.error('❌ Error updating user profile:', error);
+      showError('Profile Update Failed', 'Failed to update your profile. Please try again.');
+      return { success: false, error: error.message };
     }
   }
 
   const loginWithGoogle = async () => {
     setAuthLoading(true)
-    
+
     try {
       const result = await authService.loginWithGoogle()
-      
+
       if (result.success && result.user) {
         console.log('✅ Google login successful, loading user profile...')
-        
+
         const userState = await setUserState(result.user)
-        
+
         if (userState) {
           // Check if profile needs completion
           if (!userState.profileCompleted) {
@@ -234,15 +252,15 @@ export const AuthProvider = ({ children }) => {
 
   const signupWithGoogle = async () => {
     setAuthLoading(true)
-    
+
     try {
       const result = await authService.signupWithGoogle()
-      
+
       if (result.success && result.user) {
         console.log('✅ Google signup successful, redirecting to complete profile...')
-        
+
         const userState = await setUserState(result.user)
-        
+
         if (userState) {
           showSuccess('Account Created', 'Your account has been created successfully! Please complete your profile.')
           navigate('/complete-profile')
@@ -266,13 +284,13 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithEmail = async (email, password) => {
     setAuthLoading(true)
-    
+
     try {
       const result = await authService.loginWithEmail(email, password)
-      
+
       if (result.success && result.user) {
         const userState = await setUserState(result.user)
-        
+
         if (userState) {
           // Check if profile needs completion
           if (!userState.profileCompleted) {
@@ -302,7 +320,7 @@ export const AuthProvider = ({ children }) => {
 
   const signupWithEmail = async (email, password, userData) => {
     setAuthLoading(true)
-    
+
     try {
       // Check for duplicate student ID
       const studentIdExists = await checkStudentIdExists(userData.studentId)
@@ -312,7 +330,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       const result = await authService.signupWithEmail(email, password, userData)
-      
+
       if (result.success && result.user) {
         // Create complete user profile immediately for email signup
         const completeUserData = {
@@ -320,9 +338,9 @@ export const AuthProvider = ({ children }) => {
           isRegistered: true,
           profileCompleted: true
         }
-        
+
         const userState = await setUserState(result.user, completeUserData)
-        
+
         if (userState) {
           showSuccess('Account Created', 'Your account has been created successfully!')
           navigate('/')
@@ -360,7 +378,7 @@ export const AuthProvider = ({ children }) => {
   const initializeAuthState = async () => {
     try {
       setLoading(true)
-      
+
       // First, try to load from session storage for immediate UI
       const savedSession = loadSessionFromStorage()
       if (savedSession) {
@@ -373,10 +391,10 @@ export const AuthProvider = ({ children }) => {
         try {
           if (user) {
             console.log('🔄 Firebase auth state changed: User authenticated')
-            
+
             // Get fresh data from Firestore
             const userState = await setUserState(user)
-            
+
             if (userState) {
               console.log('✅ User state synchronized with Firebase')
             }
@@ -396,13 +414,13 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Error initializing auth state:', error)
       setLoading(false)
-      return () => {}
+      return () => { }
     }
   }
 
   useEffect(() => {
     const unsubscribe = initializeAuthState()
-    
+
     return () => {
       unsubscribe.then(unsub => unsub && unsub()).catch(console.error)
     }

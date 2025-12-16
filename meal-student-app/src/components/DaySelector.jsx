@@ -1,127 +1,104 @@
 import { useState, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
-import { useMenu } from "../context/MenuContext";
+import { useTheme } from '../context/ThemeContext';
+import { motion } from 'framer-motion';
 
-const DaySelector = ({ days, selectedDay, onSelect, messType = 'veg' }) => {
+const DaySelector = ({ days, selectedDay, onSelect, messType = 'veg', hideLabel = false }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [currentDay, setCurrentDay] = useState('');
+  const { theme } = useTheme();
 
-  // Check screen size and set up resize listener
+  // Check screen size
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 768);
     };
-
-    // Initial check
     checkScreenSize();
-
-    // Add event listener
     window.addEventListener('resize', checkScreenSize);
-
-    // Clean up
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // Get the current day of the week on component mount
+  // Get current day
   useEffect(() => {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     setCurrentDay(today);
-    
-    // Always select the current day on component mount
     if (days.includes(today)) {
       onSelect(today);
     }
   }, []);
 
-  // Get color classes based on mess type - matching MealTimeCard colors
-  const getColorClasses = () => {
+  // Get color based on mess type from theme
+  const getMessColor = () => {
     switch (messType) {
       case 'veg':
-        return {
-          selected: 'bg-green-600',
-          today: 'bg-green-100 text-green-900 border-green-300 shadow-md', // Enhanced today style
-          todayDot: 'bg-green-500',
-          default: 'bg-green-50 text-green-700 border-green-100 hover:bg-green-100'
-        };
+        return theme.colors.veg.primary;
       case 'non-veg':
-        return {
-          selected: 'bg-red-600',
-          today: 'bg-red-100 text-red-900 border-red-300 shadow-md',
-          todayDot: 'bg-red-500',
-          default: 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100'
-        };
+        return theme.colors.nonVeg.primary;
       case 'special':
-        return {
-          selected: 'bg-purple-600',
-          today: 'bg-purple-100 text-purple-900 border-purple-300 shadow-md',
-          todayDot: 'bg-purple-500',
-          default: 'bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100'
-        };
+        return theme.colors.special.primary;
       default:
-        return {
-          selected: 'from-green-500 to-green-700',
-          today: 'bg-green-100 text-green-900 border-green-300 shadow-md',
-          todayDot: 'bg-green-500',
-          default: 'bg-green-50 text-green-700 border-green-100 hover:bg-green-100'
-        };
+        return theme.colors.primary;
     }
   };
 
-  const colors = getColorClasses();
+  const messColor = getMessColor();
 
-  // Function to get day abbreviation
+  // Get day abbreviation
   const getDayAbbreviation = (day) => {
-    switch(day.toLowerCase()) {
-      case 'monday': return 'M';
-      case 'tuesday': return 'T';
-      case 'wednesday': return 'W';
-      case 'thursday': return 'Th';
-      case 'friday': return 'F';
-      case 'saturday': return 'S';
-      case 'sunday': return 'Su';
-      default: return day.substring(0, 2);
-    }
+    const abbr = {
+      Monday: 'M',
+      Tuesday: 'T',
+      Wednesday: 'W',
+      Thursday: 'Th',
+      Friday: 'F',
+      Saturday: 'S',
+      Sunday: 'Su',
+    };
+    return isMobile ? (abbr[day] || day.substring(0, 1)) : day.substring(0, 3);
   };
 
   return (
-    <div className="mb-5 md:mb-6 mt-4 md:mt-6 ml-4 md:ml-2 mr-4 md:mr-2">
-      
-      <div className="flex justify-between md:justify-start md:gap-3">
-        {days.map(day => {
+    <div className="mb-4">
+      {!hideLabel && (
+        <h3 className="text-sm font-semibold mb-3 px-1" style={{ color: theme.colors.textSecondary }}>
+          Select Day
+        </h3>
+      )}
+
+      <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+        {days.map((day) => {
           const isToday = day === currentDay;
           const isSelected = selectedDay === day;
-          const displayText = isMobile ? getDayAbbreviation(day) : day.substring(0, 3);
-          
+          const displayText = getDayAbbreviation(day);
+
           return (
-            <div key={day} className="relative flex flex-col items-center">
-              <button
-                onClick={() => onSelect(day)}
-                className={`
-                  flex items-center justify-center 
-                  rounded-3xl transition-all duration-300 
-                  font-medium relative border-2
-                  ${isSelected
-                    ? `bg-gradient-to-r ${colors.selected} text-white shadow-lg border-transparent transform scale-105`
-                    : isToday
-                    ? `${colors.today} border-2 font-semibold` // Enhanced today styling
-                    : `${colors.default}`
-                  }
-                  ${isMobile 
-                    ? 'h-9 w-9 text-sm' 
-                    : 'h-12 w-12 text-base'
-                  }
-                  hover:scale-105 active:scale-95
-                `}
-                title={isToday ? `${day} (Today)` : day}
-              >
-                {displayText}
-                
-                {/* Today indicator dot - show only when not selected */}
-                {isToday && !isSelected && (
-                  <div className={`absolute -top-1 -right-1 w-3 h-3 ${colors.todayDot} rounded-full border-2 border-white`}></div>
-                )}
-              </button>
-            </div>
+            <motion.button
+              key={day}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onSelect(day)}
+              className="flex flex-col items-center justify-center min-w-[60px] px-3 py-2.5 rounded-xl font-medium transition-all relative"
+              style={{
+                background: isSelected
+                  ? messColor
+                  : isToday
+                    ? messColor + '20'
+                    : theme.colors.backgroundSecondary,
+                color: isSelected
+                  ? 'white'
+                  : isToday
+                    ? messColor
+                    : theme.colors.text,
+                border: `2px solid ${isSelected || isToday ? messColor : theme.colors.border}`,
+              }}
+              title={day}
+            >
+              <span className="text-sm font-bold">{displayText}</span>
+              {isToday && !isSelected && (
+                <div
+                  className="w-1.5 h-1.5 rounded-full mt-1"
+                  style={{ background: messColor }}
+                />
+              )}
+            </motion.button>
           );
         })}
       </div>

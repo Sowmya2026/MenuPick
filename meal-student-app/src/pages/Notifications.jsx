@@ -1,80 +1,57 @@
 import { useNotification } from "../context/NotificationContext";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
-  CheckCircle,
+  X,
   Clock,
   Utensils,
-  X,
-  Leaf,
-  Beef,
-  Star,
+  Trash2,
+  BellOff,
+  Check,
 } from "lucide-react";
 
 const Notifications = () => {
+  const { theme } = useTheme();
   const {
     activeNotifications,
     clearNotification,
     clearAllNotifications,
     notifications,
   } = useNotification();
-
   const { currentUser } = useAuth();
-
-  // Get user's mess type from profile
-  const userMessType = currentUser?.messPreference || "veg";
-
-  // Get gradient class for header based on mess type (same as home page)
-  const getHeaderGradient = (messType) => {
-    switch (messType) {
-      case "veg":
-        return "bg-gradient-to-r from-green-600 to-green-800";
-      case "non-veg":
-        return "bg-gradient-to-r from-red-600 to-red-800";
-      case "special":
-        return "bg-gradient-to-r from-purple-600 to-purple-800";
-      default:
-        return "bg-gradient-to-r from-green-600 to-purple-600";
-    }
-  };
-
-  // Get color class based on mess type (same as home page)
-  const getColorClass = (messType) => {
-    switch (messType) {
-      case "veg":
-        return "text-green-600";
-      case "non-veg":
-        return "text-red-600";
-      case "special":
-        return "text-purple-600";
-      default:
-        return "text-gray-800";
-    }
-  };
-
-  // Get mess icon (same as home page)
-  const getMessIcon = () => {
-    switch (userMessType) {
-      case "veg":
-        return <Leaf size={20} className="text-green-600" />;
-      case "non-veg":
-        return <Beef size={20} className="text-red-600" />;
-      case "special":
-        return <Star size={20} className="text-purple-600" />;
-      default:
-        return <Leaf size={20} className="text-green-600" />;
-    }
-  };
 
   const getNotificationIcon = (type, subType) => {
     if (type === "mealReminder") {
       if (subType === "start") {
-        return <Utensils size={16} className="text-green-500" />;
+        return (
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: theme.colors.primary + "20" }}
+          >
+            <Utensils className="w-5 h-5" style={{ color: theme.colors.primary }} />
+          </div>
+        );
       } else {
-        return <Clock size={16} className="text-amber-500" />;
+        return (
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: "#f59e0b20" }}
+          >
+            <Clock className="w-5 h-5 text-amber-500" />
+          </div>
+        );
       }
     }
-    return <Bell size={16} className="text-blue-500" />;
+    return (
+      <div
+        className="w-10 h-10 rounded-full flex items-center justify-center"
+        style={{ background: "#3b82f620" }}
+      >
+        <Bell className="w-5 h-5 text-blue-500" />
+      </div>
+    );
   };
 
   const formatNotificationTime = (timestamp) => {
@@ -90,124 +67,182 @@ const Notifications = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header Section - Same as home page */}
-      <div className="px-2 py-2 sm:px-4 sm:py-5 md:px-4 md:py-6">
-        <div className="text-center">
-          <h1
-            className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(
-              userMessType
-            )} mb-[0px] sm:mb-[0px] md:mb-[0px]`}
-          >
-            Notifications
-          </h1>
-        </div>
-      </div>
-
-      {/* Main Content - Same padding as home page */}
-      <div className="px-3 pb-4 sm:px-4 sm:pb-6 md:px-6 md:pb-8">
-        {/* Mess Type Header - Same as home page */}
-        <div className="flex items-center justify-center mb-[0px] sm:mb-5 md:mb-6">
-          <div className="flex items-center mr-2 sm:mr-3">{getMessIcon()}</div>
-          <h2
-            className={`text-lg font-semibold font-serif sm:text-xl md:text-2xl ${getColorClass(
-              userMessType
-            )}`}
-          >
-            Alerts & Reminders
-          </h2>
-        </div>
-
-        <div className="max-w-md mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            {activeNotifications.length > 0 && (
-              <button
-                onClick={clearAllNotifications}
-                className="text-sm text-red-500 hover:text-red-600 font-medium"
-              >
-                Clear All
-              </button>
-            )}
-          </div>
-
-          {/* Notifications List */}
-          <div className="space-y-3">
-            {activeNotifications.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-                <Bell size={48} className="mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No notifications
-                </h3>
-                <p className="text-gray-500 text-sm">
-                  Meal reminders and alerts will appear here
-                </p>
-              </div>
-            ) : (
-              activeNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3 flex-1">
-                      <div className="flex-shrink-0 mt-0.5">
-                        {getNotificationIcon(
-                          notification.type,
-                          notification.subType
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-gray-900 mb-1">
-                          {notification.title}
-                        </h4>
-                        <p className="text-xs text-gray-600 mb-2">
-                          {notification.message}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-400">
-                            {formatNotificationTime(notification.timestamp)}
-                          </span>
-                          {notification.timing && (
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                              {notification.timing}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => clearNotification(notification.id)}
-                      className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors ml-2"
-                      title="Dismiss"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Settings Info */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Meal reminders</span>
-              <span
-                className={`text-xs px-2 py-1 rounded-full ${
-                  notifications.mealReminders
-                    ? "bg-green-100 text-green-600"
-                    : "bg-red-100 text-red-600"
-                }`}
-              >
-                {notifications.mealReminders ? "Enabled" : "Disabled"}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Manage notification settings in your profile
+    <div className="pb-20" style={{ background: theme.colors.background }}>
+      {/* Header */}
+      <div
+        className="px-4 sm:px-6 py-4 sm:py-6 border-b"
+        style={{
+          background: theme.colors.card,
+          borderColor: theme.colors.border,
+        }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: theme.colors.text }}>
+              Notifications
+            </h1>
+            <p className="text-xs sm:text-sm mt-1" style={{ color: theme.colors.textSecondary }}>
+              {activeNotifications.length > 0
+                ? `${activeNotifications.length} unread notification${activeNotifications.length > 1 ? 's' : ''}`
+                : 'All caught up!'}
             </p>
           </div>
+
+          {/* Badge */}
+          {activeNotifications.length > 0 && (
+            <div
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base font-bold text-white"
+              style={{ background: theme.colors.primary }}
+            >
+              {activeNotifications.length > 9 ? '9+' : activeNotifications.length}
+            </div>
+          )}
         </div>
+
+        {/* Clear All Button */}
+        {activeNotifications.length > 0 && (
+          <button
+            onClick={clearAllNotifications}
+            className="mt-3 flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm text-white"
+            style={{ background: '#EF4444' }}
+          >
+            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+            Clear All
+          </button>
+        )}
+      </div>
+
+      {/* Notifications List */}
+      <div className="px-4 sm:px-6 py-4 sm:py-6 max-w-3xl mx-auto">
+        <AnimatePresence mode="popLayout">
+          {activeNotifications.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="text-center py-12 sm:py-16 rounded-2xl"
+              style={{
+                background: theme.colors.card,
+                border: `1px solid ${theme.colors.border}`,
+              }}
+            >
+              <div
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-4 sm:mb-6 flex items-center justify-center"
+                style={{ background: theme.colors.backgroundSecondary }}
+              >
+                <BellOff className="w-8 h-8 sm:w-10 sm:h-10" style={{ color: theme.colors.textTertiary }} />
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold mb-2" style={{ color: theme.colors.text }}>
+                No Notifications
+              </h3>
+              <p className="text-sm sm:text-base" style={{ color: theme.colors.textSecondary }}>
+                Meal reminders and alerts will appear here
+              </p>
+            </motion.div>
+          ) : (
+            <div className="space-y-3">
+              {activeNotifications.map((notification, index) => (
+                <motion.div
+                  key={notification.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="rounded-2xl p-4 relative overflow-hidden"
+                  style={{
+                    background: theme.colors.card,
+                    border: `1px solid ${theme.colors.border}`,
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Icon */}
+                    <div className="flex-shrink-0">
+                      {getNotificationIcon(notification.type, notification.subType)}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm sm:text-base font-semibold mb-1" style={{ color: theme.colors.text }}>
+                        {notification.title}
+                      </h4>
+                      <p className="text-xs sm:text-sm mb-2" style={{ color: theme.colors.textSecondary }}>
+                        {notification.message}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs" style={{ color: theme.colors.textTertiary }}>
+                          {formatNotificationTime(notification.timestamp)}
+                        </span>
+                        {notification.timing && (
+                          <span
+                            className="text-xs px-2 py-1 rounded-lg font-medium"
+                            style={{
+                              background: theme.colors.backgroundTertiary,
+                              color: theme.colors.primary,
+                            }}
+                          >
+                            {notification.timing}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Dismiss Button */}
+                    <button
+                      onClick={() => clearNotification(notification.id)}
+                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                      style={{
+                        background: theme.colors.backgroundSecondary,
+                        color: theme.colors.textSecondary,
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Settings Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6 sm:mt-8 p-4 rounded-2xl"
+          style={{
+            background: theme.colors.card,
+            border: `1px solid ${theme.colors.border}`,
+          }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: theme.colors.primary }} />
+              <span className="text-sm sm:text-base font-medium" style={{ color: theme.colors.text }}>
+                Meal Reminders
+              </span>
+            </div>
+            <div
+              className={`px-3 py-1 rounded-full text-xs font-medium ${notifications.mealReminders
+                ? "bg-green-100 text-green-600"
+                : "bg-red-100 text-red-600"
+                }`}
+            >
+              {notifications.mealReminders ? (
+                <span className="flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  Enabled
+                </span>
+              ) : (
+                "Disabled"
+              )}
+            </div>
+          </div>
+          <p className="text-xs sm:text-sm" style={{ color: theme.colors.textSecondary }}>
+            Manage notification preferences in your settings
+          </p>
+        </motion.div>
       </div>
     </div>
   );

@@ -2,17 +2,20 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { MealProvider } from './context/MealContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { useEffect, useState } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import MenuImport from './pages/MenuImport';
+
 import MealManagement from './pages/MealManagement';
 import FeedbackView from './pages/FeedbackView';
 import Analytics from './pages/Analytics';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import Profile from './pages/Profile';
-
-// Add this route
+import AdminSetup from './pages/AdminSetup';
+import UserActives from './pages/UserActives';
 
 // Route reset component to ensure dashboard loads on reload
 function RouteReset() {
@@ -33,7 +36,7 @@ function RouteReset() {
 function AppContent() {
   return (
     <div className="App">
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
@@ -46,6 +49,7 @@ function AppContent() {
       <RouteReset />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/admin-setup" element={<AdminSetup />} />
         <Route path="/" element={
           <ProtectedRoute>
             <Layout />
@@ -54,8 +58,11 @@ function AppContent() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="meals" element={<MealManagement />} />
+          <Route path="menu-import" element={<MenuImport />} />
           <Route path="feedback" element={<FeedbackView />} />
+
           <Route path="analytics" element={<Analytics />} />
+          <Route path="user-activities" element={<UserActives />} />
           <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -66,11 +73,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <MealProvider>
-        <AppContent />
-      </MealProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <MealProvider>
+          <AppContent />
+        </MealProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

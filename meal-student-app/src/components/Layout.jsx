@@ -1,20 +1,26 @@
 import { useAuth } from '../context/AuthContext';
+import MainNavbar from './MainNavbar';
 import BottomNavigation from './BottomNavigation';
+import InstallPrompt from './InstallPrompt';
 
 const Layout = ({ children }) => {
   const { currentUser } = useAuth();
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Main Content Area */}
-      <main className="flex-1 pb-20"> {/* Increased bottom padding for mobile nav */}
-        <div className="container mx-auto px-4 py-4 md:px-6 md:py-6">
-          {children}
-        </div>
+    <div className="min-h-screen flex flex-col">
+      {/* Navbar */}
+      <MainNavbar />
+
+      {/* Main Content Area - No extra padding, let pages control their own layout */}
+      <main className="flex-1">
+        {children}
       </main>
-      
+
       {/* Bottom Navigation (Mobile only) */}
       {currentUser && <BottomNavigation />}
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 };

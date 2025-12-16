@@ -12,13 +12,18 @@ import {
   Menu,
   HelpCircle,
   User,
+  Activity,
+  FileJson,
 } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Logo from "./Logo";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
+  { name: "User Activities", href: "/user-activities", icon: Activity },
   { name: "Meal Management", href: "/meals", icon: Utensils },
+  { name: "Import Menu", href: "/menu-import", icon: FileJson },
   { name: "Analytics", href: "/analytics", icon: BarChart },
   { name: "Feedback", href: "/feedback", icon: MessageSquare },
 ];
@@ -104,7 +109,7 @@ const Sidebar = ({
             <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
               {/* Logo */}
               <div className="flex items-center justify-center px-4 mb-4">
-                <h1 className="text-lg font-bold text-green-900">Meal Admin</h1>
+                <Logo size="md" withText={true} />
               </div>
 
               {/* Navigation */}
@@ -114,10 +119,9 @@ const Sidebar = ({
                     key={item.name}
                     to={item.href}
                     className={({ isActive }) =>
-                      `group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                        isActive
-                          ? "bg-green-100 text-green-700 border border-green-200"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      `group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${isActive
+                        ? "bg-green-100 text-green-700 border border-green-200"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }`
                     }
                     onClick={() => setSidebarOpen(false)}
@@ -167,28 +171,38 @@ const Sidebar = ({
 
       {/* Desktop sidebar */}
       <div
-        className={`hidden lg:flex lg:flex-shrink-0 ${
-          isCollapsed ? "lg:w-20" : "lg:w-64"
-        } transition-all duration-300 ease-in-out`}
+        className={`hidden lg:flex lg:flex-shrink-0 ${isCollapsed ? "lg:w-20" : "lg:w-64"
+          } transition-all duration-300 ease-in-out`}
         ref={sidebarRef}
       >
         <div className="flex flex-col w-full h-full bg-gradient-to-br from-green-100 to-emerald-100 border-r border-green-200">
-          {/* Top section with toggle */}
+          {/* Top section with toggle and logo */}
           <div className="flex items-center justify-between p-4 border-b border-green-200">
+            <div className={`${isCollapsed ? 'flex justify-center w-full' : ''}`}>
+              <Logo size="sm" withText={!isCollapsed} />
+            </div>
+
             {!isCollapsed && (
-              <h1 className="text-xl font-bold text-green-900">Admin Panel</h1>
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-lg text-green-700 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 transition-all duration-200 ml-2"
+              >
+                <ChevronLeft
+                  className={`h-5 w-5 transition-transform duration-300`}
+                />
+              </button>
             )}
 
-            <button
-              onClick={toggleSidebar}
-              className="p-1.5 rounded-lg text-green-700 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 transition-all duration-200"
-            >
-              <ChevronLeft
-                className={`h-5 w-5 ${
-                  isCollapsed ? "rotate-180" : ""
-                } transition-transform duration-300`}
-              />
-            </button>
+            {isCollapsed && (
+              <button
+                onClick={toggleSidebar}
+                className="absolute top-4 right-3 p-1.5 rounded-lg text-green-700 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 transition-all duration-200"
+              >
+                <ChevronLeft
+                  className={`h-5 w-5 rotate-180 transition-transform duration-300`}
+                />
+              </button>
+            )}
           </div>
 
           {/* Navigation */}
@@ -198,12 +212,10 @@ const Sidebar = ({
                 key={item.name}
                 to={item.href}
                 className={({ isActive }) =>
-                  `group flex items-center ${
-                    isCollapsed ? "justify-center px-2" : "px-2"
-                  } py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                    isActive
-                      ? " bg-opacity-50 text-green-900 border border-green-300 shadow-sm"
-                      : "text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900"
+                  `group flex items-center ${isCollapsed ? "justify-center px-2" : "px-2"
+                  } py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${isActive
+                    ? " bg-opacity-50 text-green-900 border border-green-300 shadow-sm"
+                    : "text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900"
                   }`
                 }
               >
@@ -227,9 +239,8 @@ const Sidebar = ({
           <div className="flex-shrink-0 border-t border-green-200 p-4 space-y-2 mt-auto">
             <NavLink
               to="/profile"
-              className={`flex items-center ${
-                isCollapsed ? "justify-center" : ""
-              } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg transition-colors`}
+              className={`flex items-center ${isCollapsed ? "justify-center" : ""
+                } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg transition-colors`}
             >
               <User className={`${isCollapsed ? "h-5 w-5" : "mr-3 h-5 w-5"}`} />
               {!isCollapsed && "Profile"}
@@ -237,9 +248,8 @@ const Sidebar = ({
 
             <a
               href="#"
-              className={`flex items-center ${
-                isCollapsed ? "justify-center" : ""
-              } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg transition-colors`}
+              className={`flex items-center ${isCollapsed ? "justify-center" : ""
+                } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg transition-colors`}
             >
               <HelpCircle
                 className={`${isCollapsed ? "h-5 w-5" : "mr-3 h-5 w-5"}`}
@@ -249,9 +259,8 @@ const Sidebar = ({
 
             <a
               href="#"
-              className={`flex items-center ${
-                isCollapsed ? "justify-center" : ""
-              } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg transition-colors`}
+              className={`flex items-center ${isCollapsed ? "justify-center" : ""
+                } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg transition-colors`}
             >
               <Settings
                 className={`${isCollapsed ? "h-5 w-5" : "mr-3 h-5 w-5"}`}
@@ -261,9 +270,8 @@ const Sidebar = ({
 
             <button
               onClick={handleLogout}
-              className={`flex items-center ${
-                isCollapsed ? "justify-center" : ""
-              } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg w-full transition-colors`}
+              className={`flex items-center ${isCollapsed ? "justify-center" : ""
+                } py-2 text-sm font-medium text-green-800 hover:bg-green-200 hover:bg-opacity-50 hover:text-green-900 rounded-lg w-full transition-colors`}
             >
               <LogOut
                 className={`${isCollapsed ? "h-5 w-5" : "mr-3 h-5 w-5"}`}

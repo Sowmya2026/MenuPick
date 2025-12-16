@@ -1,16 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import Logo from "../components/Logo";
 import {
   Mail,
   Lock,
   Eye,
   EyeOff,
-  Sparkles,
-  X,
+  ArrowRight,
 } from "lucide-react";
 
 const SignIn = () => {
+  const { theme } = useTheme();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -18,22 +21,8 @@ const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const {
-    loginWithEmail,
-    loginWithGoogle,
-    authLoading,
-  } = useAuth();
+  const { loginWithEmail, loginWithGoogle, authLoading } = useAuth();
   const navigate = useNavigate();
-
-  const theme = {
-    primary: {
-      gradient: "from-green-500 to-emerald-600",
-      gradientHover: "from-green-600 to-emerald-700",
-      text: "text-green-600",
-      bg: "bg-green-50",
-      border: "border-green-200",
-    },
-  };
 
   const handleInputChange = (e) => {
     setFormData({
@@ -82,9 +71,8 @@ const SignIn = () => {
     }
   };
 
-  // Google SVG Icon
   const GoogleIcon = () => (
-    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+    <svg className="w-5 h-5" viewBox="0 0 24 24">
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -105,160 +93,183 @@ const SignIn = () => {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 via-purple-50 to-red-50">
-      <div className="w-full max-w-sm sm:max-w-md">
-        {/* Decorative Top */}
-        <div className="relative mb-2">
-          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-16 h-3 bg-green-200 rounded-full"></div>
-          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-12 h-2 bg-green-300 rounded-full"></div>
-        </div>
-
-        {/* Main Card */}
-        <div className="bg-white/90 backdrop-blur-lg rounded-3xl border-4 border-white shadow-2xl shadow-green-100/50 hover:shadow-green-200/70 transition-all duration-500 transform hover:-translate-y-1">
-          {/* Header Section */}
-          <div className="text-center pt-6 px-6">
-            <div className="mx-auto w-16 h-16 mb-4 transform hover:scale-110 transition-transform duration-300">
-              <img
-                src="/logo.png"
-                alt="MenuPick"
-                className="w-full h-full object-contain drop-shadow-lg"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
-              />
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: theme.colors.background }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md"
+      >
+        {/* Card */}
+        <div
+          className="rounded-3xl p-6 sm:p-8 shadow-2xl"
+          style={{
+            background: theme.colors.card,
+            border: `1px solid ${theme.colors.border}`,
+          }}
+        >
+          {/* Logo & Header */}
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="flex justify-center mb-4">
+              <Logo size="lg" withText={true} />
             </div>
-
-            <div className="relative inline-block">
-              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 via-purple-600 to-red-600 bg-clip-text text-transparent mb-1">
-                Welcome Back
-              </h2>
-              <Sparkles
-                size={16}
-                className="absolute -top-1 -right-4 text-purple-500 animate-pulse"
-              />
-            </div>
-            <p className="text-sm sm:text-base text-gray-600 font-medium">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: theme.colors.text }}>
+              Welcome Back
+            </h2>
+            <p className="text-sm sm:text-base" style={{ color: theme.colors.textSecondary }}>
               Sign in to continue
             </p>
           </div>
 
-          <form className="p-4 sm:p-6 space-y-4" onSubmit={handleEmailSignIn}>
-            <div className="space-y-3">
-              {/* Email */}
-              <div className="group relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-green-500" />
+          {/* Form */}
+          <form className="space-y-4" onSubmit={handleEmailSignIn}>
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: theme.colors.textTertiary }} />
                 <input
                   name="email"
                   type="email"
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 text-sm border-2 border-gray-100 rounded-2xl focus:border-green-300 focus:ring-2 focus:ring-green-100 transition-all duration-300 bg-white/80 disabled:opacity-50"
-                  placeholder="Email address"
+                  className="w-full pl-11 pr-4 py-3 text-sm sm:text-base rounded-xl border-2 transition-all"
+                  style={{
+                    background: theme.colors.backgroundSecondary,
+                    color: theme.colors.text,
+                    borderColor: theme.colors.border,
+                  }}
+                  placeholder="your@email.com"
                   disabled={isLoading}
                 />
               </div>
+            </div>
 
-              {/* Password */}
-              <div className="group relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-red-500" />
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium" style={{ color: theme.colors.text }}>
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-medium hover:underline"
+                  style={{ color: theme.colors.primary }}
+                >
+                  Forgot?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: theme.colors.textTertiary }} />
                 <input
                   name="password"
                   type={showPassword ? "text" : "password"}
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-12 py-3 text-sm border-2 border-gray-100 rounded-2xl focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all duration-300 bg-white/80 disabled:opacity-50"
-                  placeholder="Password"
+                  className="w-full pl-11 pr-12 py-3 text-sm sm:text-base rounded-xl border-2 transition-all"
+                  style={{
+                    background: theme.colors.backgroundSecondary,
+                    color: theme.colors.text,
+                    borderColor: theme.colors.border,
+                  }}
+                  placeholder="Enter your password"
                   disabled={isLoading}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 disabled:opacity-50"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
+                  style={{ color: theme.colors.textTertiary }}
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Forgot Password Link */}
-            <div className="text-right">
-              <Link
-                to="/forgot-password"
-                className="text-xs text-purple-600 hover:text-purple-700 font-medium hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            {/* Submit Button */}
+            {/* Sign In Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 px-4 bg-gradient-to-r ${theme.primary.gradient} hover:${theme.primary.gradientHover} text-white rounded-2xl font-semibold shadow-lg shadow-green-200 hover:shadow-green-300 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed`}
+              className="w-full py-3 sm:py-4 px-4 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base text-white flex items-center justify-center gap-2 transition-all"
+              style={{
+                background: theme.colors.primary,
+                opacity: isLoading ? 0.7 : 1,
+              }}
             >
               {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Signing In...
-                </div>
+                </>
               ) : (
-                "Sign In"
+                <>
+                  Sign In
+                  <ArrowRight className="w-5 h-5" />
+                </>
               )}
             </button>
 
             {/* Divider */}
-            <div className="relative py-2">
+            <div className="relative py-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-100" />
+                <div className="w-full border-t" style={{ borderColor: theme.colors.border }} />
               </div>
               <div className="relative flex justify-center">
-                <span className="px-2 bg-white text-xs text-gray-400">
-                  or continue with
+                <span className="px-4 text-xs sm:text-sm" style={{ background: theme.colors.card, color: theme.colors.textSecondary }}>
+                  Or continue with
                 </span>
               </div>
             </div>
 
-            {/* Google Sign In Button */}
+            {/* Google Sign In */}
             <button
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isLoading || authLoading}
-              className="w-full flex items-center justify-center py-2.5 px-4 border-2 border-gray-100 rounded-2xl bg-white text-gray-600 hover:border-gray-200 hover:bg-gray-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border-2 transition-all text-sm sm:text-base font-medium"
+              style={{
+                background: theme.colors.backgroundSecondary,
+                borderColor: theme.colors.border,
+                color: theme.colors.text,
+                opacity: (isLoading || authLoading) ? 0.7 : 1,
+              }}
             >
               {authLoading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mr-2"></div>
+                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
               ) : (
                 <GoogleIcon />
               )}
-              <span className="text-sm font-medium">
-                {authLoading ? "Signing in..." : "Continue with Google"}
-              </span>
+              {authLoading ? "Signing in..." : "Continue with Google"}
             </button>
 
-            {/* Don't have account */}
-            <div className="text-center pt-2">
-              <Link
-                to="/signup"
-                className="text-xs text-gray-500 hover:text-purple-600 transition-colors duration-300 disabled:opacity-50"
-              >
+            {/* Sign Up Link */}
+            <div className="text-center pt-4">
+              <span className="text-sm" style={{ color: theme.colors.textSecondary }}>
                 Don't have an account?{" "}
-                <span className="font-semibold text-purple-600 hover:underline">
+                <Link
+                  to="/signup"
+                  className="font-semibold hover:underline"
+                  style={{ color: theme.colors.primary }}
+                >
                   Sign up
-                </span>
-              </Link>
+                </Link>
+              </span>
             </div>
           </form>
         </div>
 
-        {/* Decorative Bottom */}
-        <div className="relative mt-2">
-          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-2 bg-purple-200 rounded-full"></div>
-          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-purple-300 rounded-full"></div>
-        </div>
-      </div>
+        {/* Footer Text */}
+        <p className="text-center mt-6 text-xs" style={{ color: theme.colors.textTertiary }}>
+          By signing in, you agree to our Terms & Privacy Policy
+        </p>
+      </motion.div>
     </div>
   );
 };

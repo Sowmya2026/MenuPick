@@ -14,8 +14,43 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+import { useNavigate } from "react-router-dom";
+import { deleteUser } from "firebase/auth";
+import { deleteDoc, doc } from "firebase/firestore";
+import { db } from "../firebase";
+import toast from "react-hot-toast";
+
 const Profile = () => {
-  const { currentUser, isDemoMode } = useAuth();
+  const { currentUser, isDemoMode, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const uid = currentUser.uid;
+
+      // 1. Delete Admin Data from Firestore
+      await deleteDoc(doc(db, "adminUsers", uid));
+
+      // 2. Delete User from Auth
+      await deleteUser(currentUser);
+
+      // 3. Cleanup local state
+      toast.success("Account deleted successfully");
+      navigate("/login");
+
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      if (error.code === 'auth/requires-recent-login') {
+        toast.error("Please log out and log in again to perform this action.");
+      } else {
+        toast.error("Failed to delete account: " + error.message);
+      }
+    }
+  };
 
   // Animation variants matching dashboard
   const containerVariants = {
@@ -295,7 +330,7 @@ const Profile = () => {
           </div>
 
           <div className="p-4 sm:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-full">
               <motion.button
                 className="flex items-center justify-center p-3 sm:p-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-sm"
                 variants={cardVariants}
@@ -317,6 +352,19 @@ const Profile = () => {
                 <Key className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 <span className="text-sm sm:text-base font-medium">
                   Change Password
+                </span>
+              </motion.button>
+
+              <motion.button
+                onClick={handleDeleteAccount}
+                className="flex items-center justify-center p-3 sm:p-4 border border-red-300 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
+                variants={cardVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                <span className="text-sm sm:text-base font-medium">
+                  Delete Account
                 </span>
               </motion.button>
             </div>

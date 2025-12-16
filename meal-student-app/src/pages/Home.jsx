@@ -1,58 +1,56 @@
 import { useAuth } from "../context/AuthContext";
 import { useMenu } from "../context/MenuContext";
-import DaySelector from "../components/DaySelector";
-import MealTimeCard from "../components/MealTimeCard";
+import { useTheme } from "../context/ThemeContext";
+import Layout from "../components/Layout";
 import {
+  Calendar,
+  Clock,
+  ChefHat,
+  Coffee,
+  Sun,
+  Moon,
+  Utensils,
+  X,
   Leaf,
   Beef,
   Star,
-  Calendar,
-  Utensils,
-  ChevronDown,
+  Sandwich,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import Layout from "../components/Layout";
-
+import { motion, AnimatePresence } from "framer-motion";
 
 const Home = () => {
   const { currentUser } = useAuth();
+  const { theme } = useTheme();
   const {
     selectedMess,
     setSelectedMess,
     selectedDay,
     setSelectedDay,
-    selectedMealTime,
-    setSelectedMealTime,
     getMenuItems,
-    getMessColor,
-    getTimings,
+    getMealTiming,
     days,
+    setIsMenuModalOpen,
   } = useMenu();
 
   const [currentDate, setCurrentDate] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [expandedCards, setExpandedCards] = useState({});
+  const [greeting, setGreeting] = useState("Good Morning");
+  const [selectedMeal, setSelectedMeal] = useState(null);
 
-  // Check if mobile on mount and resize
+  // Sync modal state with context
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    setIsMenuModalOpen(!!selectedMeal);
+  }, [selectedMeal, setIsMenuModalOpen]);
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  // Set default mess type based on user preference
+  // Set default mess type based on student's preference
   useEffect(() => {
     if (currentUser?.messPreference) {
       setSelectedMess(currentUser.messPreference);
     }
+  }, [currentUser, setSelectedMess]);
 
-    // Set current date in a formatted way
+  // Set current date and greeting
+  useEffect(() => {
     const date = new Date();
     const formattedDate = date.toLocaleDateString("en-US", {
       weekday: "long",
@@ -60,246 +58,295 @@ const Home = () => {
       day: "numeric",
     });
     setCurrentDate(formattedDate);
-  }, [currentUser, setSelectedMess]);
 
-  // Toggle individual card expand state
-  const toggleCardExpand = (mealTime) => {
-    setExpandedCards((prev) => ({
-      ...prev,
-      [mealTime]: !prev[mealTime],
-    }));
+    const hour = date.getHours();
+    if (hour < 12) setGreeting("Good Morning");
+    else if (hour < 17) setGreeting("Good Afternoon");
+    else setGreeting("Good Evening");
+
+    // Set current day
+    const today = date.toLocaleDateString("en-US", { weekday: "long" });
+    if (days.includes(today)) {
+      setSelectedDay(today);
+    }
+  }, [days, setSelectedDay]);
+
+  // Mess configurations
+  const messConfig = {
+    veg: { name: "Veg", Icon: Leaf },
+    "non-veg": { name: "Non-Veg", Icon: Beef },
+    special: { name: "Special", Icon: Star },
   };
 
-  // Close all cards when mess type changes
-  useEffect(() => {
-    setExpandedCards({});
-  }, [selectedMess]);
-
-  // Close all cards when day changes
-  useEffect(() => {
-    setExpandedCards({});
-  }, [selectedDay]);
-
-  // Mess type options with icons and updated colors
-  const messTypes = [
-    {
-      id: "veg",
-      name: "Vegetarian",
-      icon: <Leaf size={20} className="text-green-600" />,
-      color: "green",
-    },
-    {
-      id: "non-veg",
-      name: "Non-Veg",
-      icon: <Beef size={20} className="text-red-600" />,
-      color: "red",
-    },
-    {
-      id: "special",
-      name: "Special",
-      icon: <Star size={20} className="text-purple-600" />,
-      color: "purple",
-    },
+  // Meal times
+  const mealTimes = [
+    { id: "breakfast", name: "Breakfast", Icon: Coffee },
+    { id: "lunch", name: "Lunch", Icon: Sun },
+    { id: "snacks", name: "Snacks", Icon: Sandwich },
+    { id: "dinner", name: "Dinner", Icon: Moon },
   ];
 
-  // Get current mess color
-  const currentMessColor = getMessColor(selectedMess);
-  const currentTimings = getTimings(selectedMess);
-
-  // Get selected mess details
-  const selectedMessDetails =
-    messTypes.find((mess) => mess.id === selectedMess) || messTypes[0];
-
-  // Get color class based on mess type
-  const getColorClass = (messId) => {
-    switch (messId) {
-      case "veg":
-        return "text-green-600";
-      case "non-veg":
-        return "text-red-600";
-      case "special":
-        return "text-purple-600";
-      default:
-        return "text-gray-800";
-    }
+  const openMealModal = (meal) => {
+    const items = getMenuItems(selectedMess, selectedDay, meal.id);
+    const timing = getMealTiming(selectedDay, meal.id);
+    setSelectedMeal({ ...meal, items, timing });
   };
-
-  // Get gradient class for header based on mess type
-  const getHeaderGradient = (messId) => {
-    switch (messId) {
-      case "veg":
-        return "bg-gradient-to-r from-green-600 to-green-800";
-      case "non-veg":
-        return "bg-gradient-to-r from-red-600 to-red-800";
-      case "special":
-        return "bg-gradient-to-r from-purple-600 to-purple-800";
-      default:
-        return "bg-gradient-to-r from-green-600 to-purple-600";
-    }
-  };
-
-  // Motivational quotes for students
-  const motivationalQuotes = [
-    "Fuel your body, conquer your day.",
-    "Good food, happy mind, happy life.",
-    "Eat well, respect your body daily.",
-    "Healthy choices build a better future.",
-    "Food is energy, enjoy every bite.",
-    "Health first, always take care.",
-    "Savor every bite, taste the joy.",
-  ];
-
-  // Select a random quote
-  const randomQuote =
-    motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
-
-  // Toggle dropdown based on device
-  const toggleDropdown = () => {
-    if (isMobile) {
-      setIsOpen(!isOpen);
-    } else {
-      setIsOpen(true);
-    }
-  };
-
-  // Handle mess selection
-  const handleMessSelect = (messId) => {
-    setSelectedMess(messId);
-    setIsOpen(false);
-  };
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest(".mess-selector-container")) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen && !isMobile) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen, isMobile]);
 
   return (
     <Layout>
-      <div className="min-h-screen bg-white">
-        {/* Header Section */}
-        <div className="px-2 py-2 sm:px-6 sm:py-8 md:px-8 md:py-8">
-          <div className="text-center">
+      <div
+        className="pb-20 overflow-x-hidden"
+        style={{ background: theme.colors.background }}
+      >
+        {/* Header - Centered */}
+        <div className="px-4 pt-4 pb-3">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
             <h1
-              className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient(
-                selectedMess
-              )} mb-2 sm:mb-4 md:mb-5`}
+              className="text-2xl font-bold mb-1"
+              style={{ color: theme.colors.text }}
             >
-              Campus Dining
+              {greeting}, {currentUser?.name?.split(" ")[0] || "Student"}!
             </h1>
+            <div
+              className="flex items-center justify-center gap-2 text-sm"
+              style={{ color: theme.colors.textSecondary }}
+            >
+              <Calendar className="w-4 h-4" />
+              <span>{currentDate}</span>
+            </div>
+          </motion.div>
+        </div>
 
-            <p className="text-xs text-gray-700 italic font-light sm:text-sm md:text-base mb-3 sm:mb-4 md:mb-5">
-              "{randomQuote}"
-            </p>
+        {/* Mess Type Selection - Segmented Control */}
+        <div className="px-4 mb-3">
+          <div className="flex justify-center">
+            <div
+              className="inline-flex rounded-full p-1 gap-1"
+              style={{
+                background: theme.colors.backgroundSecondary,
+                border: `1px solid ${theme.colors.border}`,
+              }}
+            >
+              {Object.entries(messConfig).map(([key, config]) => {
+                const isSelected = selectedMess === key;
+                const MessIcon = config.Icon;
 
-            <div className="flex items-center justify-center text-gray-600 mb-4">
-              <Calendar size={14} className="mr-1 sm:mr-2 sm:size-4" />
-              <p className="text-xs sm:text-sm md:text-base">{currentDate}</p>
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedMess(key)}
+                    className="relative px-4 py-2 rounded-full flex items-center gap-2 transition-all"
+                    style={{
+                      background: isSelected
+                        ? `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`
+                        : 'transparent',
+                      color: isSelected ? "white" : theme.colors.textSecondary,
+                    }}
+                  >
+                    <MessIcon className="w-4 h-4" />
+                    <span className="text-xs font-semibold">{config.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="px-4 pb-6 sm:px-6 sm:pb-8 md:px-8 md:pb-12">
-          {/* Mess Type Selector */}
-          <div className="flex items-center justify-center mb-5 sm:mb-6 md:mb-8 mess-selector-container">
-            <div className="relative mr-3 sm:mr-4">
-              {/* Clickable area for dropdown */}
-              <div
-                className="flex items-center p-3 bg-white border border-gray-300 rounded-lg cursor-pointer shadow-sm sm:p-3.5 md:p-4"
-                onClick={toggleDropdown}
-                onMouseEnter={() => !isMobile && setIsOpen(true)}
-              >
-                <div className="flex items-center">
-                  {selectedMessDetails.icon}
-                  <ChevronDown
-                    size={16}
-                    className={`ml-2 text-gray-600 transition-transform sm:size-4 sm:ml-2.5 ${
-                      isOpen ? "rotate-180" : "rotate-0"
-                    }`}
-                  />
-                </div>
-              </div>
+        {/* Day Selection - Scrollable with Hidden Scrollbar */}
+        <div className="px-4 mb-3">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {days.map((day) => {
+              const isSelected = selectedDay === day;
 
-              {/* Dropdown */}
-              {/* In the Home component, update the dropdown container */}
-              {isOpen && (
-                <div
-                  className={`absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px] sm:min-w-[180px] ${
-                    isMobile ? "w-full" : ""
-                  }`}
-                  style={{ zIndex: 9999 }} // Ensure dropdown appears above everything
+              return (
+                <button
+                  key={day}
+                  onClick={() => setSelectedDay(day)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex-shrink-0"
+                  style={{
+                    background: isSelected
+                      ? `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`
+                      : theme.colors.backgroundSecondary,
+                    color: isSelected ? "white" : theme.colors.text,
+                    border: `1px solid ${isSelected ? theme.colors.primary : theme.colors.border}`,
+                  }}
                 >
-                  {messTypes.map((mess) => (
-                    <div
-                      key={mess.id}
-                      className={`flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors sm:p-3.5 md:p-4 ${
-                        selectedMess === mess.id ? "bg-gray-100" : ""
-                      }`}
-                      onClick={() => handleMessSelect(mess.id)}
-                    >
-                      <div className="mr-3 sm:mr-4">{mess.icon}</div>
-                      <span className="text-sm text-gray-800 sm:text-base">
-                        {mess.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Menu title with colored text */}
-            <h2
-              className={`text-lg font-semibold font-serif sm:text-xl md:text-2xl ${getColorClass(
-                selectedMess
-              )}`}
-            >
-              {selectedMessDetails.name} Menu
-            </h2>
+                  {day.substring(0, 3)}
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          {selectedMess && (
-            <div className="max-w-6xl mx-auto">
-              {/* Day Selector */}
-              <div className="mb-4 sm:mb-5 md:mb-6">
-                <DaySelector
-                  days={days}
-                  selectedDay={selectedDay}
-                  onSelect={setSelectedDay}
-                  hideLabel={true}
-                  messType={selectedMess}
-                />
-              </div>
+        {/* Meal Cards - 2 Column Grid with Centered Content */}
+        <div className="px-4 grid grid-cols-2 gap-3">
+          {mealTimes.map((meal, index) => {
+            const items = getMenuItems(selectedMess, selectedDay, meal.id);
+            const timing = getMealTiming(selectedDay, meal.id);
+            const MealIcon = meal.Icon;
 
-              {/* Meal Time Cards Grid */}
-              <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 sm:gap-5 md:grid-cols-2 lg:grid-cols-4 md:gap-6">
-                {Object.entries(currentTimings).map(([mealTime, timing]) => (
-                  <MealTimeCard
-                    key={mealTime}
-                    mealTime={mealTime}
-                    timing={timing}
-                    isExpanded={expandedCards[mealTime] || false}
-                    onToggleExpand={() => toggleCardExpand(mealTime)}
-                    items={getMenuItems(selectedMess, selectedDay, mealTime)}
-                    messType={selectedMess}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+            return (
+              <motion.button
+                key={meal.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => openMealModal(meal)}
+                className="p-4 rounded-2xl text-center transition-all hover:shadow-lg active:scale-95"
+                style={{
+                  background: theme.colors.card,
+                  border: `1px solid ${theme.colors.border}`,
+                }}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  {/* Icon with gradient background - Centered */}
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${theme.colors.primaryLight}20, ${theme.colors.primary}15)`,
+                    }}
+                  >
+                    <MealIcon className="w-7 h-7" style={{ color: theme.colors.primary }} strokeWidth={2} />
+                  </div>
+
+                  {/* Meal Info - Centered */}
+                  <div>
+                    <h3
+                      className="font-bold text-lg mb-1"
+                      style={{ color: theme.colors.text }}
+                    >
+                      {meal.name}
+                    </h3>
+                    <div
+                      className="flex items-center justify-center gap-1 text-xs"
+                      style={{ color: theme.colors.textSecondary }}
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{timing}</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.button>
+            );
+          })}
         </div>
       </div>
+
+      {/* Modal Dialog */}
+      <AnimatePresence>
+        {selectedMeal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedMeal(null)}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-x-4 top-20 bottom-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl rounded-3xl overflow-hidden shadow-2xl z-50"
+              style={{ background: theme.colors.card }}
+            >
+              {/* Modal Header */}
+              <div
+                className="p-6 border-b"
+                style={{
+                  background: theme.colors.backgroundSecondary,
+                  borderColor: theme.colors.border,
+                }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center"
+                      style={{ background: theme.colors.backgroundTertiary }}
+                    >
+                      <selectedMeal.Icon
+                        className="w-6 h-6"
+                        style={{ color: theme.colors.primary }}
+                      />
+                    </div>
+                    <div>
+                      <h2
+                        className="text-xl font-bold"
+                        style={{ color: theme.colors.text }}
+                      >
+                        {selectedMeal.name}
+                      </h2>
+                      <div
+                        className="flex items-center gap-1 text-sm"
+                        style={{ color: theme.colors.textSecondary }}
+                      >
+                        <Clock className="w-3 h-3" />
+                        <span>{selectedMeal.timing}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedMeal(null)}
+                    className="p-2 rounded-xl transition-all"
+                    style={{
+                      background: theme.colors.backgroundTertiary,
+                      color: theme.colors.text,
+                    }}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 overflow-y-auto" style={{ maxHeight: "calc(100% - 120px)" }}>
+                {selectedMeal.items && selectedMeal.items.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedMeal.items.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 p-3 rounded-xl"
+                        style={{ background: theme.colors.backgroundSecondary }}
+                      >
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
+                          style={{
+                            background: theme.colors.primary,
+                            color: "white",
+                          }}
+                        >
+                          {index + 1}
+                        </div>
+                        <p
+                          className="flex-1 text-sm font-medium"
+                          style={{ color: theme.colors.text }}
+                        >
+                          {item}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="text-center py-12"
+                    style={{ color: theme.colors.textSecondary }}
+                  >
+                    <ChefHat className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No items available for this meal</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </Layout>
   );
 };

@@ -1,69 +1,94 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
-import { Eye, EyeOff, LogIn, Sparkles, UserCheck } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { motion } from 'framer-motion'
+import Logo from '../components/Logo'
 
 const Login = () => {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const [isLogin, setIsLogin] = useState(true)
+  const { login, signup, currentUser, resetPassword } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [currentUser, navigate])
+
+  const handleResetPassword = async () => {
+    const input = username || window.prompt("Please enter your username or email to reset password:");
+
+    if (!input) {
+      toast.error("Username/Email is required to reset password");
+      return;
+    }
+
+    const emailToReset = input.includes('@') ? input : `${input}@menupick.com`;
+
+    try {
+      await resetPassword(emailToReset);
+      toast.success(`Password reset email sent to ${emailToReset}! Check your inbox.`);
+    } catch (error) {
+      console.error("Reset password error:", error);
+      toast.error("Failed to send reset email: " + error.message);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    if (!email || !password) {
+
+    if (!username || !password) {
       toast.error('Please fill in all fields')
       return
     }
 
+    if (!isLogin && password !== confirmPassword) {
+      toast.error("Passwords do not match!");
+      return;
+    }
+
     setLoading(true)
+
+    // Clean username and construct email
+    const cleanUsername = username.trim().toLowerCase().replace(/\s+/g, '');
+    const finalEmail = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@menupick.com`;
+
+    // Validate constructed email simple check
+    if (!finalEmail.includes('@') || finalEmail.endsWith('@')) {
+      toast.error("Invalid username format");
+      setLoading(false);
+      return;
+    }
+
     try {
-      await login(email, password)
-      toast.success('Logged in successfully!')
-      
-      // Add a small delay to ensure state is updated
-      setTimeout(() => {
-        navigate('/', { replace: true })
-      }, 100)
-      
+      if (isLogin) {
+        await login(finalEmail, password)
+        toast.success('Logged in successfully!')
+        // Navigation handled by useEffect
+      } else {
+        await signup(finalEmail, password)
+        toast.success('Account created successfully!')
+        // After signup, usually auto-logged in, so useEffect handles nav
+      }
+
     } catch (error) {
-      console.error('Login error:', error)
-      toast.error('Failed to log in: ' + error.message)
+      console.error('Auth error:', error)
+      toast.error(error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  // Auto-fill demo credentials for testing
-  const fillDemoCredentials = () => {
-    setEmail('demo@admin.com')
-    setPassword('demo123')
-    toast.success('Demo credentials filled! Click Sign in to continue.')
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-6 sm:space-y-8">
-        {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center"
-        >
-          <h1 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">
-            Admin Panel
-          </h1>
-          <p className="text-sm sm:text-base text-green-700">
-            Secure access to meal management system
-          </p>
-        </motion.div>
-
         {/* Login Card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -73,66 +98,35 @@ const Login = () => {
         >
           {/* Logo Section */}
           <div className="flex flex-col items-center mb-6">
-            <motion.div
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              transition={{ type: "spring", stiffness: 300 }}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-full p-3 shadow-lg mb-4"
-            >
-              <LogIn className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-            </motion.div>
+            <div className="flex justify-center mb-4">
+              <Logo size="lg" withText={true} />
+            </div>
             <h2 className="text-xl sm:text-2xl font-bold text-green-900">
-              Welcome Back
+              {isLogin ? 'Welcome Back' : 'Join Us'}
             </h2>
             <p className="text-xs sm:text-sm text-green-600 mt-1">
-              Sign in to your admin account
+              {isLogin ? 'Sign in to your admin account' : 'Enter details to create account'}
             </p>
           </div>
-
-          {/* Demo Credentials Section */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mb-6 p-3 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg"
-          >
-            <p className="text-xs sm:text-sm text-green-800 text-center mb-2 font-medium flex items-center justify-center">
-              <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-              Demo Access
-            </p>
-            <div className="text-xs text-green-700 bg-white/80 p-2 rounded border border-green-100">
-              <p><span className="font-medium">Email:</span> demo@admin.com</p>
-              <p><span className="font-medium">Password:</span> demo123</p>
-            </div>
-            <motion.button
-              type="button"
-              onClick={fillDemoCredentials}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full mt-2 bg-green-100 hover:bg-green-200 text-green-800 text-xs font-medium py-2 px-2 rounded-lg transition-all duration-200 flex items-center justify-center"
-            >
-              <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-              Auto-fill Demo Credentials
-            </motion.button>
-          </motion.div>
 
           {/* Login Form */}
           <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-3">
-              {/* Email Input */}
+              {/* Username Input */}
               <div>
-                <label htmlFor="email" className="sr-only">
-                  Email address
+                <label htmlFor="username" className="sr-only">
+                  Username
                 </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
                   required
                   className="w-full rounded-lg border border-green-200 bg-white/50 px-3 py-2.5 sm:py-3 text-sm sm:text-base text-green-900 placeholder-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
 
@@ -164,6 +158,36 @@ const Login = () => {
                   )}
                 </button>
               </div>
+
+              {/* Confirm Password Input (Only for Signup) */}
+              {!isLogin && (
+                <div className="relative">
+                  <label htmlFor="confirmPassword" className="sr-only">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    className="w-full rounded-lg border border-green-200 bg-white/50 px-3 py-2.5 sm:py-3 text-sm sm:text-base text-green-900 placeholder-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  className="text-xs sm:text-sm text-green-600 hover:text-green-800 hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
             </div>
 
             {/* Submit Button */}
@@ -180,12 +204,23 @@ const Login = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Signing in...
+                  {isLogin ? 'Signing in...' : 'Creating account...'}
                 </span>
               ) : (
-                'Sign in'
+                isLogin ? 'Sign in' : 'Create Account'
               )}
             </motion.button>
+
+            {/* Toggle Login/Signup */}
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-green-600 hover:text-green-800 font-medium focus:outline-none transition-colors duration-200"
+              >
+                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              </button>
+            </div>
           </form>
         </motion.div>
 

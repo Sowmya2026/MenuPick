@@ -1,0 +1,15 @@
+{
+  "name": "MenuPick - Campus Dining",
+  "short_name": "MenuPick",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d4af37",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

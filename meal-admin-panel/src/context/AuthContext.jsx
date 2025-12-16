@@ -1,47 +1,51 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { 
-  signInWithEmailAndPassword, 
-  signOut, 
+import {
+  signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail
 } from 'firebase/auth'
 import { auth } from '../firebase'
+import toast from 'react-hot-toast'
 
 // Create context first
 const AuthContext = createContext()
-
-// Demo user data
-const DEMO_USER = {
-  email: 'demo@admin.com',
-  uid: 'demo-user-id-12345',
-  displayName: 'Demo Administrator',
-  isDemo: true,
-  joinDate: 'January 2023',
-  role: 'Administrator'
-}
 
 // Then define the provider
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [isDemoMode, setIsDemoMode] = useState(false)
 
   const login = async (email, password) => {
     try {
-      // Check for demo credentials first
-      if (email === 'demo@admin.com' && password === 'demo123') {
-        setIsDemoMode(true)
-        const demoUser = { ...DEMO_USER }
-        setCurrentUser(demoUser)
-        localStorage.setItem('demoUser', JSON.stringify(demoUser))
-        localStorage.setItem('isDemoMode', 'true')
-        return demoUser
+      // Special handling for Demo User: Try to Sign In, if missing, Sign Up
+      if (email === 'demo@admin.com') {
+        try {
+          const result = await signInWithEmailAndPassword(auth, email, password);
+          return result.user;
+        } catch (error) {
+          // If user doesn't exist, create it (Auto-provisioning for demo)
+          if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+            try {
+              const createResult = await createUserWithEmailAndPassword(auth, email, password);
+              toast.success("Demo account created successfully!");
+              return createResult.user;
+            } catch (createErr) {
+              // If creation/other error, throw original
+              if (createErr.code === 'auth/email-already-in-use') {
+                // Fallback: try login again? Or simpler: Just throw original
+                // This handles case where invalid-credential was due to wrong password for existing user
+                throw error;
+              }
+              throw createErr;
+            }
+          }
+          throw error;
+        }
       }
-      
-      // Otherwise, use Firebase authentication
-      setIsDemoMode(false)
-      localStorage.removeItem('demoUser')
-      localStorage.removeItem('isDemoMode')
+
+      // Normal Login
       const result = await signInWithEmailAndPassword(auth, email, password)
       return result.user
     } catch (error) {
@@ -50,38 +54,51 @@ export const AuthProvider = ({ children }) => {
   }
 
   const signup = (email, password) => {
-    setIsDemoMode(false)
-    localStorage.removeItem('demoUser')
-    localStorage.removeItem('isDemoMode')
     return createUserWithEmailAndPassword(auth, email, password)
   }
 
   const logout = () => {
-    if (isDemoMode) {
-      setIsDemoMode(false)
-      setCurrentUser(null)
-      localStorage.removeItem('demoUser')
-      localStorage.removeItem('isDemoMode')
-      return Promise.resolve()
-    }
-    localStorage.removeItem('demoUser')
-    localStorage.removeItem('isDemoMode')
     return signOut(auth)
   }
 
+  // Auto-logout functionality
   useEffect(() => {
-    // Check for demo user in localStorage on component mount
-    const demoUser = localStorage.getItem('demoUser')
-    const demoMode = localStorage.getItem('isDemoMode')
-    
-    if (demoUser && demoMode === 'true') {
-      setIsDemoMode(true)
-      setCurrentUser(JSON.parse(demoUser))
-      setLoading(false)
-      return
-    }
+    if (!currentUser) return;
 
-    // Otherwise, use Firebase auth listener
+    // 15 minutes in milliseconds
+    const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+    let timeoutId;
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        logout();
+        toast.error("Session expired due to inactivity");
+      }, INACTIVITY_TIMEOUT);
+    };
+
+    // Events to track activity
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+    // Attach listeners
+    events.forEach(event => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    // Initialize timer
+    resetTimer();
+
+    // Cleanup
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach(event => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [currentUser]);
+
+  useEffect(() => {
+    // Use Firebase auth listener
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
       setLoading(false)
@@ -90,12 +107,16 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe
   }, [])
 
+  const resetPassword = (email) => {
+    return sendPasswordResetEmail(auth, email)
+  }
+
   const value = {
     currentUser,
-    isDemoMode,
     login,
     signup,
-    logout
+    logout,
+    resetPassword
   }
 
   return (

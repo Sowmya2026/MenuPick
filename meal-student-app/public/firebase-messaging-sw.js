@@ -21,12 +21,12 @@ const messaging = firebase.messaging();
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log('Received background message: ', payload);
-  
+
   const notificationTitle = payload.notification?.title || 'MenuPick';
   const notificationOptions = {
     body: payload.notification?.body || 'You have a new notification',
-    icon: '/logo.png',
-    badge: '/logo.png',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
     tag: 'menupick-notification',
     requireInteraction: true,
     data: payload.data || {},
@@ -49,9 +49,9 @@ messaging.onBackgroundMessage((payload) => {
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
+
   const urlToOpen = new URL('/', self.location.origin).href;
-  
+
   // Handle action buttons
   if (event.action === 'view') {
     // Navigate to specific page based on notification data
@@ -108,4 +108,23 @@ self.addEventListener('notificationclick', (event) => {
 // Handle notification close
 self.addEventListener('notificationclose', (event) => {
   console.log('Notification closed:', event.notification);
+});
+
+// PWA: Basic Install Event
+self.addEventListener('install', (event) => {
+  console.log('Service Worker installed');
+  self.skipWaiting();
+});
+
+// PWA: Activate Event
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker activated');
+  event.waitUntil(clients.claim());
+});
+
+// PWA: Fetch Event (Required for PWA installability)
+self.addEventListener('fetch', (event) => {
+  // Basic pass-through fetch. 
+  // For a full offline experience, we would add caching logic here.
+  event.respondWith(fetch(event.request));
 });

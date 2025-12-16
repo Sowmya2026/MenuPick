@@ -1,849 +1,389 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useMeal } from "../context/MealContext";
-import { useNotification } from "../context/NotificationContext";
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { showLogoutConfirmation } from '../utils/alertUtils';
+import { motion } from 'framer-motion';
 import {
   User,
   Mail,
+  Phone,
+  MapPin,
   Calendar,
-  Edit3,
+  Edit2,
   Save,
   X,
-  Bell,
-  Shield,
-  HelpCircle,
-  ArrowRight,
-  Leaf,
-  Beef,
-  Star,
-  BookOpen,
-  Utensils,
-  AlertCircle,
+  LogOut,
   Settings,
-  ChefHat,
-} from "lucide-react";
+  Utensils,
+  Heart,
+  Star,
+  TrendingUp,
+  ArrowRight,
+  Sparkles,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 
-export default function Profile() {
+const Profile = () => {
   const { currentUser, logout, updateUserProfile } = useAuth();
-  const { preferences } = useMeal();
-  const {
-    notifications,
-    updateNotificationPreference,
-    hasPermission,
-    permissionStatus,
-    requestNotificationPermission,
-    togglePushNotifications,
-    checkPermissionStatus,
-  } = useNotification();
-
+  const { theme, changeTheme, themes, currentTheme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    displayName: "",
-    email: "",
-    phone: "",
-    studentId: "",
-    dietaryPreferences: [],
-    allergies: [],
-    // messPreference will be set from currentUser and cannot be changed
-  });
 
-  // Local state for toggle UI feedback
-  const [isProcessing, setIsProcessing] = useState(false);
+  // Use refs to prevent re-renders
+  const nameRef = useRef(null);
+  const phoneRef = useRef(null);
+  const hostelRef = useRef(null);
+  const roomRef = useRef(null);
 
+  // Initialize refs with current user data
   useEffect(() => {
-    if (currentUser) {
-      setFormData((prev) => ({
-        ...prev,
-        displayName: currentUser.displayName || "",
-        email: currentUser.email || "",
-        phone: currentUser.phone || "",
-        studentId: currentUser.studentId || "",
-        dietaryPreferences: currentUser.dietaryPreferences || [],
-        allergies: currentUser.allergies || [],
-        // messPreference is read-only from currentUser
-      }));
+    if (currentUser && nameRef.current) {
+      nameRef.current.value = currentUser.name || '';
+      phoneRef.current.value = currentUser.phone || '';
+      hostelRef.current.value = currentUser.hostel || '';
+      roomRef.current.value = currentUser.room || '';
     }
-  }, [currentUser]);
-
-  // Check permission status on component mount
-  useEffect(() => {
-    checkPermissionStatus();
-  }, [checkPermissionStatus]);
-
-  // Get gradient class for header based on mess type
-  const getHeaderGradient = () => {
-    const messType = currentUser?.messPreference || "veg";
-    switch (messType) {
-      case "veg":
-        return "bg-gradient-to-r from-green-600 to-green-800";
-      case "non-veg":
-        return "bg-gradient-to-r from-red-600 to-red-800";
-      case "special":
-        return "bg-gradient-to-r from-purple-600 to-purple-800";
-      default:
-        return "bg-gradient-to-r from-green-600 to-purple-600";
-    }
-  };
-
-  // Get color class based on mess type
-  const getColorClass = () => {
-    const messType = currentUser?.messPreference || "veg";
-    switch (messType) {
-      case "veg":
-        return "text-green-600";
-      case "non-veg":
-        return "text-red-600";
-      case "special":
-        return "text-purple-600";
-      default:
-        return "text-gray-800";
-    }
-  };
-
-  // Get mess icon
-  const getMessIcon = () => {
-    const messType = currentUser?.messPreference || "veg";
-    switch (messType) {
-      case "veg":
-        return <Leaf size={20} className="text-green-600" />;
-      case "non-veg":
-        return <Beef size={20} className="text-red-600" />;
-      case "special":
-        return <Star size={20} className="text-purple-600" />;
-      default:
-        return <Leaf size={20} className="text-green-600" />;
-    }
-  };
-
-  // Get mess type display name
-  const getMessTypeDisplayName = () => {
-    const messType = currentUser?.messPreference || "veg";
-    switch (messType) {
-      case "veg":
-        return "Vegetarian";
-      case "non-veg":
-        return "Non-Vegetarian";
-      case "special":
-        return "Special";
-      default:
-        return "Vegetarian";
-    }
-  };
-
-  const dietaryOptions = [
-    "Vegetarian",
-    "Vegan",
-    "Gluten-Free",
-    "Dairy-Free",
-    "Keto",
-    "Paleo",
-  ];
-
-  const allergyOptions = [
-    "Nuts",
-    "Dairy",
-    "Gluten",
-    "Shellfish",
-    "Eggs",
-    "Soy",
-  ];
-
-  // Remove messOptions array since users can't change mess preference
-
-  // Handle meal reminder toggle with proper error handling
-  const handleMealReminderToggle = async (enabled) => {
-    if (isProcessing) return;
-
-    setIsProcessing(true);
-
-    try {
-      // If enabling and push notifications are disabled, suggest enabling them
-      if (
-        enabled &&
-        !notifications.pushNotifications &&
-        permissionStatus !== "denied"
-      ) {
-        // Allow meal reminders to be enabled without push notifications
-        // User will get in-app notifications only
-        updateNotificationPreference("mealReminders", enabled);
-      }
-      // If enabling but push notifications are blocked
-      else if (enabled && permissionStatus === "denied") {
-        // Still enable meal reminders for in-app notifications
-        updateNotificationPreference("mealReminders", enabled);
-      } else {
-        // Simple toggle for meal reminders
-        updateNotificationPreference("mealReminders", enabled);
-      }
-    } catch (error) {
-      console.log("Error toggling meal reminders:", error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Handle push notification toggle with better error handling
-  const handlePushNotificationToggle = async (enabled) => {
-    if (isProcessing) return;
-
-    setIsProcessing(true);
-
-    try {
-      const success = await togglePushNotifications(enabled);
-
-      // If toggling failed, revert the UI toggle
-      if (!success && enabled) {
-        // The toggle will remain off due to the async nature
-        console.log(
-          "Push notification toggle was reverted due to permission issues"
-        );
-      }
-    } catch (error) {
-      console.log("Error toggling push notifications:", error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Open browser settings guide
-  const openBrowserSettingsGuide = () => {
-    const userAgent = navigator.userAgent.toLowerCase();
-    let guideUrl = "";
-
-    if (userAgent.includes("chrome")) {
-      guideUrl = "https://support.google.com/chrome/answer/3220216";
-    } else if (userAgent.includes("firefox")) {
-      guideUrl =
-        "https://support.mozilla.org/en-US/kb/push-notifications-firefox";
-    } else if (userAgent.includes("safari")) {
-      guideUrl =
-        "https://support.apple.com/guide/safari/manage-website-notifications-sfri40734/mac";
-    } else {
-      guideUrl =
-        "https://www.howtogeek.com/355088/how-to-enable-and-disable-web-notifications-in-chrome/";
-    }
-
-    window.open(guideUrl, "_blank");
-  };
+  }, [currentUser?.uid]);
 
   const handleSave = async () => {
     try {
-      const result = await updateUserProfile(formData);
-      if (result.success) {
-        console.log("Profile saved successfully:", formData);
-        setIsEditing(false);
-      } else {
-        console.error("Error saving profile:", result.error);
-      }
+      await updateUserProfile({
+        name: nameRef.current?.value || '',
+        phone: phoneRef.current?.value || '',
+        hostel: hostelRef.current?.value || '',
+        room: roomRef.current?.value || '',
+      });
+      setIsEditing(false);
     } catch (error) {
-      console.error("Error saving profile:", error);
+      console.error('Profile update error:', error);
     }
   };
 
   const handleCancel = () => {
+    // Reset to original values
     if (currentUser) {
-      setFormData({
-        displayName: currentUser.displayName || "",
-        email: currentUser.email || "",
-        phone: currentUser.phone || "",
-        studentId: currentUser.studentId || "",
-        dietaryPreferences: currentUser.dietaryPreferences || [],
-        allergies: currentUser.allergies || [],
-        // messPreference remains read-only
-      });
+      nameRef.current.value = currentUser.name || '';
+      phoneRef.current.value = currentUser.phone || '';
+      hostelRef.current.value = currentUser.hostel || '';
+      roomRef.current.value = currentUser.room || '';
     }
     setIsEditing(false);
   };
 
-  const toggleDietaryPreference = (preference) => {
-    setFormData((prev) => ({
-      ...prev,
-      dietaryPreferences: prev.dietaryPreferences.includes(preference)
-        ? prev.dietaryPreferences.filter((p) => p !== preference)
-        : [...prev.dietaryPreferences, preference],
-    }));
+  const handleLogout = async () => {
+    const result = await showLogoutConfirmation();
+    if (result.isConfirmed) {
+      try {
+        await logout();
+      } catch (error) {
+        toast.error('Error logging out');
+      }
+    }
   };
 
-  const toggleAllergy = (allergy) => {
-    setFormData((prev) => ({
-      ...prev,
-      allergies: prev.allergies.includes(allergy)
-        ? prev.allergies.filter((a) => a !== allergy)
-        : [...prev.allergies, allergy],
-    }));
-  };
+  const stats = [
+    { icon: Utensils, label: 'Meals', value: '47' },
+    { icon: Heart, label: 'Favorites', value: '12' },
+    { icon: Star, label: 'Reviews', value: '8' },
+    { icon: TrendingUp, label: 'Days', value: '23' },
+  ];
 
-  if (!currentUser) {
-    return (
-      <div className="text-center py-8 px-4 md:py-12">
-        <h2 className="text-xl font-bold text-gray-900 mb-3 md:text-2xl md:mb-4">
-          Please Sign In
-        </h2>
-        <p className="text-gray-600 mb-4 text-sm md:text-base md:mb-6">
-          You need to be signed in to view your profile.
-        </p>
-        <a href="/auth" className="btn-primary text-sm px-4 py-2 md:text-base">
-          Sign In
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Header Section */}
-      <div className="px-2 py-2 sm:px-4 sm:py-5 md:px-4 md:py-6">
-        <div className="text-center">
-          <h1
-            className={`text-2xl font-bold bg-clip-text text-transparent font-serif sm:text-3xl md:text-4xl ${getHeaderGradient()} mb-[0px] sm:mb-3 md:mb-[0px]`}
-          >
-            Profile Settings
-          </h1>
+  const InfoField = ({ icon: Icon, label, inputRef, editable = true, defaultValue = '' }) => (
+    <div
+      className="p-3 sm:p-4 rounded-xl"
+      style={{ background: theme.colors.backgroundSecondary }}
+    >
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div
+          className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ background: theme.colors.backgroundTertiary }}
+        >
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: theme.colors.primary }} />
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="px-3 pb-4 sm:px-4 sm:pb-6 md:px-6 md:pb-8">
-        {/* Mess Type Header */}
-        <div className="flex items-center justify-center mb-4 sm:mb-5 md:mb-6">
-          <div className="flex items-center mr-2 sm:mr-3">{getMessIcon()}</div>
-          <h2
-            className={`text-lg font-semibold font-serif sm:text-xl md:text-2xl ${getColorClass()}`}
-          >
-            Manage Your Account
-          </h2>
-        </div>
-
-        <div className="max-w-4xl mx-auto">
-          <div className="grid gap-4 md:grid-cols-3 md:gap-6">
-            {/* Left Column - Main Content */}
-            <div className="md:col-span-2 space-y-4 md:space-y-6">
-              {/* Personal Information Card */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
-                <div className="flex items-center justify-between mb-4 md:mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center md:text-xl">
-                    <User size={18} className="mr-2 md:size-5" />
-                    Personal Information
-                  </h2>
-                  {!isEditing ? (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className={`flex items-center ${getColorClass()} hover:opacity-80 text-sm`}
-                    >
-                      <Edit3 size={14} className="mr-1 md:size-4" />
-                      Edit
-                    </button>
-                  ) : (
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={handleSave}
-                        className="flex items-center text-green-600 hover:text-green-700 text-sm"
-                      >
-                        <Save size={14} className="mr-1 md:size-4" />
-                        Save
-                      </button>
-                      <button
-                        onClick={handleCancel}
-                        className="flex items-center text-gray-600 hover:text-gray-700 text-sm"
-                      >
-                        <X size={14} className="mr-1 md:size-4" />
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3 sm:space-y-4">
-                  {/* First Row: Display Name and Student ID */}
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                    {/* Display Name */}
-                    <div className="space-y-1">
-                      <label className="block text-xs font-medium text-gray-700">
-                        Display Name
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.displayName}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            displayName: e.target.value,
-                          }))
-                        }
-                        disabled={!isEditing}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      />
-                    </div>
-
-                    {/* Student ID */}
-                    <div className="space-y-1">
-                      <label className="block text-xs font-medium text-gray-700">
-                        Student ID
-                      </label>
-                      <div className="relative">
-                        <BookOpen
-                          size={14}
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                        />
-                        <input
-                          type="text"
-                          value={formData.studentId}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              studentId: e.target.value,
-                            }))
-                          }
-                          disabled={!isEditing}
-                          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Second Row: Email */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-700">
-                      Email
-                    </label>
-                    <div className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
-                      <Mail
-                        size={14}
-                        className="text-gray-400 mr-2 flex-shrink-0"
-                      />
-                      <span className="text-gray-600 text-sm truncate">
-                        {currentUser.email}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Third Row: Phone Number, Member Since, Account Type */}
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    {/* Phone Number */}
-                    <div className="space-y-1">
-                      <label className="block text-xs font-medium text-gray-700">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                        disabled={!isEditing}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-[13px] disabled:bg-gray-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        placeholder="+1 (555) 000-0000"
-                      />
-                    </div>
-
-                    {/* Member Since */}
-                    <div className="space-y-1">
-                      <label className="block text-xs font-medium text-gray-700">
-                        Member Since
-                      </label>
-                      <div className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
-                        <span className="text-gray-600 text-[12px]">
-                          {new Date(
-                            currentUser.metadata?.creationTime || new Date()
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Account Type */}
-                    <div className="space-y-1">
-                      <label className="block text-xs font-medium text-gray-700">
-                        Account Type
-                      </label>
-                      <div className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
-                        <Shield
-                          size={14}
-                          className="text-gray-400 mr-2 flex-shrink-0"
-                        />
-                        <span className="text-gray-600 text-sm capitalize">
-                          {currentUser.accountType || "email"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mess Information Card - Read Only */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3 md:text-xl md:mb-4">
-                  Mess Information
-                </h2>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center">
-                    {getMessIcon()}
-                    <span className="ml-2 text-sm font-medium text-gray-700">
-                      {getMessTypeDisplayName()} Mess
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
-                    Assigned
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Your mess type is assigned by the administration and cannot be
-                  changed.
-                </p>
-              </div>
-
-              {/* Dietary Preferences Card */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3 md:text-xl md:mb-4">
-                  Dietary Preferences
-                </h2>
-                <div className="grid gap-2 grid-cols-2 md:grid-cols-3 md:gap-3">
-                  {dietaryOptions.map((option) => (
-                    <label
-                      key={option}
-                      className={`flex items-center p-2 rounded-lg border cursor-pointer transition-colors text-xs md:text-sm md:p-3 ${
-                        formData.dietaryPreferences.includes(option)
-                          ? `border-${getColorClass().split("-")[1]}-300 bg-${
-                              getColorClass().split("-")[1]
-                            }-50`
-                          : "border-gray-200 hover:border-gray-300"
-                      } ${!isEditing ? "opacity-50 cursor-not-allowed" : ""}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.dietaryPreferences.includes(option)}
-                        onChange={() => toggleDietaryPreference(option)}
-                        disabled={!isEditing}
-                        className={`rounded ${getColorClass()} focus:ring-${
-                          getColorClass().split("-")[1]
-                        }-500 mr-2`}
-                      />
-                      <span>{option}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Allergies Card */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3 md:text-xl md:mb-4">
-                  Allergies
-                </h2>
-                <div className="grid gap-2 grid-cols-2 md:grid-cols-3 md:gap-3">
-                  {allergyOptions.map((option) => (
-                    <label
-                      key={option}
-                      className={`flex items-center p-2 rounded-lg border cursor-pointer transition-colors text-xs md:text-sm md:p-3 ${
-                        formData.allergies.includes(option)
-                          ? "border-red-300 bg-red-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      } ${!isEditing ? "opacity-50 cursor-not-allowed" : ""}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.allergies.includes(option)}
-                        onChange={() => toggleAllergy(option)}
-                        disabled={!isEditing}
-                        className="rounded text-red-600 focus:ring-red-500 mr-2"
-                      />
-                      <span>{option}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - Sidebar */}
-            <div className="space-y-4 md:space-y-6">
-              {/* Notifications Card */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center md:text-xl md:mb-4">
-                  <Bell size={18} className="mr-2 md:size-5" />
-                  Notifications
-                </h2>
-                <div className="space-y-4">
-                  {/* Meal Reminder Toggle */}
-                  <div className="border-b border-gray-100 pb-3">
-                    <label className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Utensils size={16} className="text-green-600 mr-2" />
-                        <span className="text-xs font-medium text-gray-700 md:text-sm">
-                          Meal Reminders
-                        </span>
-                      </div>
-                      <div className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={notifications.mealReminders}
-                          onChange={(e) =>
-                            handleMealReminderToggle(e.target.checked)
-                          }
-                          disabled={isProcessing}
-                          className="sr-only peer"
-                        />
-                        <div
-                          className={`w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600 md:w-11 md:h-6 ${
-                            isProcessing ? "opacity-50" : ""
-                          }`}
-                        ></div>
-                      </div>
-                    </label>
-                    <p className="text-xs text-gray-500 mt-1">
-                      15min before start, 30min before end
-                    </p>
-                    {!notifications.mealReminders && (
-                      <div className="flex items-center mt-1 text-xs text-amber-600">
-                        <AlertCircle size={12} className="mr-1" />
-                        Meal reminders are disabled
-                      </div>
-                    )}
-                  </div>
-                
-                  {/* Push Notifications Toggle */}
-                  <div className="border-b border-gray-100 pb-3">
-                    <label className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Bell size={16} className="text-blue-600 mr-2" />
-                        <span className="text-xs font-medium text-gray-700 md:text-sm">
-                          Push Notifications
-                        </span>
-                      </div>
-                      <div className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={
-                            notifications.pushNotifications && hasPermission
-                          }
-                          onChange={(e) =>
-                            handlePushNotificationToggle(e.target.checked)
-                          }
-                          disabled={
-                            isProcessing || permissionStatus === "denied"
-                          }
-                          className="sr-only peer"
-                        />
-                        <div
-                          className={`w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 md:w-11 md:h-6 ${
-                            isProcessing || permissionStatus === "denied"
-                              ? "opacity-50"
-                              : ""
-                          }`}
-                        ></div>
-                      </div>
-                    </label>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Receive notifications when app is closed
-                    </p>
-                    {permissionStatus === "denied" && (
-                      <div className="flex items-center mt-1 text-xs text-red-600">
-                        <AlertCircle size={12} className="mr-1" />
-                        <button
-                          onClick={openBrowserSettingsGuide}
-                          className="underline hover:no-underline"
-                        >
-                          Enable in browser settings
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Other Notification Toggles */}
-                  {Object.entries(notifications)
-                    .filter(
-                      ([key]) =>
-                        key !== "mealReminders" && key !== "pushNotifications"
-                    )
-                    .map(([key, value]) => (
-                      <label
-                        key={key}
-                        className="flex items-center justify-between"
-                      >
-                        <span className="text-xs text-gray-700 capitalize md:text-sm">
-                          {key.replace(/([A-Z])/g, " $1").toLowerCase()}
-                        </span>
-                        <div className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={value}
-                            onChange={(e) =>
-                              updateNotificationPreference(
-                                key,
-                                e.target.checked
-                              )
-                            }
-                            className="sr-only peer"
-                          />
-                          <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 md:w-11 md:h-6"></div>
-                        </div>
-                      </label>
-                    ))}
-                </div>
-              </div>
-
-              {/* Notification Status Card */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center md:text-xl md:mb-4">
-                  <Settings size={18} className="mr-2 md:size-5" />
-                  Notification Status
-                </h2>
-                <div className="space-y-2 text-xs md:text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Meal Reminders</span>
-                    <span
-                      className={`font-medium ${
-                        notifications.mealReminders
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {notifications.mealReminders ? "Enabled" : "Disabled"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Push Notifications</span>
-                    <span
-                      className={`font-medium ${
-                        notifications.pushNotifications && hasPermission
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {notifications.pushNotifications && hasPermission
-                        ? "Active"
-                        : "Inactive"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Browser Permission</span>
-                    <span
-                      className={`font-medium ${
-                        permissionStatus === "granted"
-                          ? "text-green-600"
-                          : permissionStatus === "denied"
-                          ? "text-red-600"
-                          : "text-amber-600"
-                      }`}
-                    >
-                      {permissionStatus === "granted"
-                        ? "Granted"
-                        : permissionStatus === "denied"
-                        ? "Blocked"
-                        : "Not Set"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Notification Type</span>
-                    <span className="font-medium text-blue-600">
-                      {hasPermission ? "Push + In-app" : "In-app Only"}
-                    </span>
-                  </div>
-                </div>
-
-                {permissionStatus === "denied" && (
-                  <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-xs text-red-800 mb-2">
-                      🔔 Notifications are blocked in your browser settings.
-                    </p>
-                    <button
-                      onClick={openBrowserSettingsGuide}
-                      className="text-xs text-red-700 underline hover:no-underline"
-                    >
-                      Learn how to enable them
-                    </button>
-                  </div>
-                )}
-
-                {notifications.mealReminders &&
-                  !hasPermission &&
-                  permissionStatus !== "denied" && (
-                    <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-xs text-blue-800">
-                        💡 Enable push notifications to get reminders when the
-                        app is closed.
-                      </p>
-                    </div>
-                  )}
-              </div>
-
-              {/* Account Stats Card */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3 md:text-xl md:mb-4">
-                  Account Stats
-                </h2>
-                <div className="space-y-2 md:space-y-3">
-                  <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-gray-600">Student ID</span>
-                    <span className="font-medium">
-                      {formData.studentId || "Not set"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-gray-600">Mess Type</span>
-                    <span className="font-medium capitalize">
-                      {getMessTypeDisplayName()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-gray-600">Meals Rated</span>
-                    <span className="font-medium">24</span>
-                  </div>
-                  <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-gray-600">Preferences Set</span>
-                    <span className="font-medium">
-                      {(preferences || []).length}/10
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-gray-600">Member Since</span>
-                    <span className="font-medium">
-                      {new Date(
-                        currentUser.metadata?.creationTime || new Date()
-                      ).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions Card */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 md:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3 md:text-xl md:mb-4">
-                  Actions
-                </h2>
-                <div className="space-y-2 md:space-y-3">
-                  <button className="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors text-xs md:text-sm md:p-3">
-                    <span className="flex items-center">
-                      <Shield size={14} className="mr-2 md:size-4" />
-                      Privacy & Security
-                    </span>
-                    <ArrowRight size={14} className="md:size-4" />
-                  </button>
-
-                  <button className="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors text-xs md:text-sm md:p-3">
-                    <span className="flex items-center">
-                      <HelpCircle size={14} className="mr-2 md:size-4" />
-                      Help & Support
-                    </span>
-                    <ArrowRight size={14} className="md:size-4" />
-                  </button>
-
-                  <button
-                    onClick={logout}
-                    className="w-full text-left p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs md:text-sm md:p-3"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs mb-1" style={{ color: theme.colors.textSecondary }}>
+            {label}
           </div>
+          {isEditing && editable ? (
+            <input
+              ref={inputRef}
+              type="text"
+              defaultValue={defaultValue}
+              className="w-full px-2 sm:px-3 py-1 rounded-lg border-2 transition-all text-sm font-medium"
+              style={{
+                background: theme.colors.card,
+                color: theme.colors.text,
+                borderColor: theme.colors.border,
+              }}
+            />
+          ) : (
+            <div className="font-medium text-sm sm:text-base truncate" style={{ color: theme.colors.text }}>
+              {defaultValue || 'Not set'}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-}
+
+  return (
+    <div className="pb-20" style={{ background: theme.colors.background }}>
+      {/* Header */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
+        }}
+      >
+        <div className="relative px-4 sm:px-6 py-8 sm:py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
+            {/* Profile Avatar */}
+            <div className="relative inline-block mb-3 sm:mb-4">
+              <div
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold mx-auto border-4 border-white shadow-2xl"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.colors.primaryLight}, ${theme.colors.primary})`,
+                  color: 'white',
+                }}
+              >
+                {(currentUser?.name || currentUser?.email || 'U').charAt(0).toUpperCase()}
+              </div>
+              {!isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-lg"
+                  style={{ color: theme.colors.primary }}
+                >
+                  <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Name */}
+            <h1 className="text-xl sm:text-2xl font-bold text-white mb-1 px-4">
+              {currentUser?.name || 'Student'}
+            </h1>
+            <p className="text-white/80 text-xs sm:text-sm px-4 truncate">
+              {currentUser?.email}
+            </p>
+
+            {/* Mess Preference Badge */}
+            <div className="mt-3 sm:mt-4">
+              <div
+                className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'white',
+                }}
+              >
+                {currentUser?.messPreference?.toUpperCase() || 'NOT SET'} Mess
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 + index * 0.05 }}
+              className="rounded-xl sm:rounded-2xl p-2 sm:p-3 text-center"
+              style={{
+                background: theme.colors.card,
+                border: `1px solid ${theme.colors.border}`,
+              }}
+            >
+              <div
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mx-auto mb-1 sm:mb-2"
+                style={{ background: theme.colors.backgroundSecondary }}
+              >
+                <stat.icon className="w-3 h-3 sm:w-4 sm:h-4" style={{ color: theme.colors.primary }} />
+              </div>
+              <div className="text-base sm:text-lg font-bold" style={{ color: theme.colors.text }}>
+                {stat.value}
+              </div>
+              <div className="text-[10px] sm:text-xs" style={{ color: theme.colors.textSecondary }}>
+                {stat.label}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Personal Information */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          style={{
+            background: theme.colors.card,
+            border: `1px solid ${theme.colors.border}`,
+          }}
+        >
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-base sm:text-lg font-bold" style={{ color: theme.colors.text }}>
+              Personal Information
+            </h2>
+            {isEditing ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSave}
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1 sm:gap-2 text-white font-medium text-xs sm:text-sm"
+                  style={{ background: theme.colors.primary }}
+                >
+                  <Save className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Save</span>
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1 sm:gap-2 font-medium text-xs sm:text-sm"
+                  style={{
+                    background: theme.colors.backgroundSecondary,
+                    color: theme.colors.text,
+                  }}
+                >
+                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Cancel</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1 sm:gap-2 font-medium text-xs sm:text-sm"
+                style={{
+                  background: theme.colors.backgroundTertiary,
+                  color: theme.colors.primary,
+                }}
+              >
+                <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Edit</span>
+              </button>
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:gap-4">
+            <InfoField
+              icon={User}
+              label="Full Name"
+              inputRef={nameRef}
+              defaultValue={currentUser?.name || ''}
+            />
+            <InfoField
+              icon={Mail}
+              label="Email Address"
+              defaultValue={currentUser?.email || ''}
+              editable={false}
+            />
+            <InfoField
+              icon={Phone}
+              label="Phone Number"
+              inputRef={phoneRef}
+              defaultValue={currentUser?.phone || ''}
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <InfoField
+                icon={MapPin}
+                label="Hostel"
+                inputRef={hostelRef}
+                defaultValue={currentUser?.hostel || ''}
+              />
+              <InfoField
+                icon={MapPin}
+                label="Room No."
+                inputRef={roomRef}
+                defaultValue={currentUser?.room || ''}
+              />
+            </div>
+            <InfoField
+              icon={Calendar}
+              label="Member Since"
+              defaultValue={new Date(currentUser?.createdAt?.toDate?.() || Date.now()).toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric',
+              })}
+              editable={false}
+            />
+          </div>
+        </motion.div>
+
+        {/* Appearance Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          style={{
+            background: theme.colors.card,
+            border: `1px solid ${theme.colors.border}`,
+          }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold" style={{ color: theme.colors.text }}>
+                Appearance
+              </h2>
+              <p className="text-xs sm:text-sm mt-1" style={{ color: theme.colors.textSecondary }}>
+                Current theme: {themes[currentTheme]?.name}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => window.location.href = '/themes'}
+            className="w-full p-3 sm:p-4 rounded-xl flex items-center justify-between transition-all"
+            style={{
+              background: theme.colors.backgroundSecondary,
+              border: `1px solid ${theme.colors.border}`,
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
+                }}
+              >
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left">
+                <div className="font-semibold text-sm sm:text-base" style={{ color: theme.colors.text }}>
+                  Change Theme
+                </div>
+                <div className="text-xs" style={{ color: theme.colors.textSecondary }}>
+                  Choose from 16 premium themes
+                </div>
+              </div>
+            </div>
+            <ArrowRight className="w-5 h-5" style={{ color: theme.colors.textSecondary }} />
+          </button>
+        </motion.div>
+
+        {/* Logout Button */}
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          onClick={handleLogout}
+          className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm sm:text-base text-white"
+          style={{
+            background: '#EF4444',
+          }}
+        >
+          <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+          Logout
+        </motion.button>
+      </div>
+    </div>
+  );
+};
+
+export default Profile;
