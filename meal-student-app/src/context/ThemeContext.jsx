@@ -378,45 +378,6 @@ export const ThemeProvider = ({ children }) => {
             document.getElementsByTagName('head')[0].appendChild(themeColorMeta);
         }
         themeColorMeta.content = theme.colors.card; // Use card color for clean look
-
-        // Update manifest theme_color
-        const manifestLink = document.querySelector('link[rel="manifest"]');
-        if (manifestLink) {
-            // Create dynamic manifest
-            const manifest = {
-                name: 'MenuPick - Campus Dining',
-                short_name: 'MenuPick',
-                start_url: '/',
-                display: 'standalone',
-                background_color: theme.colors.background,
-                theme_color: theme.colors.card,
-                icons: [
-                    {
-                        src: `/icon-${currentTheme}.svg`,
-                        sizes: 'any',
-                        type: 'image/svg+xml'
-                    }
-                ]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-            const manifestURL = URL.createObjectURL(manifestBlob);
-            manifestLink.href = manifestURL;
-        }
-
-        // Update Favicon with Theme Color
-        const link = document.querySelector("link[rel~='icon']") || document.createElement('link');
-        link.type = 'image/svg+xml';
-        link.rel = 'icon';
-
-        // Encode the SVG with the dynamic color
-        const colorPrimary = theme.colors.primary.replace('#', '');
-        const colorCard = theme.colors.card.replace('#', ''); // usually ffffff
-
-        // Simplified SVG for Favicon (Shield + Cloche)
-        const svgIcon = `data:image/svg+xml;utf8,<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 2L4 7V14C4 21.5 9.5 28.5 16 30C22.5 28.5 28 21.5 28 14V7L16 2Z" fill="%23${colorPrimary}" /><path d="M16 10C13 10 10.5 12.5 10.5 15.5V19H21.5V15.5C21.5 12.5 19 10 16 10Z" fill="%23${colorCard}" /><path d="M10 19H22V20H10V19Z" fill="%23${colorCard}" /><circle cx="16" cy="9" r="1.5" fill="%23${colorCard}" /></svg>`;
-
-        link.href = svgIcon;
-        document.getElementsByTagName('head')[0].appendChild(link);
     }, [currentTheme]);
 
     // Save animations preference

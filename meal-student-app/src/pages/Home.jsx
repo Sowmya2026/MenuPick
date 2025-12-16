@@ -95,134 +95,137 @@ const Home = () => {
   return (
     <Layout>
       <div
-        className="h-[calc(100vh-64px)] flex flex-col overflow-hidden bg-gray-50/50"
+        className="h-[calc(100vh-64px)] flex flex-col overflow-hidden bg-gray-50/50 md:h-auto md:overflow-visible md:min-h-[calc(100vh-64px)]"
         style={{ background: theme.colors.background }}
       >
-        {/* === Header Section: Spacious & Clean === */}
-        <div className="px-6 pt-6 pb-2 flex-shrink-0 flex flex-col gap-5">
+        <div className="md:max-w-6xl md:mx-auto w-full flex flex-col h-full">
+          {/* === Header Section: Spacious & Clean === */}
+          <div className="px-6 pt-6 pb-2 flex-shrink-0 flex flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-10">
 
-          {/* Row 1: Big Greeting (Full Width) */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest opacity-60 mb-2" style={{ color: theme.colors.text }}>
-              <Calendar className="w-3 h-3" />
-              <span>{currentDate}</span>
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight leading-none" style={{ color: theme.colors.text }}>
-              {greeting}, <br />
-              <span className="text-4xl" style={{ color: theme.colors.primary }}>
-                {currentUser?.name?.split(" ")[0] || "Student"}!
-              </span>
-            </h1>
-          </motion.div>
-
-          {/* Row 2: Control Center (Mess + Days) */}
-          <div className="flex flex-col gap-4">
-            {/* Mess Type Selector - Full Width Segmented Control */}
-            <div
-              className="flex p-1.5 rounded-2xl border shadow-sm"
-              style={{
-                background: theme.colors.card,
-                borderColor: theme.colors.border
-              }}
+            {/* Row 1: Big Greeting (Full Width on Mobile, Left on Desktop) */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:flex-1"
             >
-              {Object.entries(messConfig).map(([key, config]) => {
-                const isSelected = selectedMess === key;
-                const MessIcon = config.Icon;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedMess(key)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${isSelected ? 'shadow-sm' : ''}`}
-                    style={{
-                      background: isSelected ? theme.colors.primary : 'transparent',
-                      color: isSelected ? '#fff' : theme.colors.textSecondary
-                    }}
-                  >
-                    <MessIcon className="w-3.5 h-3.5" />
-                    <span>{config.name}</span>
-                  </button>
-                )
-              })}
-            </div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest opacity-60 mb-2" style={{ color: theme.colors.text }}>
+                <Calendar className="w-3 h-3" />
+                <span>{currentDate}</span>
+              </div>
+              <h1 className="text-3xl font-extrabold tracking-tight leading-none md:text-4xl" style={{ color: theme.colors.text }}>
+                {greeting}, <br />
+                <span className="text-4xl md:text-5xl" style={{ color: theme.colors.primary }}>
+                  {currentUser?.name?.split(" ")[0] || "Student"}!
+                </span>
+              </h1>
+            </motion.div>
 
-            {/* Day Selector - Clean Horizontal Strip */}
-            <div className="relative">
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide mask-linear py-1">
-                {days.map((day) => {
-                  const isSelected = selectedDay === day;
+            {/* Row 2: Control Center (Mess + Days) */}
+            <div className="flex flex-col gap-4 md:w-[450px]">
+              {/* Mess Type Selector - Full Width Segmented Control */}
+              <div
+                className="flex p-1.5 rounded-2xl border shadow-sm"
+                style={{
+                  background: theme.colors.card,
+                  borderColor: theme.colors.border
+                }}
+              >
+                {Object.entries(messConfig).map(([key, config]) => {
+                  const isSelected = selectedMess === key;
+                  const MessIcon = config.Icon;
                   return (
                     <button
-                      key={day}
-                      onClick={() => setSelectedDay(day)}
-                      className="min-w-[4rem] py-2 rounded-xl text-xs font-bold transition-all flex-shrink-0 border"
+                      key={key}
+                      onClick={() => setSelectedMess(key)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${isSelected ? 'shadow-sm' : ''}`}
                       style={{
-                        background: isSelected ? theme.colors.primary : theme.colors.card,
-                        color: isSelected ? '#fff' : theme.colors.text,
-                        borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                        background: isSelected ? theme.colors.primary : 'transparent',
+                        color: isSelected ? '#fff' : theme.colors.textSecondary
                       }}
                     >
-                      {day.slice(0, 3)}
+                      <MessIcon className="w-3.5 h-3.5" />
+                      <span>{config.name}</span>
                     </button>
-                  );
+                  )
                 })}
+              </div>
+
+              {/* Day Selector - Clean Horizontal Strip */}
+              <div className="relative">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide mask-linear py-1">
+                  {days.map((day) => {
+                    const isSelected = selectedDay === day;
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => setSelectedDay(day)}
+                        className="min-w-[4rem] py-2 rounded-xl text-xs font-bold transition-all flex-shrink-0 border cursor-pointer hover:opacity-80"
+                        style={{
+                          background: isSelected ? theme.colors.primary : theme.colors.card,
+                          color: isSelected ? '#fff' : theme.colors.text,
+                          borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                        }}
+                      >
+                        {day.slice(0, 3)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* === Main Content: Meal Grid - Compact & Balanced === */}
-        <div className="flex-1 px-6 pb-20 overflow-y-auto mt-2">
-          <div className="grid grid-cols-2 gap-4">
-            {mealTimes.map((meal, index) => {
-              const timing = getMealTiming(selectedDay, meal.id);
-              const MealIcon = meal.Icon;
+          {/* === Main Content: Meal Grid - No Scroll, Perfect Fit === */}
+          <div className="flex-1 px-6 pb-24 mt-2 overflow-hidden">
+            <div className="h-full grid grid-cols-2 grid-rows-2 gap-3 md:grid-cols-4 md:grid-rows-1 md:gap-6 md:h-auto md:pb-0">
+              {mealTimes.map((meal, index) => {
+                const timing = getMealTiming(selectedDay, meal.id);
+                const MealIcon = meal.Icon;
 
-              return (
-                <motion.button
-                  key={meal.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  onClick={() => openMealModal(meal)}
-                  className="group relative rounded-[20px] p-4 text-center transition-all hover:scale-[1.02] active:scale-95 flex flex-col items-center justify-center border shadow-sm hover:shadow-md bg-white aspect-[4/5]"
-                  style={{
-                    borderColor: theme.colors.border,
-                  }}
-                >
-                  {/* Floating Icon Bubble */}
-                  <div
-                    className="w-12 h-12 mb-3 rounded-2xl flex items-center justify-center transition-all group-hover:-translate-y-1 shadow-inner"
+                return (
+                  <motion.button
+                    key={meal.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    onClick={() => openMealModal(meal)}
+                    className="group relative rounded-[20px] p-3 text-center transition-all hover:scale-[1.02] active:scale-95 flex flex-col items-center justify-center border shadow-sm hover:shadow-md bg-white w-full h-full md:h-64"
                     style={{
-                      background: theme.colors.background,
+                      borderColor: theme.colors.border,
                     }}
                   >
-                    <MealIcon className="w-6 h-6" style={{ color: theme.colors.primary }} strokeWidth={2} />
-                  </div>
-
-                  {/* Content Container */}
-                  <div className="w-full space-y-1.5 lead-none">
-                    <h3 className="text-sm font-bold" style={{ color: theme.colors.text }}>
-                      {meal.name}
-                    </h3>
-
-                    {/* Time Badge */}
+                    {/* Floating Icon Bubble */}
                     <div
-                      className="inline-flex items-center justify-center gap-1 px-1.5 py-1 rounded-lg text-[9px] uppercase font-bold tracking-wide bg-gray-100 w-full"
+                      className="w-10 h-10 mb-2 rounded-2xl flex items-center justify-center transition-all group-hover:-translate-y-1 shadow-inner md:w-16 md:h-16 md:mb-5"
                       style={{
-                        color: theme.colors.textSecondary,
-                        backgroundColor: theme.colors.backgroundSecondary
+                        background: theme.colors.background,
                       }}
                     >
-                      <Clock className="w-2.5 h-2.5 flex-shrink-0" />
-                      <span className="whitespace-nowrap">{timing.replace(/\s/g, '')}</span>
+                      <MealIcon className="w-5 h-5 md:w-8 md:h-8" style={{ color: theme.colors.primary }} strokeWidth={2} />
                     </div>
-                  </div>
-                </motion.button>
-              );
-            })}
+
+                    {/* Content Container */}
+                    <div className="w-full space-y-1 lead-none md:space-y-3">
+                      <h3 className="text-sm font-bold md:text-lg" style={{ color: theme.colors.text }}>
+                        {meal.name}
+                      </h3>
+
+                      {/* Time Badge */}
+                      <div
+                        className="inline-flex items-center justify-center gap-1 px-1.5 py-1 rounded-lg text-[9px] uppercase font-bold tracking-wide bg-gray-100 w-full md:text-xs md:py-1.5"
+                        style={{
+                          color: theme.colors.textSecondary,
+                          backgroundColor: theme.colors.backgroundSecondary
+                        }}
+                      >
+                        <Clock className="w-2.5 h-2.5 flex-shrink-0 md:w-3.5 md:h-3.5" />
+                        <span className="whitespace-nowrap">{timing.replace(/\s/g, '')}</span>
+                      </div>
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

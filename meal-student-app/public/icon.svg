@@ -1,13 +1,14 @@
 <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="logoGradient" x1="16" y1="2" x2="16" y2="30" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stopColor="#d4af37" /> <!-- Default Gold/Champagne primaryLight -->
-      <stop offset="100%" stopColor="#b8941f" /> <!-- Default Gold/Champagne primary -->
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="4" fill="#1e293b" /> <!-- Dark Background for visibility -->
-  <path d="M16 2L4 7V14C4 21.5 9.5 28.5 16 30C22.5 28.5 28 21.5 28 14V7L16 2Z" fill="url(#logoGradient)" />
-  <path d="M16 10C13 10 10.5 12.5 10.5 15.5V19H21.5V15.5C21.5 12.5 19 10 16 10Z" fill="#ffffff" />
-  <path d="M10 19H22V20H10V19Z" fill="#ffffff" />
-  <circle cx="16" cy="9" r="1.5" fill="#ffffff" />
+  <!-- Background: Espresso Primary -->
+  <rect width="32" height="32" rx="6" fill="#8b6f47" />
+  
+  <!-- Shield Border/Shape: White -->
+  <path d="M16 4L6 8V14C6 20.5 10.5 26.5 16 28C21.5 26.5 26 20.5 26 14V8L16 4Z" fill="#ffffff" />
+  
+  <!-- Inner Detail (Cloche): Espresso Color to create cutout effect -->
+  <path d="M16 11C13.5 11 11.5 13 11.5 15.5V18.5H20.5V15.5C20.5 13 18.5 11 16 11Z" fill="#8b6f47" />
+  <rect x="11.5" y="18.5" width="9" height="1" fill="#8b6f47" />
+  
+  <!-- Top knob of cloche -->
+  <circle cx="16" cy="10" r="1.2" fill="#8b6f47" />
 </svg>

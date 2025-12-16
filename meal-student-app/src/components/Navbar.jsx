@@ -55,7 +55,7 @@ const LoggedInNavbar = () => {
 
   const navItems = [
     { path: "/", icon: Home, label: "Home" },
-    { path: "/selection", icon: Utensils, label: "Meals" },
+
     { path: "/feedback", icon: MessageSquare, label: "Feedback" },
   ];
 
@@ -67,7 +67,7 @@ const LoggedInNavbar = () => {
         borderColor: theme.colors.border,
       }}
     >
-      <div className="container mx-auto px-4">
+      <div className="md:max-w-6xl md:mx-auto w-full px-6">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">

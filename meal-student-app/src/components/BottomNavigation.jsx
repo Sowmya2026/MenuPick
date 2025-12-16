@@ -14,7 +14,7 @@ const BottomNavigation = () => {
 
   const navItems = [
     { path: "/", icon: Home, label: "Home" },
-    { path: "/selection", icon: Utensils, label: "Menu" },
+
     { path: "/feedback", icon: MessageSquare, label: "Feedback" },
     { path: "/profile", icon: User, label: "Profile" },
   ];
