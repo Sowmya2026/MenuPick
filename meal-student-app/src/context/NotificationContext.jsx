@@ -486,13 +486,6 @@ export const NotificationProvider = ({ children }) => {
     checkPermissionStatus,
   ]);
 
-  // NEW: Show permission modal when user lands on home page
-  useEffect(() => {
-    if (currentUser && window.location.pathname === "/") {
-      showInitialPermissionModal();
-    }
-  }, [currentUser, showInitialPermissionModal]);
-
   // Load user preferences
   useEffect(() => {
     if (currentUser) {
@@ -506,14 +499,6 @@ export const NotificationProvider = ({ children }) => {
       const savedToken = localStorage.getItem(`fcm_token_${currentUser.uid}`);
       if (savedToken) {
         setFcmToken(savedToken);
-      }
-
-      // Check if we've shown the prompt before
-      const hasShownPrompt = localStorage.getItem(
-        `notification_prompt_shown_${currentUser.uid}`
-      );
-      if (hasShownPrompt) {
-        setHasShownInitialPrompt(true);
       }
     }
   }, [currentUser]);
@@ -606,7 +591,6 @@ export const NotificationProvider = ({ children }) => {
     <NotificationContext.Provider value={value}>
       {children}
       <NotificationPopup />
-      <PermissionModal />
     </NotificationContext.Provider>
   );
 };

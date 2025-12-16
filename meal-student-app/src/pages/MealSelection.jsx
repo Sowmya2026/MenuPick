@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useMeal } from "../context/MealContext";
 import { useAuth } from "../context/AuthContext";
@@ -20,6 +21,8 @@ import toast from "react-hot-toast";
 const MealSelection = () => {
   const { theme } = useTheme();
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const {
     meals,
     categories,
@@ -46,6 +49,24 @@ const MealSelection = () => {
   const activeMeals = useMemo(() => {
     return filteredMeals.filter((meal) => meal.category === activeCategory);
   }, [filteredMeals, activeCategory]);
+
+  // Prevent back navigation - redirect to home
+  useEffect(() => {
+    // Replace current history entry to prevent going back to previous state
+    window.history.replaceState(null, '', location.pathname);
+
+    const handlePopState = (e) => {
+      e.preventDefault();
+      // When back button is pressed, go to home and clear this page from history
+      navigate('/', { replace: true });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate, location.pathname]);
 
   // Load saved selections
   useEffect(() => {
@@ -125,6 +146,11 @@ const MealSelection = () => {
       setHasSavedSelections(true);
       setIsEditing(false);
       toast.success("Selections saved successfully!");
+
+      // Redirect to home after successful save (prevents back navigation to selection page)
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 1500);
     } catch (error) {
       console.error("Error saving:", error);
       toast.error("Failed to save selections");

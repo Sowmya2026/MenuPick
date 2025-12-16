@@ -370,6 +370,39 @@ export const ThemeProvider = ({ children }) => {
             root.style.setProperty(`--color-${key}`, value);
         });
 
+        // Update theme-color meta tag for mobile status bar
+        let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        if (!themeColorMeta) {
+            themeColorMeta = document.createElement('meta');
+            themeColorMeta.name = 'theme-color';
+            document.getElementsByTagName('head')[0].appendChild(themeColorMeta);
+        }
+        themeColorMeta.content = theme.colors.card; // Use card color for clean look
+
+        // Update manifest theme_color
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink) {
+            // Create dynamic manifest
+            const manifest = {
+                name: 'MenuPick - Campus Dining',
+                short_name: 'MenuPick',
+                start_url: '/',
+                display: 'standalone',
+                background_color: theme.colors.background,
+                theme_color: theme.colors.card,
+                icons: [
+                    {
+                        src: `/icon-${currentTheme}.svg`,
+                        sizes: 'any',
+                        type: 'image/svg+xml'
+                    }
+                ]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const manifestURL = URL.createObjectURL(manifestBlob);
+            manifestLink.href = manifestURL;
+        }
+
         // Update Favicon with Theme Color
         const link = document.querySelector("link[rel~='icon']") || document.createElement('link');
         link.type = 'image/svg+xml';

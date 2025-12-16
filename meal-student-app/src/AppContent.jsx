@@ -212,7 +212,7 @@ function AppContent() {
             const splashTimer = setTimeout(() => {
                 setShowSplash(false);
                 setIsInitializing(false);
-            }, 2000);
+            }, 1200); // Reduced from 2000ms to 1200ms
 
             return () => clearTimeout(splashTimer);
         };

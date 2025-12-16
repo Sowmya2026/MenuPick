@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useMenu } from "../context/MenuContext";
 import { useTheme } from "../context/ThemeContext";
@@ -18,6 +19,8 @@ const Feedback = () => {
   const { theme } = useTheme();
   const { currentUser } = useAuth();
   const { selectedMess } = useMenu();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -46,6 +49,24 @@ const Feedback = () => {
     { id: "Annapurna", name: "Annapurna Mess" },
     { id: "Grand", name: "Grand Mess" },
   ];
+
+  // Prevent back navigation - redirect to home
+  useEffect(() => {
+    // Replace current history entry to prevent going back to previous state
+    window.history.replaceState(null, '', location.pathname);
+
+    const handlePopState = (e) => {
+      e.preventDefault();
+      // When back button is pressed, go to home and clear this page from history
+      navigate('/', { replace: true });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate, location.pathname]);
 
   useEffect(() => {
     if (selectedMess) {
@@ -115,15 +136,10 @@ const Feedback = () => {
 
       toast.success("Feedback submitted successfully! Thank you.");
 
-      // Reset form
-      setFormData((prev) => ({
-        ...prev,
-        overallRating: 0,
-        tasteRating: 0,
-        quantityRating: 0,
-        freshnessRating: 0,
-        description: "",
-      }));
+      // Redirect to home after successful submission (prevents back navigation to form)
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 1500);
     } catch (error) {
       console.error("Error submitting feedback:", error);
       toast.error("Failed to submit feedback. Please try again.");
