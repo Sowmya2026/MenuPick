@@ -102,7 +102,9 @@ const UserActives = () => {
         dailyActive: 0,
         monthlyActive: 0,
         newUsersToday: 0,
-        totalInstalls: 0
+        totalInstalls: 0,
+        dailyGuestActive: 0,
+        monthlyGuestActive: 0
     });
     const [selectedUser, setSelectedUser] = useState(null);
 
@@ -142,6 +144,27 @@ const UserActives = () => {
                 }
             } catch (err) {
                 console.error("Error fetching stats:", err);
+            }
+
+            // Fetch Guest Sessions
+            let dailyGuestCount = 0;
+            let monthlyGuestCount = 0;
+            try {
+                const guestSnapshot = await getDocs(collection(db, "guest_sessions"));
+                const now = new Date();
+                const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+                const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+                guestSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.lastActive) {
+                        const lastActiveDate = data.lastActive.toDate ? data.lastActive.toDate() : new Date(data.lastActive);
+                        if (lastActiveDate > oneDayAgo) dailyGuestCount++;
+                        if (lastActiveDate > thirtyDaysAgo) monthlyGuestCount++;
+                    }
+                });
+            } catch (err) {
+                console.error("Error fetching guest stats:", err);
             }
 
             const userList = [];
@@ -222,7 +245,9 @@ const UserActives = () => {
                 dailyActive: dailyActiveCount,
                 monthlyActive: monthlyActiveCount,
                 newUsersToday: newUsersCount,
-                totalInstalls: installCount
+                totalInstalls: installCount,
+                dailyGuestActive: dailyGuestCount,
+                monthlyGuestActive: monthlyGuestCount
             });
 
         } catch (error) {
@@ -291,6 +316,20 @@ const UserActives = () => {
                     color="blue"
                     trend="Lifetime"
                     className="col-span-2 lg:col-span-1"
+                />
+                <StatsCard
+                    title="Daily Active Guests"
+                    value={stats.dailyGuestActive}
+                    icon={UserCheck}
+                    color="orange"
+                    trend="Active"
+                />
+                <StatsCard
+                    title="Monthly Active Guests"
+                    value={stats.monthlyGuestActive}
+                    icon={Calendar}
+                    color="purple"
+                    trend="Active"
                 />
             </div>
 

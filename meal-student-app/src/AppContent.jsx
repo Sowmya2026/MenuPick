@@ -18,6 +18,8 @@ import SignIn from './pages/SignIn';
 // Removed Splash and Onboarding as they are unused
 import Welcome from './pages/Welcome';       // New Landing Page
 import InstallPrompt from './components/InstallPrompt'; // Global Install Prompt
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from './services/firebaseConfig';
 import Profile from './pages/Profile';
 import CompleteProfile from './pages/CompleteProfile';
 import Notifications from './pages/Notifications';
@@ -221,6 +223,35 @@ function AppContent() {
     // MAIN APP LAYOUT
     // Check for guest mode
     const isGuest = localStorage.getItem('isGuest') === 'true';
+
+    useEffect(() => {
+        if (isGuest && !currentUser) {
+            const trackGuest = async () => {
+                let guestId = localStorage.getItem('guestId');
+                if (!guestId) {
+                    guestId = 'guest_' + Math.random().toString(36).substr(2, 9) + Date.now();
+                    localStorage.setItem('guestId', guestId);
+                }
+
+                const lastUpdate = localStorage.getItem('guestLastUpdate');
+                const now = Date.now();
+
+                // Update every hour
+                if (!lastUpdate || now - parseInt(lastUpdate) > 3600000) {
+                    try {
+                        await setDoc(doc(db, 'guest_sessions', guestId), {
+                            lastActive: serverTimestamp(),
+                            sessionId: guestId
+                        }, { merge: true });
+                        localStorage.setItem('guestLastUpdate', now.toString());
+                    } catch (e) {
+                        console.error("Guest tracking failed silently", e);
+                    }
+                }
+            };
+            trackGuest();
+        }
+    }, [isGuest, currentUser]);
 
     return (
         <div
