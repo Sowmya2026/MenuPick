@@ -194,8 +194,8 @@ const MenuImport = () => {
     return (
         <div className="p-6 max-w-6xl mx-auto">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-800">Import Weekly Menu</h1>
-                <p className="text-gray-600 mt-2">
+                <h1 className="text-3xl font-bold text-green-900">Import Weekly Menu</h1>
+                <p className="text-green-700 mt-2">
                     Paste your JSON menu data here to update the student app directly.
                     Ensure it follows the structure: <code>veg/non-veg/special</code> &gt; <code>days</code>.
                 </p>

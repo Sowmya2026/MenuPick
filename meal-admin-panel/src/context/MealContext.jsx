@@ -1,10 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
   onSnapshot,
   query,
   orderBy,
@@ -75,23 +75,23 @@ export const MealProvider = ({ children }) => {
       dinner: {
         'veg': ['Staples', 'Curries', 'Side Dishes', 'Accompaniments'],
         'non-veg': ['Staples', 'Curries', 'Side Dishes', 'Fish'],
-        'special': ['Staples', 'Curries', 'Side Dishes',  'Special Items']
+        'special': ['Staples', 'Curries', 'Side Dishes', 'Special Items']
       }
     }
-    
+
     return subcategoriesMap[category]?.[messType] || ['General']
   }
 
   // Helper function to check if a subcategory has reached its maximum items
   const checkSubcategoryLimit = useCallback((category, messType, subcategory) => {
-    const currentItems = meals.filter(meal => 
-      meal.category === category && 
-      meal.messType === messType && 
+    const currentItems = meals.filter(meal =>
+      meal.category === category &&
+      meal.messType === messType &&
       meal.subcategory === subcategory
     )
-    
+
     const maxAllowed = MAX_ITEMS[category]?.[messType]?.[subcategory] || 0
-    
+
     return {
       currentCount: currentItems.length,
       maxAllowed,
@@ -102,29 +102,29 @@ export const MealProvider = ({ children }) => {
   // Fetch all meals
   useEffect(() => {
     setLoading(true)
-    
+
     const fetchAllMeals = async () => {
       try {
         const allMeals = []
-        
+
         // Fetch from all mess types
         for (const messType of messTypes) {
           // Fetch from all categories
           for (const category of categories) {
             const subcategories = getSubcategories(category, messType)
-            
+
             // Fetch from all subcategories
             for (const subcategory of subcategories) {
               try {
                 // Create collection reference with proper path according to the recommended schema
                 const mealsRef = collection(db, 'Meals', messType, 'categories', category, 'subcategories', subcategory, 'items')
                 const q = query(mealsRef, orderBy('createdAt', 'desc'))
-                
+
                 const querySnapshot = await getDocs(q)
                 querySnapshot.forEach((doc) => {
                   const data = doc.data()
-                  allMeals.push({ 
-                    id: doc.id, 
+                  allMeals.push({
+                    id: doc.id,
                     ...data,
                     messType,
                     category,
@@ -142,7 +142,7 @@ export const MealProvider = ({ children }) => {
             }
           }
         }
-        
+
         setMeals(allMeals)
         setLoading(false)
       } catch (error) {
@@ -160,7 +160,7 @@ export const MealProvider = ({ children }) => {
     try {
       // Get total meals count
       const mealsCount = meals.length
-      
+
       // Get total students count
       let studentsCount = 1250
       try {
@@ -188,11 +188,11 @@ export const MealProvider = ({ children }) => {
     try {
       // Check if subcategory has reached its limit
       const limitCheck = checkSubcategoryLimit(
-        mealData.category, 
-        mealData.messType, 
+        mealData.category,
+        mealData.messType,
         mealData.subcategory
       )
-      
+
       if (limitCheck.hasReachedLimit) {
         toast.error(`Cannot add more items to ${mealData.subcategory}. Maximum limit of ${limitCheck.maxAllowed} reached.`)
         return { error: `Maximum limit of ${limitCheck.maxAllowed} reached for ${mealData.subcategory}` }
@@ -215,21 +215,21 @@ export const MealProvider = ({ children }) => {
 
       // Build the correct path according to the recommended schema
       const mealsRef = collection(
-        db, 
-        'Meals', 
-        mealData.messType, 
-        'categories', 
-        mealData.category, 
-        'subcategories', 
-        mealData.subcategory, 
+        db,
+        'Meals',
+        mealData.messType,
+        'categories',
+        mealData.category,
+        'subcategories',
+        mealData.subcategory,
         'items'
       )
       const docRef = await addDoc(mealsRef, mealWithTimestamps)
-      
+
       toast.success('Meal added successfully!')
-      return { 
-        id: docRef.id, 
-        path: `Meals/${mealData.messType}/categories/${mealData.category}/subcategories/${mealData.subcategory}/items/${docRef.id}` 
+      return {
+        id: docRef.id,
+        path: `Meals/${mealData.messType}/categories/${mealData.category}/subcategories/${mealData.subcategory}/items/${docRef.id}`
       }
     } catch (error) {
       toast.error('Error adding meal: ' + error.message)
@@ -241,28 +241,28 @@ export const MealProvider = ({ children }) => {
     try {
       // Group meals by their path (messType/category/subcategory)
       const mealsByPath = {}
-      
+
       // First check all limits
       for (const mealData of mealsData) {
         const limitCheck = checkSubcategoryLimit(
-          mealData.category, 
-          mealData.messType, 
+          mealData.category,
+          mealData.messType,
           mealData.subcategory
         )
-        
+
         if (limitCheck.hasReachedLimit) {
           toast.error(`Cannot add more items to ${mealData.subcategory}. Maximum limit of ${limitCheck.maxAllowed} reached.`)
           return { error: `Maximum limit of ${limitCheck.maxAllowed} reached for ${mealData.subcategory}` }
         }
       }
-      
+
       mealsData.forEach(mealData => {
         const path = `${mealData.messType}/${mealData.category}/${mealData.subcategory}`
-        
+
         if (!mealsByPath[path]) {
           mealsByPath[path] = []
         }
-        
+
         const mealWithTimestamps = {
           name: mealData.name,
           description: mealData.description || '',
@@ -277,7 +277,7 @@ export const MealProvider = ({ children }) => {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         }
-        
+
         mealsByPath[path].push(mealWithTimestamps)
       })
 
@@ -285,27 +285,27 @@ export const MealProvider = ({ children }) => {
       for (const [path, meals] of Object.entries(mealsByPath)) {
         const [messType, category, subcategory] = path.split('/')
         const batch = writeBatch(db)
-        
+
         // Create collection reference with proper path according to the recommended schema
         const mealsRef = collection(
-          db, 
-          'Meals', 
-          messType, 
-          'categories', 
-          category, 
-          'subcategories', 
-          subcategory, 
+          db,
+          'Meals',
+          messType,
+          'categories',
+          category,
+          'subcategories',
+          subcategory,
           'items'
         )
-        
+
         meals.forEach(meal => {
           const docRef = doc(mealsRef)
           batch.set(docRef, meal)
         })
-        
+
         await batch.commit()
       }
-      
+
       toast.success(`${mealsData.length} meals added successfully!`)
       return true
     } catch (error) {
@@ -335,29 +335,29 @@ export const MealProvider = ({ children }) => {
       const messType = pathParts[1]
       const category = pathParts[3]
       const subcategory = pathParts[5]
-      
+
       const mealRef = doc(
-        db, 
-        'Meals', 
-        messType, 
-        'categories', 
-        category, 
-        'subcategories', 
-        subcategory, 
-        'items', 
+        db,
+        'Meals',
+        messType,
+        'categories',
+        category,
+        'subcategories',
+        subcategory,
+        'items',
         mealId
       )
       await updateDoc(mealRef, mealUpdate)
-      
+
       // Update local state
-      setMeals(prevMeals => 
-        prevMeals.map(meal => 
-          meal.id === mealId 
+      setMeals(prevMeals =>
+        prevMeals.map(meal =>
+          meal.id === mealId
             ? { ...meal, ...mealUpdate, updatedAt: new Date() }
             : meal
         )
       )
-      
+
       toast.success('Meal updated successfully!')
       return true
     } catch (error) {
@@ -373,27 +373,117 @@ export const MealProvider = ({ children }) => {
       const messType = pathParts[1]
       const category = pathParts[3]
       const subcategory = pathParts[5]
-      
+
       const mealRef = doc(
-        db, 
-        'Meals', 
-        messType, 
-        'categories', 
-        category, 
-        'subcategories', 
-        subcategory, 
-        'items', 
+        db,
+        'Meals',
+        messType,
+        'categories',
+        category,
+        'subcategories',
+        subcategory,
+        'items',
         mealId
       )
       await deleteDoc(mealRef)
-      
+
       // Update local state
       setMeals(prevMeals => prevMeals.filter(meal => meal.id !== mealId))
-      
+
       toast.success('Meal deleted successfully!')
       return true
     } catch (error) {
       toast.error('Error deleting meal: ' + error.message)
+      throw error
+    }
+  }
+
+  const deleteMealsByMessType = async (messType) => {
+    try {
+      const mealsToDelete = meals.filter(meal => meal.messType === messType)
+
+      if (mealsToDelete.length === 0) {
+        toast.error(`No ${messType} meals to delete`)
+        return false
+      }
+
+      const confirmDelete = window.confirm(
+        `Are you sure you want to delete all ${mealsToDelete.length} ${messType} meals? This action cannot be undone!`
+      )
+
+      if (!confirmDelete) return false
+
+      // Delete each meal
+      for (const meal of mealsToDelete) {
+        try {
+          const mealRef = doc(
+            db,
+            'Meals',
+            meal.messType,
+            'categories',
+            meal.category,
+            'subcategories',
+            meal.subcategory,
+            'items',
+            meal.id
+          )
+          await deleteDoc(mealRef)
+        } catch (error) {
+          console.error(`Error deleting meal ${meal.id}:`, error)
+        }
+      }
+
+      // Update local state
+      setMeals(prevMeals => prevMeals.filter(meal => meal.messType !== messType))
+
+      toast.success(`Successfully deleted all ${messType} meals!`)
+      return true
+    } catch (error) {
+      toast.error('Error deleting meals: ' + error.message)
+      throw error
+    }
+  }
+
+  const deleteAllMeals = async () => {
+    try {
+      if (meals.length === 0) {
+        toast.error('No meals to delete')
+        return false
+      }
+
+      const confirmDelete = window.confirm(
+        `Are you sure you want to delete ALL ${meals.length} meals? This action cannot be undone!`
+      )
+
+      if (!confirmDelete) return false
+
+      // Delete each meal
+      for (const meal of meals) {
+        try {
+          const mealRef = doc(
+            db,
+            'Meals',
+            meal.messType,
+            'categories',
+            meal.category,
+            'subcategories',
+            meal.subcategory,
+            'items',
+            meal.id
+          )
+          await deleteDoc(mealRef)
+        } catch (error) {
+          console.error(`Error deleting meal ${meal.id}:`, error)
+        }
+      }
+
+      // Clear local state
+      setMeals([])
+
+      toast.success('Successfully deleted all meals!')
+      return true
+    } catch (error) {
+      toast.error('Error deleting all meals: ' + error.message)
       throw error
     }
   }
@@ -403,7 +493,7 @@ export const MealProvider = ({ children }) => {
   }
 
   const getMealsBySubcategory = (category, subcategory) => {
-    return meals.filter(meal => 
+    return meals.filter(meal =>
       meal.category === category && meal.subcategory === subcategory
     )
   }
@@ -413,7 +503,7 @@ export const MealProvider = ({ children }) => {
   }
 
   const getMealsByTags = (tags) => {
-    return meals.filter(meal => 
+    return meals.filter(meal =>
       meal.tags && tags.some(tag => meal.tags.includes(tag))
     )
   }
@@ -425,7 +515,7 @@ export const MealProvider = ({ children }) => {
       }
       return tags
     }, [])
-    
+
     return [...new Set(allTags)]
   }
 
@@ -450,6 +540,8 @@ export const MealProvider = ({ children }) => {
     addMultipleMeals,
     updateMeal,
     deleteMeal,
+    deleteMealsByMessType,
+    deleteAllMeals,
     getMealsByCategory,
     getMealsBySubcategory,
     getMealsByMessType,

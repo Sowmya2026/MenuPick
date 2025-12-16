@@ -8,7 +8,10 @@ import {
     Filter,
     Download,
     MoreVertical,
-    Circle
+    Circle,
+    X,
+    Mail,
+    Clock
 } from "lucide-react";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
@@ -100,6 +103,7 @@ const UserActives = () => {
         monthlyActive: 0,
         newUsersToday: 0
     });
+    const [selectedUser, setSelectedUser] = useState(null);
 
     // Mock Data for Charts (Needs backend history to be real, keeping mock for UI demo)
     const activityData = [
@@ -225,8 +229,8 @@ const UserActives = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">User Activities</h1>
-                    <p className="text-gray-500 text-sm">Monitor user engagement and active sessions</p>
+                    <h1 className="text-2xl font-bold text-green-900">User Activities</h1>
+                    <p className="text-green-700 text-sm">Monitor user engagement and active sessions</p>
                 </div>
                 <button
                     onClick={fetchUsers}
@@ -294,8 +298,8 @@ const UserActives = () => {
                 </div>
             </div>
 
-            {/* Detailed User Table */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* Detailed User Table - Desktop */}
+            <div className="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h3 className="font-bold text-gray-900">Active Users List</h3>
 
@@ -358,7 +362,10 @@ const UserActives = () => {
                                             {user.lastActive}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="text-gray-400 hover:text-gray-600">
+                                            <button
+                                                onClick={() => setSelectedUser(user)}
+                                                className="text-gray-400 hover:text-gray-600"
+                                            >
                                                 <MoreVertical size={18} />
                                             </button>
                                         </td>
@@ -374,6 +381,146 @@ const UserActives = () => {
                     </div>
                 )}
             </div>
+
+            {/* Mobile User Cards */}
+            <div className="md:hidden space-y-4">
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="relative mb-4">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search users..."
+                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-green-500/50 w-full"
+                        />
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
+                        Loading users...
+                    </div>
+                ) : users.length === 0 ? (
+                    <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
+                        No users found.
+                    </div>
+                ) : (
+                    users.slice(0, 10).map((user) => (
+                        <motion.div
+                            key={user.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+                            onClick={() => setSelectedUser(user)}
+                        >
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3 flex-1">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm uppercase flex-shrink-0">
+                                        {user.name.charAt(0)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+                                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                    </div>
+                                </div>
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)} flex-shrink-0`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${user.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                    {user.status}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-600 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                                    {user.role}
+                                </span>
+                                <span className="text-gray-500 flex items-center gap-1">
+                                    <Clock size={12} />
+                                    {user.lastActive}
+                                </span>
+                            </div>
+                        </motion.div>
+                    ))
+                )}
+
+                {!loading && users.length > 10 && (
+                    <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
+                        <button className="text-sm text-green-600 font-medium hover:text-green-700">View All Users</button>
+                    </div>
+                )}
+            </div>
+
+            {/* User Detail Modal */}
+            {selectedUser && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedUser(null)}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div className="sticky top-0 bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-2xl">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-2xl uppercase border-2 border-white/30">
+                                        {selectedUser.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">{selectedUser.name}</h3>
+                                        <p className="text-green-100 text-sm">{selectedUser.role}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedUser(null)}
+                                    className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-6 space-y-4">
+                            {/* Status */}
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                                <span className="text-sm font-medium text-gray-700">Status</span>
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusColor(selectedUser.status)}`}>
+                                    <div className={`w-2 h-2 rounded-full ${selectedUser.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                    {selectedUser.status}
+                                </span>
+                            </div>
+
+                            {/* Email */}
+                            <div className="p-4 bg-gray-50 rounded-xl">
+                                <div className="flex items-center gap-2 text-gray-500 mb-1">
+                                    <Mail size={16} />
+                                    <span className="text-xs font-medium uppercase tracking-wider">Email</span>
+                                </div>
+                                <p className="text-sm font-medium text-gray-900">{selectedUser.email}</p>
+                            </div>
+
+                            {/* Last Active */}
+                            <div className="p-4 bg-gray-50 rounded-xl">
+                                <div className="flex items-center gap-2 text-gray-500 mb-1">
+                                    <Clock size={16} />
+                                    <span className="text-xs font-medium uppercase tracking-wider">Last Active</span>
+                                </div>
+                                <p className="text-sm font-medium text-gray-900">{selectedUser.lastActive}</p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="pt-4 space-y-2">
+                                <button className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors">
+                                    Send Message
+                                </button>
+                                <button className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">
+                                    View Activity Log
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 };

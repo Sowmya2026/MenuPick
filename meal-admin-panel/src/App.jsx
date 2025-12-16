@@ -33,6 +33,17 @@ function RouteReset() {
   return null;
 }
 
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pathname]);
+
+  return null;
+}
+
 function AppContent() {
   return (
     <div className="App">
@@ -47,6 +58,7 @@ function AppContent() {
         }}
       />
       <RouteReset />
+      <ScrollToTop />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/admin-setup" element={<AdminSetup />} />

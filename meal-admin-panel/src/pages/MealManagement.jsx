@@ -11,6 +11,7 @@ import {
   Menu,
   Grid,
   List,
+  Upload,
 } from "lucide-react";
 import { useMeal } from "../context/MealContext";
 import MealForm from "../components/MealForm";
@@ -64,6 +65,8 @@ const MealManagement = () => {
     messTypes,
     loading,
     deleteMeal,
+    deleteMealsByMessType,
+    deleteAllMeals,
     getSubcategories,
     addMeal,
   } = useMeal();
@@ -77,16 +80,19 @@ const MealManagement = () => {
   const [targetMessTypes, setTargetMessTypes] = useState([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
-  // At the top of your component, initialize the state
-  const [viewMode, setViewMode] = useState("grid"); // Default to grid initially
+  // Initialize viewMode from localStorage immediately
+  const [viewMode, setViewMode] = useState(() => {
+    const saved = localStorage.getItem("mealViewMode");
+    return saved || "grid";
+  });
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [bulkImportMessType, setBulkImportMessType] = useState("veg");
+  const [bulkImportData, setBulkImportData] = useState("");
+  const [previewMeals, setPreviewMeals] = useState([]);
 
-  // Add this useEffect to load from localStorage after component mounts
+  // Scroll to top on component mount
   useEffect(() => {
-    const savedViewMode = localStorage.getItem("mealViewMode");
-    console.log("Loaded from localStorage:", savedViewMode);
-    if (savedViewMode) {
-      setViewMode(savedViewMode);
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleViewModeChange = (mode) => {
@@ -198,6 +204,7 @@ const MealManagement = () => {
 
   const handleFilterByType = (type) => {
     setSelectedMessType(type);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const clearFilters = () => {
@@ -205,6 +212,99 @@ const MealManagement = () => {
     setSelectedCategory("all");
     setSelectedMessType("all");
     setSelectedSubcategory("all");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePreviewImport = () => {
+    if (!bulkImportData.trim()) {
+      toast.error("Please enter meal data");
+      return;
+    }
+
+    try {
+      const lines = bulkImportData.trim().split('\n');
+      const mealsToImport = [];
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        // Try parsing as JSON first
+        try {
+          const mealData = JSON.parse(line);
+          mealsToImport.push({
+            ...mealData,
+            messType: bulkImportMessType,
+            image: mealData.image || "", // Use empty string if no image
+          });
+        } catch {
+          // Parse as CSV: name,description,category,subcategory,image
+          const parts = line.split(',').map(p => p.trim());
+          if (parts.length >= 3) {
+            const category = parts[2] || "breakfast";
+            // Use valid default subcategory based on category
+            const defaultSubcategory =
+              category === "breakfast" ? "Tiffin" :
+                category === "lunch" ? "Rice" :
+                  category === "snacks" ? "Snacks" :
+                    category === "dinner" ? "Staples" : "Tiffin";
+
+            mealsToImport.push({
+              name: parts[0],
+              description: parts[1] || "",
+              category: category,
+              subcategory: parts[3] || defaultSubcategory,
+              image: parts[4] || "", // Use empty string if no image
+              messType: bulkImportMessType,
+              nutrition: {
+                calories: 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+              },
+              tags: [],
+            });
+          }
+        }
+      }
+
+      if (mealsToImport.length === 0) {
+        toast.error("No valid meals found in the data");
+        return;
+      }
+
+      setPreviewMeals(mealsToImport);
+      toast.success(`Parsed ${mealsToImport.length} meals. Review and confirm to import.`);
+    } catch (error) {
+      console.error("Error parsing data:", error);
+      toast.error("Error parsing data: " + error.message);
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (previewMeals.length === 0) {
+      toast.error("No meals to import");
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      for (const mealData of previewMeals) {
+        try {
+          await addMeal(mealData);
+          successCount++;
+        } catch (error) {
+          console.error(`Error importing meal ${mealData.name}:`, error);
+        }
+      }
+
+      toast.success(`Successfully imported ${successCount} out of ${previewMeals.length} meals!`);
+      setIsBulkImportOpen(false);
+      setBulkImportData("");
+      setPreviewMeals([]);
+    } catch (error) {
+      console.error("Error during bulk import:", error);
+      toast.error("Error importing meals: " + error.message);
+    }
   };
 
   // Get color theme for a specific mess type
@@ -251,16 +351,28 @@ const MealManagement = () => {
               </p>
             </div>
 
-            {/* Mobile Add Button */}
-            <motion.button
-              onClick={() => setIsFormOpen(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="sm:hidden bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-3 py-2 rounded-lg font-medium flex items-center transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="sr-only">Add Meal</span>
-            </motion.button>
+            {/* Mobile Buttons */}
+            <div className="sm:hidden flex gap-2">
+              <motion.button
+                onClick={() => setIsFormOpen(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-3 py-2 rounded-lg font-medium flex items-center transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="sr-only">Add Meal</span>
+              </motion.button>
+
+              <motion.button
+                onClick={() => setIsBulkImportOpen(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-3 py-2 rounded-lg font-medium flex items-center transition-colors"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="sr-only">Bulk Import</span>
+              </motion.button>
+            </div>
           </motion.div>
 
           {/* Desktop Add Button */}
@@ -274,6 +386,16 @@ const MealManagement = () => {
               <Plus className="h-5 w-5 mr-2" />
               <span>Add Meal</span>
             </motion.button>
+
+            <motion.button
+              onClick={() => setIsBulkImportOpen(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-colors"
+            >
+              <Upload className="h-5 w-5 mr-2" />
+              <span>Bulk Import</span>
+            </motion.button>
           </div>
         </div>
 
@@ -281,78 +403,131 @@ const MealManagement = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {/* Total Meals Card */}
           <motion.div
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 text-center cursor-pointer hover:shadow-md transition-shadow"
-            onClick={clearFilters}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 text-center hover:shadow-md transition-shadow relative"
             whileHover={{ y: -5 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="text-2xl md:text-3xl font-bold text-gray-900">
-              {mealCounts.total}
+            <div
+              className="cursor-pointer"
+              onClick={clearFilters}
+            >
+              <div className="text-2xl md:text-3xl font-bold text-gray-900">
+                {mealCounts.total}
+              </div>
+              <div className="text-xs md:text-sm text-gray-600 mt-1">
+                Total Meals
+              </div>
+              <div className="h-1 mt-2 rounded-full bg-blue-500"></div>
             </div>
-            <div className="text-xs md:text-sm text-gray-600 mt-1">
-              Total Meals
-            </div>
-            <div className="h-1 mt-2 rounded-full bg-blue-500"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteAllMeals();
+              }}
+              className="absolute top-2 right-2 p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+              title="Delete all meals"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </motion.div>
 
           {/* Veg Meals Card */}
           <motion.div
-            className={`bg-white rounded-xl shadow-sm border p-4 text-center cursor-pointer hover:shadow-md transition-shadow ${
-              selectedMessType === "veg"
-                ? "border-green-500 ring-2 ring-green-100"
-                : "border-gray-200"
-            }`}
-            onClick={() => handleFilterByType("veg")}
+            className={`bg-white rounded-xl shadow-sm border p-4 text-center hover:shadow-md transition-shadow relative ${selectedMessType === "veg"
+              ? "border-green-500 ring-2 ring-green-100"
+              : "border-gray-200"
+              }`}
             whileHover={{ y: -5 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="text-2xl md:text-3xl font-bold text-green-600">
-              {mealCounts.veg}
+            <div
+              className="cursor-pointer"
+              onClick={() => handleFilterByType("veg")}
+            >
+              <div className="text-2xl md:text-3xl font-bold text-green-600">
+                {mealCounts.veg}
+              </div>
+              <div className="text-xs md:text-sm text-gray-600 mt-1">
+                Veg Meals
+              </div>
+              <div className="h-1 mt-2 rounded-full bg-green-500"></div>
             </div>
-            <div className="text-xs md:text-sm text-gray-600 mt-1">
-              Veg Meals
-            </div>
-            <div className="h-1 mt-2 rounded-full bg-green-500"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteMealsByMessType("veg");
+              }}
+              className="absolute top-2 right-2 p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+              title="Delete all veg meals"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </motion.div>
 
           {/* Non-Veg Meals Card */}
           <motion.div
-            className={`bg-white rounded-xl shadow-sm border p-4 text-center cursor-pointer hover:shadow-md transition-shadow ${
-              selectedMessType === "non-veg"
-                ? "border-red-500 ring-2 ring-red-100"
-                : "border-gray-200"
-            }`}
-            onClick={() => handleFilterByType("non-veg")}
+            className={`bg-white rounded-xl shadow-sm border p-4 text-center hover:shadow-md transition-shadow relative ${selectedMessType === "non-veg"
+              ? "border-red-500 ring-2 ring-red-100"
+              : "border-gray-200"
+              }`}
             whileHover={{ y: -5 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="text-2xl md:text-3xl font-bold text-red-600">
-              {mealCounts.nonVeg}
+            <div
+              className="cursor-pointer"
+              onClick={() => handleFilterByType("non-veg")}
+            >
+              <div className="text-2xl md:text-3xl font-bold text-red-600">
+                {mealCounts.nonVeg}
+              </div>
+              <div className="text-xs md:text-sm text-gray-600 mt-1">
+                Non-Veg Meals
+              </div>
+              <div className="h-1 mt-2 rounded-full bg-red-500"></div>
             </div>
-            <div className="text-xs md:text-sm text-gray-600 mt-1">
-              Non-Veg Meals
-            </div>
-            <div className="h-1 mt-2 rounded-full bg-red-500"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteMealsByMessType("non-veg");
+              }}
+              className="absolute top-2 right-2 p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+              title="Delete all non-veg meals"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </motion.div>
 
           {/* Special Meals Card */}
           <motion.div
-            className={`bg-white rounded-xl shadow-sm border p-4 text-center cursor-pointer hover:shadow-md transition-shadow ${
-              selectedMessType === "special"
-                ? "border-purple-500 ring-2 ring-purple-100"
-                : "border-gray-200"
-            }`}
-            onClick={() => handleFilterByType("special")}
+            className={`bg-white rounded-xl shadow-sm border p-4 text-center hover:shadow-md transition-shadow relative ${selectedMessType === "special"
+              ? "border-purple-500 ring-2 ring-purple-100"
+              : "border-gray-200"
+              }`}
             whileHover={{ y: -5 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="text-2xl md:text-3xl font-bold text-purple-600">
-              {mealCounts.special}
+            <div
+              className="cursor-pointer"
+              onClick={() => handleFilterByType("special")}
+            >
+              <div className="text-2xl md:text-3xl font-bold text-purple-600">
+                {mealCounts.special}
+              </div>
+              <div className="text-xs md:text-sm text-gray-600 mt-1">
+                Special Meals
+              </div>
+              <div className="h-1 mt-2 rounded-full bg-purple-500"></div>
             </div>
-            <div className="text-xs md:text-sm text-gray-600 mt-1">
-              Special Meals
-            </div>
-            <div className="h-1 mt-2 rounded-full bg-purple-500"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteMealsByMessType("special");
+              }}
+              className="absolute top-2 right-2 p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+              title="Delete all special meals"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </motion.div>
         </div>
 
@@ -374,21 +549,19 @@ const MealManagement = () => {
             <div className="flex bg-white/40 backdrop-blur-sm rounded-lg p-1 border border-white/30">
               <button
                 onClick={() => handleViewModeChange("grid")}
-                className={`p-2 rounded transition-all ${
-                  viewMode === "grid"
-                    ? "bg-white/80 shadow-sm"
-                    : "text-gray-600"
-                }`}
+                className={`p-2 rounded transition-all ${viewMode === "grid"
+                  ? "bg-white/80 shadow-sm"
+                  : "text-gray-600"
+                  }`}
               >
                 <Grid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => handleViewModeChange("list")}
-                className={`p-2 rounded transition-all ${
-                  viewMode === "list"
-                    ? "bg-white/80 shadow-sm"
-                    : "text-gray-600"
-                }`}
+                className={`p-2 rounded transition-all ${viewMode === "list"
+                  ? "bg-white/80 shadow-sm"
+                  : "text-gray-600"
+                  }`}
               >
                 <List className="h-4 w-4" />
               </button>
@@ -428,7 +601,10 @@ const MealManagement = () => {
             <select
               className="px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 transition-all"
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
             >
               <option value="all">All Categories</option>
               {categories.map((category) => (
@@ -441,7 +617,10 @@ const MealManagement = () => {
             <select
               className="px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 disabled:opacity-50 transition-all"
               value={selectedSubcategory}
-              onChange={(e) => setSelectedSubcategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedSubcategory(e.target.value);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               disabled={selectedCategory === "all"}
             >
               <option value="all">All Subcategories</option>
@@ -456,18 +635,16 @@ const MealManagement = () => {
           {/* View Toggle */}
           <div className="flex bg-white/40 backdrop-blur-sm rounded-lg p-1 border border-white/30 ml-auto">
             <button
-              onClick={() => setViewMode("grid")}
-              className={`p-2 rounded transition-all ${
-                viewMode === "grid" ? "bg-white/80 shadow-sm" : "text-gray-600"
-              }`}
+              onClick={() => handleViewModeChange("grid")}
+              className={`p-2 rounded transition-all ${viewMode === "grid" ? "bg-white/80 shadow-sm" : "text-gray-600"
+                }`}
             >
               <Grid className="h-4 w-4" />
             </button>
             <button
-              onClick={() => setViewMode("list")}
-              className={`p-2 rounded transition-all ${
-                viewMode === "list" ? "bg-white/80 shadow-sm" : "text-gray-600"
-              }`}
+              onClick={() => handleViewModeChange("list")}
+              className={`p-2 rounded transition-all ${viewMode === "list" ? "bg-white/80 shadow-sm" : "text-gray-600"
+                }`}
             >
               <List className="h-4 w-4" />
             </button>
@@ -476,9 +653,8 @@ const MealManagement = () => {
 
         {/* Mobile Filters Panel - Search Removed */}
         <div
-          className={`md:hidden bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg mb-4 ${
-            mobileFiltersOpen ? "block" : "hidden"
-          }`}
+          className={`md:hidden bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg mb-4 ${mobileFiltersOpen ? "block" : "hidden"
+            }`}
         >
           <div className="p-4 space-y-4">
             {/* Search Completely Removed from Mobile */}
@@ -547,67 +723,67 @@ const MealManagement = () => {
           selectedCategory !== "all" ||
           selectedMessType !== "all" ||
           selectedSubcategory !== "all") && (
-          <div className="mb-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-600">Active filters:</span>
+            <div className="mb-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-gray-600">Active filters:</span>
 
-              {searchTerm && (
-                <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
-                  Search: "{searchTerm}"
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
+                {searchTerm && (
+                  <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
+                    Search: "{searchTerm}"
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
 
-              {selectedMessType !== "all" && (
-                <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
-                  Type: {selectedMessType}
-                  <button
-                    onClick={() => setSelectedMessType("all")}
-                    className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
+                {selectedMessType !== "all" && (
+                  <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
+                    Type: {selectedMessType}
+                    <button
+                      onClick={() => setSelectedMessType("all")}
+                      className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
 
-              {selectedCategory !== "all" && (
-                <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
-                  Category: {selectedCategory}
-                  <button
-                    onClick={() => setSelectedCategory("all")}
-                    className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
+                {selectedCategory !== "all" && (
+                  <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
+                    Category: {selectedCategory}
+                    <button
+                      onClick={() => setSelectedCategory("all")}
+                      className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
 
-              {selectedSubcategory !== "all" && (
-                <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
-                  Subcategory: {selectedSubcategory}
-                  <button
-                    onClick={() => setSelectedSubcategory("all")}
-                    className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
+                {selectedSubcategory !== "all" && (
+                  <span className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-sm rounded-full border border-white/30">
+                    Subcategory: {selectedSubcategory}
+                    <button
+                      onClick={() => setSelectedSubcategory("all")}
+                      className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
 
-              <button
-                onClick={clearFilters}
-                className="text-sm text-red-600 hover:text-red-800 font-medium transition-colors"
-              >
-                Clear all
-              </button>
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-red-600 hover:text-red-800 font-medium transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Results Count */}
         <div className="mb-4">
@@ -932,9 +1108,9 @@ const MealManagement = () => {
                 <p className="text-gray-500 text-lg">No meals found</p>
                 <p className="text-gray-400 text-sm mt-1">
                   {searchTerm ||
-                  selectedCategory !== "all" ||
-                  selectedMessType !== "all" ||
-                  selectedSubcategory !== "all"
+                    selectedCategory !== "all" ||
+                    selectedMessType !== "all" ||
+                    selectedSubcategory !== "all"
                     ? "Try adjusting your search or filters"
                     : "Get started by adding your first meal"}
                 </p>
@@ -942,13 +1118,13 @@ const MealManagement = () => {
                   selectedCategory !== "all" ||
                   selectedMessType !== "all" ||
                   selectedSubcategory !== "all") && (
-                  <button
-                    onClick={clearFilters}
-                    className="mt-4 text-primary-600 hover:text-primary-800 text-sm"
-                  >
-                    Clear all filters
-                  </button>
-                )}
+                    <button
+                      onClick={clearFilters}
+                      className="mt-4 text-primary-600 hover:text-primary-800 text-sm"
+                    >
+                      Clear all filters
+                    </button>
+                  )}
               </div>
             )}
           </div>
@@ -963,9 +1139,9 @@ const MealManagement = () => {
             <p className="text-gray-500 text-lg">No meals found</p>
             <p className="text-gray-400 text-sm mt-1">
               {searchTerm ||
-              selectedCategory !== "all" ||
-              selectedMessType !== "all" ||
-              selectedSubcategory !== "all"
+                selectedCategory !== "all" ||
+                selectedMessType !== "all" ||
+                selectedSubcategory !== "all"
                 ? "Try adjusting your search or filters"
                 : "Get started by adding your first meal"}
             </p>
@@ -973,13 +1149,13 @@ const MealManagement = () => {
               selectedCategory !== "all" ||
               selectedMessType !== "all" ||
               selectedSubcategory !== "all") && (
-              <button
-                onClick={clearFilters}
-                className="mt-4 text-primary-600 hover:text-primary-800 text-sm"
-              >
-                Clear all filters
-              </button>
-            )}
+                <button
+                  onClick={clearFilters}
+                  className="mt-4 text-primary-600 hover:text-primary-800 text-sm"
+                >
+                  Clear all filters
+                </button>
+              )}
           </div>
         )}
 
@@ -1072,6 +1248,164 @@ const MealManagement = () => {
                   >
                     Copy Meal
                   </motion.button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Bulk Import Modal */}
+        <AnimatePresence>
+          {isBulkImportOpen && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsBulkImportOpen(false)}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-2xl">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Bulk Import Meals</h3>
+                      <p className="text-green-100 text-sm mt-1">Import multiple meals at once</p>
+                    </div>
+                    <button
+                      onClick={() => setIsBulkImportOpen(false)}
+                      className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6 space-y-4">
+                  {/* Mess Type Selector */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Mess Type
+                    </label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {messTypes.map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setBulkImportMessType(type)}
+                          className={`p-3 rounded-xl border-2 font-medium transition-all ${bulkImportMessType === type
+                            ? type === 'veg'
+                              ? 'border-green-500 bg-green-50 text-green-700'
+                              : type === 'non-veg'
+                                ? 'border-red-500 bg-red-50 text-red-700'
+                                : 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                            }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <h4 className="font-semibold text-green-900 mb-2">Format Instructions:</h4>
+                    <div className="text-sm text-green-800 space-y-2">
+                      <div>
+                        <p><strong>CSV Format:</strong> name, description, category, subcategory, image (optional)</p>
+                        <p className="text-xs text-green-600">Example: Idli, Soft steamed rice cakes, breakfast, Tiffin</p>
+                      </div>
+                      <div>
+                        <p><strong>JSON Format:</strong> One meal object per line</p>
+                        <p className="text-xs text-green-600">Example: {`{"name":"Idli","description":"Soft steamed rice cakes","category":"breakfast","subcategory":"Tiffin"}`}</p>
+                      </div>
+                      <div className="pt-2 border-t border-green-200">
+                        <p className="font-semibold mb-1">Valid Subcategories:</p>
+                        <p className="text-xs text-green-700">
+                          <strong>Breakfast:</strong> Tiffin, Chutney, Egg, Juices<br />
+                          <strong>Lunch:</strong> Rice, Curry, Accompaniments, Dessert, Chicken, Fish<br />
+                          <strong>Snacks:</strong> Snacks<br />
+                          <strong>Dinner:</strong> Staples, Curries, Side Dishes, Accompaniments, Fish, Special Items
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Data Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Meal Data (One per line)
+                    </label>
+                    <textarea
+                      value={bulkImportData}
+                      onChange={(e) => setBulkImportData(e.target.value)}
+                      className="w-full h-64 font-mono text-sm p-4 rounded-xl border-2 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      placeholder="Paste your meal data here...&#10;&#10;CSV Example:&#10;Idli, Soft steamed rice cakes, breakfast, Tiffin&#10;Dosa, Crispy rice crepe, breakfast, Tiffin&#10;Coconut Chutney, Fresh coconut chutney, breakfast, Chutney&#10;&#10;JSON Example:&#10;{&quot;name&quot;:&quot;Idli&quot;,&quot;description&quot;:&quot;Soft steamed rice cakes&quot;,&quot;category&quot;:&quot;breakfast&quot;,&quot;subcategory&quot;:&quot;Tiffin&quot;}&#10;{&quot;name&quot;:&quot;Dosa&quot;,&quot;description&quot;:&quot;Crispy rice crepe&quot;,&quot;category&quot;:&quot;breakfast&quot;,&quot;subcategory&quot;:&quot;Tiffin&quot;}"
+                    />
+                  </div>
+
+                  {/* Preview Section */}
+                  {previewMeals.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                      <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                        <span className="bg-green-600 text-white px-2 py-1 rounded-full text-xs">
+                          {previewMeals.length}
+                        </span>
+                        Meals Ready to Import
+                      </h4>
+                      <div className="max-h-48 overflow-y-auto space-y-2">
+                        {previewMeals.slice(0, 10).map((meal, idx) => (
+                          <div key={idx} className="bg-white p-3 rounded-lg border border-green-100 flex items-start gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Utensils className="h-6 w-6 text-green-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 truncate">{meal.name}</p>
+                              <p className="text-xs text-gray-500 truncate">{meal.description}</p>
+                              <div className="flex gap-2 mt-1">
+                                <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{meal.category}</span>
+                                {meal.subcategory && (
+                                  <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{meal.subcategory}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {previewMeals.length > 10 && (
+                          <p className="text-xs text-gray-500 text-center py-2">
+                            ... and {previewMeals.length - 10} more meals
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-4">
+                    <motion.button
+                      onClick={() => {
+                        setIsBulkImportOpen(false);
+                        setBulkImportData("");
+                        setPreviewMeals([]);
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+                    >
+                      Cancel
+                    </motion.button>
+                    <motion.button
+                      onClick={previewMeals.length > 0 ? handleConfirmImport : handlePreviewImport}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled={!bulkImportData.trim()}
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      <Upload size={20} />
+                      {previewMeals.length > 0 ? `Confirm Import (${previewMeals.length})` : 'Preview Meals'}
+                    </motion.button>
+                  </div>
                 </div>
               </motion.div>
             </div>

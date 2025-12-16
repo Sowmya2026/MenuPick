@@ -46,6 +46,17 @@ const PublicRoute = ({ children }) => {
     return children;
 };
 
+// Scroll to top on route change
+const ScrollToTop = () => {
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [pathname]);
+
+    return null;
+};
+
 
 
 // Route Handler Component
@@ -54,6 +65,7 @@ const RouteHandler = () => {
 
     return (
         <>
+            <ScrollToTop />
             <Routes>
                 {/* Public routes - accessible to everyone */}
                 <Route path="/home" element={<Home />} />
