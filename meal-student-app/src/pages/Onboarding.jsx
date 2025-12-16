@@ -20,7 +20,7 @@ const Onboarding = () => {
   const slides = [
     {
       icon: ChefHat,
-      title: "Welcome to MenuPick",
+      title: "Welcome to Menu",
       description: "Your personal campus dining companion. Discover meals, plan your week, and never miss a meal.",
       color: theme.colors.primary,
     },

@@ -192,89 +192,91 @@ const MenuImport = () => {
     };
 
     return (
-        <div className="p-6 max-w-6xl mx-auto">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-green-900">Import Weekly Menu</h1>
-                <p className="text-green-700 mt-2">
-                    Paste your JSON menu data here to update the student app directly.
-                    Ensure it follows the structure: <code>veg/non-veg/special</code> &gt; <code>days</code>.
-                </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Input Section */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-semibold flex items-center gap-2">
-                            <FileJson className="w-5 h-5 text-blue-500" />
-                            JSON Input
-                        </h2>
-                        <button
-                            onClick={loadExampleTemplate}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                        >
-                            Load Template
-                        </button>
-                    </div>
-
-                    <textarea
-                        value={jsonInput}
-                        onChange={handleInputChange}
-                        className="w-full h-[500px] font-mono text-sm p-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Paste your menu JSON here..."
-                    />
+        <div className="p-6 space-y-6 bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 min-h-screen">
+            <div className="space-y-6">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-green-900">Import Weekly Menu</h1>
+                    <p className="text-green-700 mt-2">
+                        Paste your JSON menu data here to update the student app directly.
+                        Ensure it follows the structure: <code>veg/non-veg/special</code> &gt; <code>days</code>.
+                    </p>
                 </div>
 
-                {/* Preview Section */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <CheckCircle className={`w-5 h-5 ${parsedPreview ? 'text-green-500' : 'text-gray-400'}`} />
-                        Preview & Validation
-                    </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Input Section */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold flex items-center gap-2">
+                                <FileJson className="w-5 h-5 text-blue-500" />
+                                JSON Input
+                            </h2>
+                            <button
+                                onClick={loadExampleTemplate}
+                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                                Load Template
+                            </button>
+                        </div>
 
-                    <div className="flex-1 bg-gray-50 rounded-lg p-4 overflow-auto border border-gray-100">
-                        {parsedPreview ? (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg border border-green-100">
-                                    <CheckCircle className="w-5 h-5" />
-                                    <span className="font-medium">Valid JSON Format</span>
-                                </div>
-
-                                {/* Preview Categories */}
-                                {Object.keys(parsedPreview).map(category => (
-                                    <div key={category} className="border border-gray-200 rounded-lg p-3">
-                                        <h3 className="font-bold capitalize text-gray-800 mb-2">{category} Menu</h3>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {parsedPreview[category]?.days && Object.keys(parsedPreview[category].days).map(day => (
-                                                <div key={day} className="bg-white p-1 px-2 rounded border border-gray-100 text-xs text-center text-gray-600">
-                                                    {day}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                                <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
-                                <p>Waiting for valid JSON input...</p>
-                            </div>
-                        )}
+                        <textarea
+                            value={jsonInput}
+                            onChange={handleInputChange}
+                            className="w-full h-[500px] font-mono text-sm p-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Paste your menu JSON here..."
+                        />
                     </div>
 
-                    <div className="mt-6 pt-6 border-t border-gray-100">
-                        <button
-                            onClick={handleSaveMenu}
-                            disabled={!parsedPreview || loading}
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {loading ? (
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    {/* Preview Section */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+                        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <CheckCircle className={`w-5 h-5 ${parsedPreview ? 'text-green-500' : 'text-gray-400'}`} />
+                            Preview & Validation
+                        </h2>
+
+                        <div className="flex-1 bg-gray-50 rounded-lg p-4 overflow-auto border border-gray-100">
+                            {parsedPreview ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg border border-green-100">
+                                        <CheckCircle className="w-5 h-5" />
+                                        <span className="font-medium">Valid JSON Format</span>
+                                    </div>
+
+                                    {/* Preview Categories */}
+                                    {Object.keys(parsedPreview).map(category => (
+                                        <div key={category} className="border border-gray-200 rounded-lg p-3">
+                                            <h3 className="font-bold capitalize text-gray-800 mb-2">{category} Menu</h3>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {parsedPreview[category]?.days && Object.keys(parsedPreview[category].days).map(day => (
+                                                    <div key={day} className="bg-white p-1 px-2 rounded border border-gray-100 text-xs text-center text-gray-600">
+                                                        {day}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             ) : (
-                                <Save className="w-5 h-5" />
+                                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                                    <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
+                                    <p>Waiting for valid JSON input...</p>
+                                </div>
                             )}
-                            {loading ? 'Publishing...' : 'Publish Menu to Live App'}
-                        </button>
+                        </div>
+
+                        <div className="mt-6 pt-6 border-t border-gray-100">
+                            <button
+                                onClick={handleSaveMenu}
+                                disabled={!parsedPreview || loading}
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {loading ? (
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <Save className="w-5 h-5" />
+                                )}
+                                {loading ? 'Publishing...' : 'Publish Menu to Live App'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

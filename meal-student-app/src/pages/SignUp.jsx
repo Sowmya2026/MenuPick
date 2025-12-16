@@ -96,7 +96,7 @@ const SignUp = () => {
               Create Account
             </h2>
             <p className="text-sm sm:text-base" style={{ color: theme.colors.textSecondary }}>
-              Join MenuPick today
+              Join Menu today
             </p>
           </div>
 

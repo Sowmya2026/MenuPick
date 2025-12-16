@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
+import { doc, setDoc, increment } from 'firebase/firestore';
+import { db } from '../services/firebaseConfig';
 
 const InstallPrompt = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -34,6 +36,18 @@ const InstallPrompt = () => {
         // Wait for the user to respond to the prompt
         const { outcome } = await deferredPrompt.userChoice;
         console.log(`User response to the install prompt: ${outcome}`);
+
+        if (outcome === 'accepted') {
+            try {
+                // Track successful install
+                const statsRef = doc(db, "stats", "system");
+                await setDoc(statsRef, {
+                    totalInstalls: increment(1)
+                }, { merge: true });
+            } catch (error) {
+                console.error("Error tracking install:", error);
+            }
+        }
 
         // We've used the prompt, and can't use it again, throw it away
         setDeferredPrompt(null);

@@ -107,7 +107,7 @@ const Splash = () => {
           transition={{ delay: 0.3 }}
         >
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-2">
-            MenuPick
+            Menu
           </h1>
           <p className="text-lg sm:text-xl text-white/80 mb-8">
             Campus Dining Made Simple

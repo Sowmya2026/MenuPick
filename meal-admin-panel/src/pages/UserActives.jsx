@@ -14,7 +14,7 @@ import {
     Clock
 } from "lucide-react";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
 
 // --- Simple Chart Components (Reused/Adapted) ---
@@ -101,7 +101,8 @@ const UserActives = () => {
         totalRegistered: 0,
         dailyActive: 0,
         monthlyActive: 0,
-        newUsersToday: 0
+        newUsersToday: 0,
+        totalInstalls: 0
     });
     const [selectedUser, setSelectedUser] = useState(null);
 
@@ -131,6 +132,18 @@ const UserActives = () => {
         try {
             setLoading(true);
             const querySnapshot = await getDocs(collection(db, "users"));
+
+            // Fetch system stats for installs
+            let installCount = 0;
+            try {
+                const statsSnap = await getDoc(doc(db, "stats", "system"));
+                if (statsSnap.exists()) {
+                    installCount = statsSnap.data().totalInstalls || 0;
+                }
+            } catch (err) {
+                console.error("Error fetching stats:", err);
+            }
+
             const userList = [];
             let studentCount = 0;
             let dailyActiveCount = 0;
@@ -208,7 +221,8 @@ const UserActives = () => {
                 totalRegistered: studentCount,
                 dailyActive: dailyActiveCount,
                 monthlyActive: monthlyActiveCount,
-                newUsersToday: newUsersCount
+                newUsersToday: newUsersCount,
+                totalInstalls: installCount
             });
 
         } catch (error) {
@@ -241,7 +255,7 @@ const UserActives = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <StatsCard
                     title="Total Registered"
                     value={stats.totalRegistered}
@@ -269,6 +283,14 @@ const UserActives = () => {
                     icon={TrendingUp}
                     color="orange"
                     trend="+8%"
+                />
+                <StatsCard
+                    title="Total App Installs"
+                    value={stats.totalInstalls}
+                    icon={Download}
+                    color="blue"
+                    trend="Lifetime"
+                    className="col-span-2 lg:col-span-1"
                 />
             </div>
 
@@ -526,7 +548,7 @@ const UserActives = () => {
 };
 
 // Helper Sub-component for Stats
-const StatsCard = ({ title, value, icon: Icon, color, trend }) => {
+const StatsCard = ({ title, value, icon: Icon, color, trend, className = "" }) => {
     const colors = {
         blue: { bg: 'bg-blue-50', text: 'text-blue-600', iconBg: 'bg-blue-100' },
         green: { bg: 'bg-green-50', text: 'text-green-600', iconBg: 'bg-green-100' },
@@ -537,7 +559,7 @@ const StatsCard = ({ title, value, icon: Icon, color, trend }) => {
     const activeColor = colors[color] || colors.blue;
 
     return (
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className={`bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow ${className}`}>
             <div className="flex items-start justify-between mb-4">
                 <div className={`p-3 rounded-lg ${activeColor.iconBg} ${activeColor.text}`}>
                     <Icon size={24} />

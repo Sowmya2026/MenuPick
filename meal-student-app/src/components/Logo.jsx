@@ -58,7 +58,7 @@ const Logo = ({ size = 'md', withText = true, className = '' }) => {
                             color: theme.colors.text,
                         }}
                     >
-                        MenuPick
+                        Menu
                     </span>
                     {size !== 'sm' && (
                         <span

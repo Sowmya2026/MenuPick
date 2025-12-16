@@ -84,7 +84,7 @@ const AdminSetup = () => {
   // Show loading spinner if auth is loading or if we are checking admin status (and have a user)
   if (authLoading || (currentUser && checking)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 flex items-center justify-center">
         <div className="text-center">
           <Loader className="h-12 w-12 animate-spin text-green-600 mx-auto mb-4" />
           <p className="text-gray-600">Checking admin status...</p>
@@ -105,7 +105,7 @@ const AdminSetup = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
         <div className="text-center mb-8">
           <div className="bg-yellow-100 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

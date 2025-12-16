@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Utensils, User, MessageSquare } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -8,18 +8,28 @@ import { useMenu } from "../context/MenuContext";
 
 const BottomNavigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { theme } = useTheme();
   const { isMenuModalOpen } = useMenu();
+  const isGuest = localStorage.getItem('isGuest') === 'true';
 
   const navItems = [
-    { path: "/", icon: Home, label: "Home" },
-
-    { path: "/feedback", icon: MessageSquare, label: "Feedback" },
-    { path: "/profile", icon: User, label: "Profile" },
+    { path: "/", icon: Home, label: "Home" }, // Home is accessible
+    { path: "/feedback", icon: MessageSquare, label: "Feedback" }, // Restricted
+    { path: "/profile", icon: User, label: "Profile" }, // Restricted
   ];
 
-  if (!currentUser || isMenuModalOpen) return null;
+  // Show if logged in OR is guest (unless modal is open)
+  if ((!currentUser && !isGuest) || isMenuModalOpen) return null;
+
+  const handleNavClick = (e, path) => {
+    // If guest tries to access protected routes
+    if (!currentUser && (path === '/feedback' || path === '/profile')) {
+      e.preventDefault();
+      navigate('/signup');
+    }
+  };
 
   return (
     <>
@@ -45,12 +55,13 @@ const BottomNavigation = () => {
           >
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname === item.path || (item.path === '/' && location.pathname === '/home');
 
               return (
                 <Link
                   key={item.path}
                   to={item.path}
+                  onClick={(e) => handleNavClick(e, item.path)}
                   className="relative flex items-center"
                 >
                   <motion.div

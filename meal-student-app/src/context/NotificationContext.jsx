@@ -252,14 +252,14 @@ export const NotificationProvider = ({ children }) => {
           setNotifications((prev) => ({ ...prev, pushNotifications: true }));
           showSuccess(
             "Notifications Enabled",
-            "You'll receive updates, alerts, and offers from MenuPick!"
+            "You'll receive updates, alerts, and offers from Menu!"
           );
         } catch (error) {
           // Permission granted but token failed - still enable notifications
           setNotifications((prev) => ({ ...prev, pushNotifications: true }));
           showSuccess(
             "Notifications Enabled",
-            "You'll receive updates and alerts from MenuPick!"
+            "You'll receive updates and alerts from Menu!"
           );
         }
       } else {
@@ -378,7 +378,7 @@ export const NotificationProvider = ({ children }) => {
       id: Date.now(),
       type: data?.type || "general",
       subType: data?.subType,
-      title: notification?.title || "MenuPick",
+      title: notification?.title || "Menu",
       message: notification?.body || "You have a new notification",
       timestamp: new Date(),
       data: data || {},
@@ -714,7 +714,7 @@ const PermissionModal = () => {
             Enable Notifications
           </h3>
           <p className="text-white text-sm opacity-90">
-            Would you like to receive updates, alerts, and offers from MenuPick?
+            Would you like to receive updates, alerts, and offers from Menu?
           </p>
         </div>
 

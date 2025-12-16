@@ -101,9 +101,10 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 p-4 sm:p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+
+    <div className="p-6 space-y-6 bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 min-h-screen">
+      <div className="space-y-6">
+        <div className="space-y-6">
           {/* Header */}
           <motion.div
             className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
@@ -124,7 +125,7 @@ const Profile = () => {
 
         {/* Profile Card - Full Width */}
         <motion.div
-          className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/30 p-4 sm:p-6"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6"
           variants={itemVariants}
           whileHover="hover"
         >
@@ -173,7 +174,7 @@ const Profile = () => {
         >
           {/* Activity Card */}
           <motion.div
-            className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/30 p-4 sm:p-6"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6"
             variants={itemVariants}
             whileHover="hover"
           >
@@ -201,7 +202,7 @@ const Profile = () => {
 
           {/* Security Card */}
           <motion.div
-            className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/30 p-4 sm:p-6"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6"
             variants={itemVariants}
             whileHover="hover"
           >
@@ -237,7 +238,7 @@ const Profile = () => {
         >
           {/* Account Information */}
           <motion.div
-            className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/30 p-4 sm:p-6"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6"
             variants={itemVariants}
             whileHover="hover"
           >
@@ -277,7 +278,7 @@ const Profile = () => {
 
           {/* Preferences */}
           <motion.div
-            className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/30 p-4 sm:p-6"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6"
             variants={itemVariants}
             whileHover="hover"
           >
@@ -315,7 +316,7 @@ const Profile = () => {
 
         {/* Quick Actions - Matching Dashboard Style */}
         <motion.div
-          className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/30 overflow-hidden"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}

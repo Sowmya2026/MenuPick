@@ -332,8 +332,8 @@ const MealManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+    <div className="p-6 space-y-6 bg-gradient-to-br from-green-100 via-emerald-100 to-lime-100 min-h-screen">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <motion.div
@@ -537,7 +537,7 @@ const MealManagement = () => {
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-              className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg text-sm font-medium text-gray-700 hover:bg-white/90 transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-white border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white/90 transition-all"
             >
               <Filter className="h-4 w-4" />
               Filters
@@ -577,7 +577,7 @@ const MealManagement = () => {
             <input
               type="text"
               placeholder="Search meals..."
-              className="w-64 pl-10 pr-4 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all"
+              className="w-64 pl-10 pr-4 py-2 text-sm bg-white border-gray-200 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -586,7 +586,7 @@ const MealManagement = () => {
           {/* Filters */}
           <div className="flex items-center gap-3">
             <select
-              className="px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 transition-all"
+              className="px-3 py-2 text-sm bg-white border-gray-200 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 transition-all"
               value={selectedMessType}
               onChange={(e) => setSelectedMessType(e.target.value)}
             >
@@ -599,7 +599,7 @@ const MealManagement = () => {
             </select>
 
             <select
-              className="px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 transition-all"
+              className="px-3 py-2 text-sm bg-white border-gray-200 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 transition-all"
               value={selectedCategory}
               onChange={(e) => {
                 setSelectedCategory(e.target.value);
@@ -615,7 +615,7 @@ const MealManagement = () => {
             </select>
 
             <select
-              className="px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 disabled:opacity-50 transition-all"
+              className="px-3 py-2 text-sm bg-white border-gray-200 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 w-32 disabled:opacity-50 transition-all"
               value={selectedSubcategory}
               onChange={(e) => {
                 setSelectedSubcategory(e.target.value);
@@ -653,7 +653,7 @@ const MealManagement = () => {
 
         {/* Mobile Filters Panel - Search Removed */}
         <div
-          className={`md:hidden bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg mb-4 ${mobileFiltersOpen ? "block" : "hidden"
+          className={`md:hidden bg-white border-gray-200 rounded-lg mb-4 ${mobileFiltersOpen ? "block" : "hidden"
             }`}
         >
           <div className="p-4 space-y-4">
@@ -665,7 +665,7 @@ const MealManagement = () => {
                   Mess Type
                 </label>
                 <select
-                  className="w-full px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all"
+                  className="w-full px-3 py-2 text-sm bg-white border-gray-200 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all"
                   value={selectedMessType}
                   onChange={(e) => setSelectedMessType(e.target.value)}
                 >
@@ -683,7 +683,7 @@ const MealManagement = () => {
                   Category
                 </label>
                 <select
-                  className="w-full px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all"
+                  className="w-full px-3 py-2 text-sm bg-white border-gray-200 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
@@ -702,7 +702,7 @@ const MealManagement = () => {
                 Subcategory
               </label>
               <select
-                className="w-full px-3 py-2 text-sm bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 disabled:opacity-50 transition-all"
+                className="w-full px-3 py-2 text-sm bg-white border-gray-200 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/50 disabled:opacity-50 transition-all"
                 value={selectedSubcategory}
                 onChange={(e) => setSelectedSubcategory(e.target.value)}
                 disabled={selectedCategory === "all"}

@@ -10,7 +10,10 @@ const MainNavbar = () => {
     return null;
   }
 
-  return currentUser ? <LoggedInNavbar /> : <PublicNavbar />;
+  // Check for guest mode
+  const isGuest = localStorage.getItem('isGuest') === 'true';
+
+  return (currentUser || isGuest) ? <LoggedInNavbar /> : <PublicNavbar />;
 };
 
 export default MainNavbar;

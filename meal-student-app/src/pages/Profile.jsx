@@ -14,10 +14,7 @@ import {
   X,
   LogOut,
   Settings,
-  Utensils,
-  Heart,
-  Star,
-  TrendingUp,
+
   ArrowRight,
   Sparkles,
 } from 'lucide-react';
@@ -80,12 +77,7 @@ const Profile = () => {
     }
   };
 
-  const stats = [
-    { icon: Utensils, label: 'Meals', value: '47' },
-    { icon: Heart, label: 'Favorites', value: '12' },
-    { icon: Star, label: 'Reviews', value: '8' },
-    { icon: TrendingUp, label: 'Days', value: '23' },
-  ];
+
 
   const InfoField = ({ icon: Icon, label, inputRef, editable = true, defaultValue = '' }) => (
     <div
@@ -188,35 +180,7 @@ const Profile = () => {
       </div>
 
       <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-              className="rounded-xl sm:rounded-2xl p-2 sm:p-3 text-center"
-              style={{
-                background: theme.colors.card,
-                border: `1px solid ${theme.colors.border}`,
-              }}
-            >
-              <div
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mx-auto mb-1 sm:mb-2"
-                style={{ background: theme.colors.backgroundSecondary }}
-              >
-                <stat.icon className="w-3 h-3 sm:w-4 sm:h-4" style={{ color: theme.colors.primary }} />
-              </div>
-              <div className="text-base sm:text-lg font-bold" style={{ color: theme.colors.text }}>
-                {stat.value}
-              </div>
-              <div className="text-[10px] sm:text-xs" style={{ color: theme.colors.textSecondary }}>
-                {stat.label}
-              </div>
-            </motion.div>
-          ))}
-        </div>
+
 
         {/* Personal Information */}
         <motion.div

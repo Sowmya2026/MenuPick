@@ -6,7 +6,7 @@ import {
 } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import MainNavbar from './components/MainNavbar';
 import Layout from './components/Layout';
@@ -15,8 +15,9 @@ import MealSelection from './pages/MealSelection';
 import Feedback from './pages/Feedback';
 import SignUp from './pages/SignUp';
 import SignIn from './pages/SignIn';
-import Splash from './pages/Splash';
-import Onboarding from './pages/Onboarding';
+// Removed Splash and Onboarding as they are unused
+import Welcome from './pages/Welcome';       // New Landing Page
+import InstallPrompt from './components/InstallPrompt'; // Global Install Prompt
 import Profile from './pages/Profile';
 import CompleteProfile from './pages/CompleteProfile';
 import Notifications from './pages/Notifications';
@@ -29,7 +30,8 @@ const ProtectedRoute = ({ children }) => {
     const location = useLocation();
 
     if (!currentUser) {
-        return <Navigate to="/signin" replace state={{ from: location }} />;
+        // Redirect to SignUp if trying to access protected route (Feedback, Profile)
+        return <Navigate to="/signup" replace state={{ from: location }} />;
     }
 
     return children;
@@ -57,18 +59,32 @@ const ScrollToTop = () => {
     return null;
 };
 
-
-
 // Route Handler Component
 const RouteHandler = () => {
     const { currentUser } = useAuth();
+    const isGuest = localStorage.getItem('isGuest') === 'true';
 
     return (
         <>
             <ScrollToTop />
             <Routes>
-                {/* Public routes - accessible to everyone */}
+                {/* Landing / Welcome Page */}
+                <Route
+                    path="/welcome"
+                    element={
+                        (currentUser || isGuest) ? <Navigate to="/" replace /> : <Welcome />
+                    }
+                />
+
+                {/* Home - Accessible to Users AND Guests */}
                 <Route path="/home" element={<Home />} />
+                <Route
+                    path="/"
+                    element={
+                        (currentUser || isGuest) ? <Home /> : <Navigate to="/welcome" replace />
+                    }
+                />
+
 
                 {/* Auth routes - only for non-logged in users */}
                 <Route
@@ -112,18 +128,7 @@ const RouteHandler = () => {
                     }
                 />
 
-
-
                 {/* Protected routes - only for logged in users */}
-                <Route
-                    path="/"
-                    element={
-                        <ProtectedRoute>
-                            <Home />
-                        </ProtectedRoute>
-                    }
-                />
-
                 <Route
                     path="/selection"
                     element={
@@ -182,13 +187,7 @@ const RouteHandler = () => {
                 {/* Redirect any unknown routes */}
                 <Route
                     path="*"
-                    element={
-                        currentUser ? (
-                            <Navigate to="/" replace />
-                        ) : (
-                            <Navigate to="/home" replace />
-                        )
-                    }
+                    element={<Navigate to="/" replace />}
                 />
             </Routes>
         </>
@@ -198,34 +197,11 @@ const RouteHandler = () => {
 // Main App Content Component
 function AppContent() {
     const { currentUser, loading } = useAuth();
-    const { theme, animationsEnabled } = useTheme();
-    const [showSplash, setShowSplash] = useState(true);
-    const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
-    const [isInitializing, setIsInitializing] = useState(true);
+    const { theme } = useTheme();
 
-    useEffect(() => {
-        const initializeApp = () => {
-            const onboardingCompleted =
-                localStorage.getItem('hasCompletedOnboarding') === 'true';
-            setHasCompletedOnboarding(onboardingCompleted);
+    // Removed Splash and Onboarding logic as they are replaced by Welcome page logic handled in routing
 
-            const splashTimer = setTimeout(() => {
-                setShowSplash(false);
-                setIsInitializing(false);
-            }, 1200); // Reduced from 2000ms to 1200ms
-
-            return () => clearTimeout(splashTimer);
-        };
-
-        initializeApp();
-    }, []);
-
-    const handleOnboardingComplete = () => {
-        localStorage.setItem('hasCompletedOnboarding', 'true');
-        setHasCompletedOnboarding(true);
-    };
-
-    if (loading || isInitializing) {
+    if (loading) {
         return (
             <div
                 className="min-h-screen flex items-center justify-center"
@@ -242,25 +218,21 @@ function AppContent() {
         );
     }
 
-    // Show splash screen for first-time users
-    if (showSplash && !hasCompletedOnboarding && !currentUser) {
-        return <Splash onComplete={() => setShowSplash(false)} />;
-    }
-
-    // Show onboarding for first-time users
-    if (!hasCompletedOnboarding && !currentUser && !showSplash) {
-        return <Onboarding onComplete={handleOnboardingComplete} />;
-    }
-
     // MAIN APP LAYOUT
+    // Check for guest mode
+    const isGuest = localStorage.getItem('isGuest') === 'true';
+
     return (
         <div
             className="min-h-screen transition-colors duration-300"
             style={{ background: theme.colors.background }}
         >
+            {/* Global Install Prompt - Shows whenever browser allows */}
+            <InstallPrompt />
+
             {/* MainNavbar will conditionally render the correct navbar */}
             <MainNavbar />
-            <main className={currentUser ? 'pt-16' : ''}>
+            <main className={(currentUser || isGuest) ? 'pt-16' : ''}>
                 <RouteHandler />
             </main>
 
