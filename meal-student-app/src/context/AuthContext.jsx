@@ -9,7 +9,8 @@ import {
   setDoc,
   collection,
   getDocs,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot
 } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
 import { showError, showSuccess, showWarning, showInfo } from '../utils/alertUtils'
@@ -374,8 +375,10 @@ export const AuthProvider = ({ children }) => {
     return result
   }
 
-  // SIMPLIFIED Initialize auth state
-  const initializeAuthState = async () => {
+  // Initialize auth state with real-time Firestore sync
+  const initializeAuthState = () => {
+    let firestoreUnsubscribe = null;
+
     try {
       setLoading(true)
 
@@ -387,30 +390,66 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Then set up Firebase auth listener
-      const unsubscribe = authService.onAuthStateChanged(async (user) => {
+      const authUnsubscribe = authService.onAuthStateChanged(async (user) => {
+        // Unsubscribe from previous user doc if exists
+        if (firestoreUnsubscribe) {
+          firestoreUnsubscribe();
+          firestoreUnsubscribe = null;
+        }
+
         try {
           if (user) {
             console.log('🔄 Firebase auth state changed: User authenticated')
 
-            // Get fresh data from Firestore
-            const userState = await setUserState(user)
+            // Setup real-time listener for user profile
+            const userRef = doc(db, 'users', user.uid);
+            firestoreUnsubscribe = onSnapshot(userRef, (docSnap) => {
+              if (docSnap.exists()) {
+                const profileData = docSnap.data();
 
-            if (userState) {
-              console.log('✅ User state synchronized with Firebase')
-            }
+                // Merge auth user + profile data
+                const userData = {
+                  uid: user.uid,
+                  email: user.email,
+                  displayName: user.displayName || profileData?.displayName || '',
+                  photoURL: user.photoURL || profileData?.photoURL || '',
+                  metadata: user.metadata || {},
+                  ...profileData,
+                  isRegistered: profileData?.isRegistered || false,
+                  profileCompleted: profileData?.profileCompleted || false,
+                  studentId: profileData?.studentId || '',
+                  messPreference: profileData?.messPreference || 'veg',
+                };
+
+                console.log('🔄 Real-time user update received');
+                setCurrentUser(userData);
+                saveSessionToStorage(userData);
+              }
+            }, (error) => {
+              console.error("Error in user snapshot listener:", error);
+            });
+
+            // We also do one-time fetch/set via setUserState to ensure we handle the promise if needed,
+            // but the listener above is the primary sync mechanism.
+            // Actually, to avoid race conditions, we stick to the listener as the source of truth for updates.
           } else {
             console.log('🔒 Firebase auth state changed: No user')
-            await setUserState(null)
+            setCurrentUser(null)
+            saveSessionToStorage(null)
           }
         } catch (error) {
           console.error('❌ Auth state change error:', error)
-          await setUserState(null)
+          setCurrentUser(null)
         } finally {
           setLoading(false)
         }
       })
 
-      return unsubscribe
+      // Return a function that unsubscribes BOTH
+      return () => {
+        authUnsubscribe();
+        if (firestoreUnsubscribe) firestoreUnsubscribe();
+      }
     } catch (error) {
       console.error('❌ Error initializing auth state:', error)
       setLoading(false)
@@ -419,10 +458,13 @@ export const AuthProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    const unsubscribe = initializeAuthState()
+    const unsubscribeFn = initializeAuthState()
 
     return () => {
-      unsubscribe.then(unsub => unsub && unsub()).catch(console.error)
+      // The result of initializeAuthState is now a synchronous cleanup function (or promise of one? No, I made it sync in replacement)
+      // Wait, original was async but I removed async keyword from initializeAuthState definition in replacement
+      // But authService.onAuthStateChanged is sync (returns unsub), so initializeAuthState can be sync.
+      if (unsubscribeFn) unsubscribeFn();
     }
   }, [])
 

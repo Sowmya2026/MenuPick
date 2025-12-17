@@ -203,24 +203,6 @@ function AppContent() {
 
     // Removed Splash and Onboarding logic as they are replaced by Welcome page logic handled in routing
 
-    if (loading) {
-        return (
-            <div
-                className="min-h-screen flex items-center justify-center"
-                style={{ background: theme.colors.background }}
-            >
-                <div className="text-center">
-                    <div
-                        className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
-                        style={{ borderColor: theme.colors.primary }}
-                    />
-                    <p style={{ color: theme.colors.textSecondary }}>Loading...</p>
-                </div>
-            </div>
-        );
-    }
-
-    // MAIN APP LAYOUT
     // Check for guest mode
     const isGuest = localStorage.getItem('isGuest') === 'true';
 
@@ -252,6 +234,23 @@ function AppContent() {
             trackGuest();
         }
     }, [isGuest, currentUser]);
+
+    if (loading) {
+        return (
+            <div
+                className="min-h-screen flex items-center justify-center"
+                style={{ background: theme.colors.background }}
+            >
+                <div className="text-center">
+                    <div
+                        className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+                        style={{ borderColor: theme.colors.primary }}
+                    />
+                    <p style={{ color: theme.colors.textSecondary }}>Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div

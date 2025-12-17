@@ -10,8 +10,8 @@ import AppContent from './AppContent';
 function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <ThemeProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <ThemeProvider>
           <MealProvider>
             <MenuProvider>
               <NotificationProvider>
@@ -42,8 +42,8 @@ function App() {
               </NotificationProvider>
             </MenuProvider>
           </MealProvider>
-        </AuthProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </Router>
   );
 }

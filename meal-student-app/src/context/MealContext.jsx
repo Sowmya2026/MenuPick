@@ -1,17 +1,19 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
+import { useAuth } from './AuthContext'
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
   getDocs,
   query,
   orderBy,
   serverTimestamp,
   setDoc,
   getDoc,
-  writeBatch
+  writeBatch,
+  onSnapshot
 } from 'firebase/firestore'
 import { db } from '../services/firebaseConfig'
 import toast from 'react-hot-toast'
@@ -28,7 +30,7 @@ const MAX_ITEMS = {
   },
   lunch: {
     'veg': { 'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3 },
-    'non-veg': {'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3, 'Chicken': 3 },
+    'non-veg': { 'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3, 'Chicken': 3 },
     'special': { 'Rice': 7, 'Curry': 14, 'Accompaniments': 7, 'Dessert': 3, 'Chicken': 3, 'Fish': 2 }
   },
   snacks: {
@@ -39,7 +41,7 @@ const MAX_ITEMS = {
   dinner: {
     'veg': { 'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Accompaniments': 7 },
     'non-veg': { 'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Fish': 2 },
-    'special': {'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Special Items': 3 }
+    'special': { 'Staples': 7, 'Curries': 14, 'Side Dishes': 7, 'Special Items': 3 }
   }
 }
 
@@ -73,23 +75,23 @@ export const MealProvider = ({ children }) => {
       dinner: {
         'veg': ['Staples', 'Curries', 'Side Dishes', 'Accompaniments'],
         'non-veg': ['Staples', 'Curries', 'Side Dishes', 'Fish'],
-        'special': ['Staples', 'Curries', 'Side Dishes',  'Special Items']
+        'special': ['Staples', 'Curries', 'Side Dishes', 'Special Items']
       }
     }
-    
+
     return subcategoriesMap[category]?.[messType] || ['General']
   }
 
   // Helper function to check if a subcategory has reached its maximum items for student selections
   const checkSubcategoryLimit = useCallback((category, messType, subcategory, currentSelections = {}) => {
     // Count current selections in this subcategory
-    const currentCount = Object.values(currentSelections).filter(selection => 
-      selection.category === category && 
+    const currentCount = Object.values(currentSelections).filter(selection =>
+      selection.category === category &&
       selection.subcategory === subcategory
     ).length
-    
+
     const maxAllowed = MAX_ITEMS[category]?.[messType]?.[subcategory] || 0
-    
+
     return {
       currentCount,
       maxAllowed,
@@ -102,12 +104,12 @@ export const MealProvider = ({ children }) => {
     try {
       const studentsRef = collection(db, 'students')
       const querySnapshot = await getDocs(studentsRef)
-      
+
       const studentsData = []
       querySnapshot.forEach((doc) => {
         studentsData.push({ id: doc.id, ...doc.data() })
       })
-      
+
       setAllStudents(studentsData)
       return studentsData
     } catch (error) {
@@ -120,29 +122,29 @@ export const MealProvider = ({ children }) => {
   // Fetch all meals
   useEffect(() => {
     setLoading(true)
-    
+
     const fetchAllMeals = async () => {
       try {
         const allMeals = []
-        
+
         // Fetch from all mess types
         for (const messType of messTypes) {
           // Fetch from all categories
           for (const category of categories) {
             const subcategories = getSubcategories(category, messType)
-            
+
             // Fetch from all subcategories
             for (const subcategory of subcategories) {
               try {
                 // Create collection reference with proper path
                 const mealsRef = collection(db, 'Meals', messType, 'categories', category, 'subcategories', subcategory, 'items')
                 const q = query(mealsRef, orderBy('createdAt', 'desc'))
-                
+
                 const querySnapshot = await getDocs(q)
                 querySnapshot.forEach((doc) => {
                   const data = doc.data()
-                  allMeals.push({ 
-                    id: doc.id, 
+                  allMeals.push({
+                    id: doc.id,
                     ...data,
                     messType,
                     category,
@@ -160,7 +162,7 @@ export const MealProvider = ({ children }) => {
             }
           }
         }
-        
+
         setMeals(allMeals)
         setLoading(false)
       } catch (error) {
@@ -178,11 +180,11 @@ export const MealProvider = ({ children }) => {
   const fetchStudentSelections = useCallback(async (studentId) => {
     try {
       if (!studentId) return
-      
+
       // Updated path to students/{id}/preferences/mealSelections
       const selectionsRef = doc(db, 'students', studentId, 'preferences', 'mealSelections')
       const docSnap = await getDoc(selectionsRef)
-      
+
       if (docSnap.exists()) {
         const data = docSnap.data()
         setStudentSelections(prev => ({
@@ -197,6 +199,26 @@ export const MealProvider = ({ children }) => {
       return null
     }
   }, [])
+
+  const { currentUser } = useAuth();
+
+  // Sync selections from Firestore
+  useEffect(() => {
+    let unsubscribe;
+    if (currentUser?.uid) {
+      const selectionsRef = doc(db, 'students', currentUser.uid, 'preferences', 'mealSelections');
+      unsubscribe = onSnapshot(selectionsRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setStudentSelections(prev => ({
+            ...prev,
+            [currentUser.uid]: data
+          }));
+        }
+      });
+    }
+    return () => unsubscribe && unsubscribe();
+  }, [currentUser]);
 
   // Clear non-veg selections when veg is selected
   const clearNonVegSelections = useCallback(async (studentId, currentSelections = {}) => {
@@ -223,13 +245,13 @@ export const MealProvider = ({ children }) => {
 
         // Update Firestore
         const selectionsRef = doc(db, 'students', studentId, 'preferences', 'mealSelections')
-        batch.set(selectionsRef, { 
+        batch.set(selectionsRef, {
           selections: updatedSelections,
           updatedAt: serverTimestamp()
         }, { merge: true })
 
         await batch.commit()
-        
+
         // Update local state
         setStudentSelections(prev => ({
           ...prev,
@@ -278,7 +300,7 @@ export const MealProvider = ({ children }) => {
       if (hasVegSelection) {
         // Get current selections to check for existing non-veg items
         const currentSelections = studentSelections[studentId]?.selections || {}
-        
+
         // Clear non-veg selections and get updated selections
         finalSelections = await clearNonVegSelections(studentId, {
           ...currentSelections,
@@ -291,17 +313,17 @@ export const MealProvider = ({ children }) => {
         selections: finalSelections,
         updatedAt: serverTimestamp()
       }
-      
+
       // Save to Firestore with updated path
       const selectionsRef = doc(db, 'students', studentId, 'preferences', 'mealSelections')
       await setDoc(selectionsRef, selectionsData, { merge: true })
-      
+
       // Update local state
       setStudentSelections(prev => ({
         ...prev,
         [studentId]: selectionsData
       }))
-      
+
       return true
     } catch (error) {
       console.error('Error saving meal selections:', error)
@@ -323,7 +345,7 @@ export const MealProvider = ({ children }) => {
 
       // Get current selections
       const currentSelections = studentSelections[studentId]?.selections || {}
-      
+
       // Check if adding veg item
       if (mealData.messType === 'veg') {
         // Clear all non-veg selections when adding veg
@@ -336,7 +358,7 @@ export const MealProvider = ({ children }) => {
         const hasVegSelections = Object.values(currentSelections).some(
           selection => selection.messType === 'veg'
         )
-        
+
         if (hasVegSelections) {
           toast.error('Cannot add non-veg items when veg items are already selected')
           return false
@@ -404,21 +426,21 @@ export const MealProvider = ({ children }) => {
 
       // Build the correct path
       const mealsRef = collection(
-        db, 
-        'Meals', 
-        mealData.messType, 
-        'categories', 
-        mealData.category, 
-        'subcategories', 
-        mealData.subcategory, 
+        db,
+        'Meals',
+        mealData.messType,
+        'categories',
+        mealData.category,
+        'subcategories',
+        mealData.subcategory,
         'items'
       )
       const docRef = await addDoc(mealsRef, mealWithTimestamps)
-      
+
       toast.success('Meal added successfully!')
-      return { 
-        id: docRef.id, 
-        path: `Meals/${mealData.messType}/categories/${mealData.category}/subcategories/${mealData.subcategory}/items/${docRef.id}` 
+      return {
+        id: docRef.id,
+        path: `Meals/${mealData.messType}/categories/${mealData.category}/subcategories/${mealData.subcategory}/items/${docRef.id}`
       }
     } catch (error) {
       toast.error('Error adding meal: ' + error.message)
@@ -447,29 +469,29 @@ export const MealProvider = ({ children }) => {
       const messType = pathParts[1]
       const category = pathParts[3]
       const subcategory = pathParts[5]
-      
+
       const mealRef = doc(
-        db, 
-        'Meals', 
-        messType, 
-        'categories', 
-        category, 
-        'subcategories', 
-        subcategory, 
-        'items', 
+        db,
+        'Meals',
+        messType,
+        'categories',
+        category,
+        'subcategories',
+        subcategory,
+        'items',
         mealId
       )
       await updateDoc(mealRef, mealUpdate)
-      
+
       // Update local state
-      setMeals(prevMeals => 
-        prevMeals.map(meal => 
-          meal.id === mealId 
+      setMeals(prevMeals =>
+        prevMeals.map(meal =>
+          meal.id === mealId
             ? { ...meal, ...mealUpdate, updatedAt: new Date() }
             : meal
         )
       )
-      
+
       toast.success('Meal updated successfully!')
       return true
     } catch (error) {
@@ -485,23 +507,23 @@ export const MealProvider = ({ children }) => {
       const messType = pathParts[1]
       const category = pathParts[3]
       const subcategory = pathParts[5]
-      
+
       const mealRef = doc(
-        db, 
-        'Meals', 
-        messType, 
-        'categories', 
-        category, 
-        'subcategories', 
-        subcategory, 
-        'items', 
+        db,
+        'Meals',
+        messType,
+        'categories',
+        category,
+        'subcategories',
+        subcategory,
+        'items',
         mealId
       )
       await deleteDoc(mealRef)
-      
+
       // Update local state
       setMeals(prevMeals => prevMeals.filter(meal => meal.id !== mealId))
-      
+
       toast.success('Meal deleted successfully!')
       return true
     } catch (error) {
@@ -515,7 +537,7 @@ export const MealProvider = ({ children }) => {
   }
 
   const getMealsBySubcategory = (category, subcategory) => {
-    return meals.filter(meal => 
+    return meals.filter(meal =>
       meal.category === category && meal.subcategory === subcategory
     )
   }
@@ -531,7 +553,7 @@ export const MealProvider = ({ children }) => {
       }
       return tags
     }, [])
-    
+
     return [...new Set(allTags)]
   }
 

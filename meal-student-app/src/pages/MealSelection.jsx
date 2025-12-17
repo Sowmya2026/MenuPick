@@ -31,6 +31,7 @@ const MealSelection = () => {
     checkSubcategoryLimit,
     saveStudentSelections,
     fetchStudentSelections,
+    studentSelections,
   } = useMeal();
 
   const [selectedMeals, setSelectedMeals] = useState({});
@@ -68,23 +69,28 @@ const MealSelection = () => {
     };
   }, [navigate, location.pathname]);
 
-  // Load saved selections
+  // Sync saved selections from context (Real-time)
   useEffect(() => {
-    const loadSelections = async () => {
+    const syncSelections = async () => {
       if (currentUser?.uid) {
-        try {
-          const saved = await fetchStudentSelections(currentUser.uid);
-          if (saved && saved.selections && saved.messType === userMessType) {
-            setSelectedMeals(saved.selections);
-            setHasSavedSelections(true);
+        // Check if we have data in context
+        const contextData = studentSelections[currentUser.uid];
+
+        if (contextData && contextData.selections && contextData.messType === userMessType) {
+          setSelectedMeals(contextData.selections);
+          setHasSavedSelections(true);
+        } else {
+          // If not in context yet, fetch it
+          try {
+            await fetchStudentSelections(currentUser.uid);
+          } catch (error) {
+            console.error("Error fetching selections:", error);
           }
-        } catch (error) {
-          console.error("Error loading selections:", error);
         }
       }
     };
-    loadSelections();
-  }, [currentUser, userMessType, fetchStudentSelections]);
+    syncSelections();
+  }, [currentUser, userMessType, studentSelections, fetchStudentSelections]);
 
   // Count selections by category
   const getCategoryCount = (category) => {

@@ -113,11 +113,17 @@ service cloud.firestore {
     }
 
     // ============================================================
-    // ANALYTICS COLLECTION (Admin only)
+    // ANALYTICS & STATS
     // ============================================================
     match /analytics/{document=**} {
       allow read: if isAdmin();
       allow write: if isAdmin();
+    }
+    
+    // Allow public write to system stats (for app install tracking)
+    match /stats/{document=**} {
+        allow read: if isAdmin();
+        allow write: if true;
     }
 
     // ============================================================
@@ -144,6 +150,13 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId;
       allow read, write: if isAdmin();
+    }
+
+    // ============================================================
+    // GUEST SESSIONS (Public Access for Tracking)
+    // ============================================================
+    match /guest_sessions/{sessionId} {
+      allow read, write: if true;
     }
 
     // ============================================================

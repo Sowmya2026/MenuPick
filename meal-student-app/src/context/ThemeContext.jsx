@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 const ThemeContext = createContext();
 
@@ -355,6 +357,46 @@ export const ThemeProvider = ({ children }) => {
         return savedAnimations !== null ? savedAnimations === 'true' : true;
     });
 
+    const { currentUser } = useAuth();
+    const db = getFirestore();
+
+    // Sync settings from Firestore when user logs in
+    useEffect(() => {
+        let unsubscribe;
+
+        if (currentUser) {
+            console.log('🔄 Syncing theme with user account:', currentUser.uid);
+            const userRef = doc(db, 'users', currentUser.uid);
+
+            unsubscribe = onSnapshot(userRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const settings = data.settings || {};
+
+                    // Sync Theme
+                    if (settings.theme && themes[settings.theme] && settings.theme !== currentTheme) {
+                        console.log('☁️ Received external theme update:', settings.theme);
+                        setCurrentTheme(settings.theme);
+                        localStorage.setItem('menuPickTheme', settings.theme);
+                    }
+
+                    // Sync Animations
+                    if (settings.animationsEnabled !== undefined && settings.animationsEnabled !== animationsEnabled) {
+                        console.log('☁️ Received external animation update:', settings.animationsEnabled);
+                        setAnimationsEnabled(settings.animationsEnabled);
+                        localStorage.setItem('menuPickAnimations', settings.animationsEnabled.toString());
+                    }
+                }
+            }, (error) => {
+                console.error('❌ Error syncing theme settings:', error);
+            });
+        }
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [currentUser]);
+
 
 
     // Save theme changes and apply CSS variables
@@ -390,11 +432,36 @@ export const ThemeProvider = ({ children }) => {
         if (themes[themeId]) {
             console.log('🎨 Changing theme to:', themeId);
             setCurrentTheme(themeId);
+            // Local storage is updated in the useEffect dependent on currentTheme
+
+            // Save to Firestore if user is logged in
+            if (currentUser) {
+                const userRef = doc(db, 'users', currentUser.uid);
+                setDoc(userRef, {
+                    settings: {
+                        theme: themeId
+                    }
+                }, { merge: true }).catch(err => console.error("Error saving theme to account:", err));
+            }
         }
     };
 
     const toggleAnimations = () => {
-        setAnimationsEnabled(prev => !prev);
+        setAnimationsEnabled(prev => {
+            const newValue = !prev;
+
+            // Save to Firestore if user is logged in
+            if (currentUser) {
+                const userRef = doc(db, 'users', currentUser.uid);
+                setDoc(userRef, {
+                    settings: {
+                        animationsEnabled: newValue
+                    }
+                }, { merge: true }).catch(err => console.error("Error saving animations to account:", err));
+            }
+
+            return newValue;
+        });
     };
 
     const value = {

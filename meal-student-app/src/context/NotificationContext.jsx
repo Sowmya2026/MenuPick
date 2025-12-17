@@ -17,8 +17,9 @@ import {
   getFCMToken,
   onForegroundMessage,
   initializeMessaging,
+  db
 } from "../services/firebaseConfig";
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 // ... (rest of file)
 
 // ...
@@ -459,7 +460,7 @@ export const NotificationProvider = ({ children }) => {
   };
 
   // Update notification preference
-  const updateNotificationPreference = (key, value) => {
+  const updateNotificationPreference = async (key, value) => {
     setNotifications((prev) => {
       const updated = { ...prev, [key]: value };
       if (currentUser) {
@@ -467,6 +468,16 @@ export const NotificationProvider = ({ children }) => {
           `notifications_${currentUser.uid}`,
           JSON.stringify(updated)
         );
+
+        // Sync to Firestore
+        const userRef = doc(db, "users", currentUser.uid);
+        setDoc(userRef, {
+          settings: {
+            notifications: {
+              [key]: value
+            }
+          }
+        }, { merge: true }).catch(err => console.error("Error saving notification pref:", err));
       }
       return updated;
     });
@@ -486,9 +497,12 @@ export const NotificationProvider = ({ children }) => {
     checkPermissionStatus,
   ]);
 
-  // Load user preferences
+  // Load user preferences and Listen for changes
   useEffect(() => {
+    let unsubscribe;
+
     if (currentUser) {
+      // 1. Load from LocalStorage (fast initial load)
       const savedNotifications = localStorage.getItem(
         `notifications_${currentUser.uid}`
       );
@@ -500,7 +514,38 @@ export const NotificationProvider = ({ children }) => {
       if (savedToken) {
         setFcmToken(savedToken);
       }
+
+      // 2. Setup Firestore Listener for Real-time Sync
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        unsubscribe = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const settings = data.settings || {};
+            const remoteNotifications = settings.notifications;
+
+            if (remoteNotifications) {
+              console.log("☁️ Syncing notifications from account");
+              setNotifications(prev => {
+                const newState = { ...prev, ...remoteNotifications };
+                // Update local storage to match
+                localStorage.setItem(
+                  `notifications_${currentUser.uid}`,
+                  JSON.stringify(newState)
+                );
+                return newState;
+              });
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Error setting up notification sync:", error);
+      }
     }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [currentUser]);
 
   // In NotificationContext.js - add this to the value object

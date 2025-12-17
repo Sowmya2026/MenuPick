@@ -42,10 +42,55 @@ const fallbackMenus = {
   }
 };
 
+const days = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+const messTypes = ["veg", "non-veg", "special"];
+
+// Centralized timing configuration
+const timings = {
+  weekday: {
+    breakfast: "7:00 AM - 9:00 AM",
+    lunch: "12:00 PM - 2:00 PM",
+    snacks: "5:00 PM - 6:00 PM",
+    dinner: "7:00 PM - 9:00 PM",
+  },
+  weekend: {
+    breakfast: "7:30 AM - 9:30 AM",
+    lunch: "12:30 PM - 2:30 PM",
+    snacks: "5:00 PM - 6:00 PM",
+    dinner: "7:30 PM - 9:30 PM",
+  },
+};
+
 // Menu Provider Component
 export const MenuProvider = ({ children }) => {
   const [menuData, setMenuData] = useState(fallbackMenus);
-  const [selectedMess, setSelectedMess] = useState("veg");
+
+  // Initialize from localStorage or default to 'veg'
+  const [selectedMess, setSelectedMess] = useState(() => {
+    try {
+      return localStorage.getItem('guestMessPreference') || 'veg';
+    } catch (e) {
+      return 'veg';
+    }
+  });
+
+  // Persist selection to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('guestMessPreference', selectedMess);
+    } catch (e) {
+      console.error('Failed to save mess preference', e);
+    }
+  }, [selectedMess]);
   const [selectedDay, setSelectedDay] = useState("Monday");
   const [selectedMealTime, setSelectedMealTime] = useState(null);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
@@ -68,33 +113,6 @@ export const MenuProvider = ({ children }) => {
 
     return () => unsubscribe();
   }, [db]);
-
-  const days = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ];
-  const messTypes = ["veg", "non-veg", "special"];
-
-  // Centralized timing configuration
-  const timings = {
-    weekday: {
-      breakfast: "7:00 AM - 9:00 AM",
-      lunch: "12:00 PM - 2:00 PM",
-      snacks: "5:00 PM - 6:00 PM",
-      dinner: "7:00 PM - 9:00 PM",
-    },
-    weekend: {
-      breakfast: "7:30 AM - 9:30 AM",
-      lunch: "12:30 PM - 2:30 PM",
-      snacks: "5:00 PM - 6:00 PM",
-      dinner: "7:30 PM - 9:30 PM",
-    },
-  };
 
   // Check if a day is weekend (Saturday or Sunday)
   const isWeekend = (day) => {

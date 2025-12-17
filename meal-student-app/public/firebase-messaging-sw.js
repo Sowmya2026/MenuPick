@@ -124,7 +124,9 @@ self.addEventListener('activate', (event) => {
 
 // PWA: Fetch Event (Required for PWA installability)
 self.addEventListener('fetch', (event) => {
-  // Basic pass-through fetch. 
-  // For a full offline experience, we would add caching logic here.
-  event.respondWith(fetch(event.request));
+  // We add this listener to satisfy PWA requirements (having a fetch handler),
+  // but we don't call respondWith(), letting the browser handle the network request
+  // naturally. This avoids "Failed to fetch" errors when the SW proxies requests
+  // that might fail (e.g., HMR updates in dev or when offline without a cache).
+  return;
 });
