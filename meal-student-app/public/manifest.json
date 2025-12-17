@@ -1,6 +1,6 @@
 {
-  "name": "MenuPick - Campus Dining",
-  "short_name": "MenuPick",
+  "name": "VitMessMenu - Campus Dining",
+  "short_name": "VitMessMenu",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -11,7 +11,8 @@ import {
     Circle,
     X,
     Mail,
-    Clock
+    Clock,
+    Zap
 } from "lucide-react";
 import { db } from "../firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
@@ -99,10 +100,12 @@ const UserActives = () => {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         totalRegistered: 0,
+        currentRegisteredActive: 0,
         dailyActive: 0,
         monthlyActive: 0,
         newUsersToday: 0,
         totalInstalls: 0,
+        currentGuestActive: 0,
         dailyGuestActive: 0,
         monthlyGuestActive: 0
     });
@@ -147,11 +150,13 @@ const UserActives = () => {
             }
 
             // Fetch Guest Sessions
+            let currentGuestCount = 0;
             let dailyGuestCount = 0;
             let monthlyGuestCount = 0;
             try {
                 const guestSnapshot = await getDocs(collection(db, "guest_sessions"));
                 const now = new Date();
+                const fifteenMinutesAgo = new Date(now.getTime() - (15 * 60 * 1000));
                 const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
                 const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
 
@@ -159,6 +164,7 @@ const UserActives = () => {
                     const data = doc.data();
                     if (data.lastActive) {
                         const lastActiveDate = data.lastActive.toDate ? data.lastActive.toDate() : new Date(data.lastActive);
+                        if (lastActiveDate > fifteenMinutesAgo) currentGuestCount++;
                         if (lastActiveDate > oneDayAgo) dailyGuestCount++;
                         if (lastActiveDate > thirtyDaysAgo) monthlyGuestCount++;
                     }
@@ -169,11 +175,13 @@ const UserActives = () => {
 
             const userList = [];
             let studentCount = 0;
+            let currentRegisteredCount = 0;
             let dailyActiveCount = 0;
             let monthlyActiveCount = 0;
             let newUsersCount = 0;
 
             const now = new Date();
+            const fifteenMinutesAgo = new Date(now.getTime() - (15 * 60 * 1000));
             const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
             const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
             const startOfToday = new Date();
@@ -197,10 +205,16 @@ const UserActives = () => {
                         if (!isNaN(lastActiveDate.getTime())) {
                             lastActiveString = lastActiveDate.toLocaleString();
 
+                            // Check Current Active
+                            if (lastActiveDate > fifteenMinutesAgo) {
+                                currentRegisteredCount++;
+                                status = "Online";
+                            }
+
                             // Check Daily Active
                             if (lastActiveDate > oneDayAgo) {
                                 dailyActiveCount++;
-                                status = "Active";
+                                if (status !== "Online") status = "Active";
                             }
 
                             // Check Monthly Active
@@ -242,10 +256,12 @@ const UserActives = () => {
 
             setStats({
                 totalRegistered: studentCount,
+                currentRegisteredActive: currentRegisteredCount,
                 dailyActive: dailyActiveCount,
                 monthlyActive: monthlyActiveCount,
                 newUsersToday: newUsersCount,
                 totalInstalls: installCount,
+                currentGuestActive: currentGuestCount,
                 dailyGuestActive: dailyGuestCount,
                 monthlyGuestActive: monthlyGuestCount
             });
@@ -258,8 +274,9 @@ const UserActives = () => {
     };
 
     const getStatusColor = (status) => {
+        if (status === 'Online') return 'bg-green-100 text-green-700 border-green-200';
         return status === 'Active'
-            ? 'bg-green-100 text-green-700 border-green-200'
+            ? 'bg-blue-100 text-blue-700 border-blue-200'
             : 'bg-gray-100 text-gray-700 border-gray-200';
     };
 
@@ -280,13 +297,13 @@ const UserActives = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 <StatsCard
-                    title="Total Registered"
-                    value={stats.totalRegistered}
-                    icon={Users}
-                    color="blue"
-                    trend="+12%"
+                    title="Current Active Accts"
+                    value={stats.currentRegisteredActive}
+                    icon={Zap}
+                    color="green"
+                    trend="Live"
                 />
                 <StatsCard
                     title="Daily Active Users"
@@ -303,19 +320,19 @@ const UserActives = () => {
                     trend="+2.1%"
                 />
                 <StatsCard
-                    title="New Users Today"
-                    value={stats.newUsersToday}
-                    icon={TrendingUp}
-                    color="orange"
-                    trend="+8%"
-                />
-                <StatsCard
-                    title="Total App Installs"
-                    value={stats.totalInstalls}
-                    icon={Download}
+                    title="Total Registered"
+                    value={stats.totalRegistered}
+                    icon={Users}
                     color="blue"
-                    trend="Lifetime"
-                    className="col-span-2 lg:col-span-1"
+                    trend="+12%"
+                />
+
+                <StatsCard
+                    title="Current Active Guests"
+                    value={stats.currentGuestActive}
+                    icon={Zap}
+                    color="orange"
+                    trend="Live"
                 />
                 <StatsCard
                     title="Daily Active Guests"
@@ -330,6 +347,22 @@ const UserActives = () => {
                     icon={Calendar}
                     color="purple"
                     trend="Active"
+                />
+                <StatsCard
+                    title="New Users Today"
+                    value={stats.newUsersToday}
+                    icon={TrendingUp}
+                    color="orange"
+                    trend="+8%"
+                />
+
+                <StatsCard
+                    title="Total App Installs"
+                    value={stats.totalInstalls}
+                    icon={Download}
+                    color="blue"
+                    trend="Lifetime"
+                    className="col-span-2 lg:col-span-1"
                 />
             </div>
 
@@ -415,7 +448,7 @@ const UserActives = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
-                                                <div className={`w-1.5 h-1.5 rounded-full ${user.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                <div className={`w-1.5 h-1.5 rounded-full ${user.status === 'Online' ? 'bg-green-500' : user.status === 'Active' ? 'bg-blue-500' : 'bg-gray-400'}`} />
                                                 {user.status}
                                             </span>
                                         </td>
@@ -484,7 +517,7 @@ const UserActives = () => {
                                     </div>
                                 </div>
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)} flex-shrink-0`}>
-                                    <div className={`w-1.5 h-1.5 rounded-full ${user.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                    <div className={`w-1.5 h-1.5 rounded-full ${user.status === 'Online' ? 'bg-green-500' : user.status === 'Active' ? 'bg-blue-500' : 'bg-gray-400'}`} />
                                     {user.status}
                                 </span>
                             </div>
@@ -546,7 +579,7 @@ const UserActives = () => {
                             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                                 <span className="text-sm font-medium text-gray-700">Status</span>
                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusColor(selectedUser.status)}`}>
-                                    <div className={`w-2 h-2 rounded-full ${selectedUser.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                    <div className={`w-2 h-2 rounded-full ${selectedUser.status === 'Online' ? 'bg-green-500' : selectedUser.status === 'Active' ? 'bg-blue-500' : 'bg-gray-400'}`} />
                                     {selectedUser.status}
                                 </span>
                             </div>
