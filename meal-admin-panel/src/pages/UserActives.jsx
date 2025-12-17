@@ -107,7 +107,8 @@ const UserActives = () => {
         totalInstalls: 0,
         currentGuestActive: 0,
         dailyGuestActive: 0,
-        monthlyGuestActive: 0
+        monthlyGuestActive: 0,
+        totalGuestUsers: 0
     });
     const [selectedUser, setSelectedUser] = useState(null);
 
@@ -153,8 +154,11 @@ const UserActives = () => {
             let currentGuestCount = 0;
             let dailyGuestCount = 0;
             let monthlyGuestCount = 0;
+            let totalGuestCount = 0;
             try {
                 const guestSnapshot = await getDocs(collection(db, "guest_sessions"));
+                totalGuestCount = guestSnapshot.size;
+
                 const now = new Date();
                 const fifteenMinutesAgo = new Date(now.getTime() - (15 * 60 * 1000));
                 const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
@@ -263,7 +267,8 @@ const UserActives = () => {
                 totalInstalls: installCount,
                 currentGuestActive: currentGuestCount,
                 dailyGuestActive: dailyGuestCount,
-                monthlyGuestActive: monthlyGuestCount
+                monthlyGuestActive: monthlyGuestCount,
+                totalGuestUsers: totalGuestCount
             });
 
         } catch (error) {
@@ -347,6 +352,13 @@ const UserActives = () => {
                     icon={Calendar}
                     color="purple"
                     trend="Active"
+                />
+                <StatsCard
+                    title="Total Guests"
+                    value={stats.totalGuestUsers}
+                    icon={Users}
+                    color="blue"
+                    trend="Lifetime"
                 />
                 <StatsCard
                     title="New Users Today"
